@@ -299,6 +299,12 @@ app.get('/security', (_req, res) => {
 app.get('/integrity', (_req, res) => {
   res.sendFile(path.join(publicDir, 'integrity.html'));
 });
+app.get('/privacy', (_req, res) => {
+  res.sendFile(path.join(publicDir, 'privacy.html'));
+});
+app.get('/terms', (_req, res) => {
+  res.sendFile(path.join(publicDir, 'terms.html'));
+});
 
 app.get('/help', (_req, res) => {
   res.sendFile(path.join(publicDir, 'help.html'));
@@ -379,6 +385,8 @@ app.get('/sitemap.xml', (_req, res) => {
     '/templates',
     '/security',
     '/integrity',
+    '/privacy',
+    '/terms',
     '/help',
     '/license',
     '/legal',

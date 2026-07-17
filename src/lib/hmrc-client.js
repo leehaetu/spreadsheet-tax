@@ -77,9 +77,20 @@ export function buildSubmitRequest(req, config) {
     throw new Error(`Unsupported income source: ${source}`);
   }
 
+  // Accept version must match subscribed Hub API version
+  // SE Business (MTD) 5.0 → vnd.hmrc.5.0+json; Property Business (MTD) 6.0 → vnd.hmrc.6.0+json
+  let acceptVersion = process.env.HMRC_API_ACCEPT_VERSION || null;
+  if (!acceptVersion) {
+    if (source === 'self_employment') {
+      acceptVersion = process.env.HMRC_SE_API_VERSION || '5.0';
+    } else {
+      acceptVersion = process.env.HMRC_PROPERTY_API_VERSION || '6.0';
+    }
+  }
+
   /** @type {Record<string, string>} */
   const headers = {
-    Accept: 'application/vnd.hmrc.1.0+json',
+    Accept: `application/vnd.hmrc.${acceptVersion}+json`,
     'Content-Type': 'application/json',
     ...buildFraudPreventionHeaders(config.req || null, {
       userId: config.userId || null,

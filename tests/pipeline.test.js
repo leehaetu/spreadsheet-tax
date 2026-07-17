@@ -247,7 +247,7 @@ describe('HMRC client interface', () => {
     assert.equal(req.method, 'POST');
     assert.match(req.path, /self-employment\/AA123456A\/XAIS1\/period/);
     assert.equal(req.body, body);
-    assert.equal(req.headers.Accept, 'application/vnd.hmrc.1.0+json');
+    assert.equal(req.headers.Accept, 'application/vnd.hmrc.5.0+json');
   });
 
   it('buildSubmitRequest produces UK and foreign property paths', () => {
