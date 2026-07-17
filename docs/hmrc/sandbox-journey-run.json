@@ -1,5 +1,5 @@
 {
-  "at": "2026-07-17T23:42:40.604Z",
+  "at": "2026-07-17T23:44:50.507Z",
   "base": "https://spreadsheet-tax-production.up.railway.app",
   "nino": "TB****",
   "steps": [
@@ -9,7 +9,7 @@
       "status": 200,
       "label": null,
       "path": null,
-      "snippet": "{\"connected\":true,\"mock\":false,\"expired\":false,\"mode\":\"sandbox\",\"expiresAt\":\"2026-07-18T03:42:47.167Z\",\"label\":\"HMRC OAuth token stored\"}"
+      "snippet": "{\"connected\":true,\"mock\":false,\"expired\":false,\"mode\":\"sandbox\",\"expiresAt\":\"2026-07-18T03:44:56.613Z\",\"label\":\"HMRC OAuth token stored\"}"
     },
     {
       "name": "import_self_employment",
@@ -17,7 +17,7 @@
       "status": 200,
       "label": null,
       "path": null,
-      "snippet": "{\"draftId\":\"6c66de41-7bc8-4a92-81f4-9d721e62d817\"}"
+      "snippet": "{\"draftId\":\"cc17e29f-27d2-459d-bc53-cfbe47f4ffba\"}"
     },
     {
       "name": "import_uk_property",
@@ -25,7 +25,7 @@
       "status": 200,
       "label": null,
       "path": null,
-      "snippet": "{\"draftId\":\"502fe0d5-ddae-4c35-bc83-3e5a62d0e302\"}"
+      "snippet": "{\"draftId\":\"3801400e-0755-4c71-b290-79afcf1d28e7\"}"
     },
     {
       "name": "import_foreign_property",
@@ -33,7 +33,7 @@
       "status": 200,
       "label": null,
       "path": null,
-      "snippet": "{\"draftId\":\"eee690df-1247-43f5-98ea-26357368871f\"}"
+      "snippet": "{\"draftId\":\"984287f1-11f4-4593-9d04-ba57424729cd\"}"
     },
     {
       "name": "businesses",
@@ -61,11 +61,11 @@
     },
     {
       "name": "se_period_retrieve",
-      "ok": false,
-      "status": 502,
+      "ok": true,
+      "status": 200,
       "label": null,
-      "path": "/individuals/business/self-employment/TB116925D/XBIS12345678901/period/2024-04-06_2024-07-05",
-      "snippet": "{\"ok\":false,\"status\":400,\"path\":\"/individuals/business/self-employment/TB116925D/XBIS12345678901/period/2024-04-06_2024-07-05\",\"method\":\"GET\",\"label\":\"se_period_retrieve\",\"url\":\"https://test-api.service.hmrc.gov.uk/individuals/business/self-employment/TB116925D/XBIS12345678901/period/2024-04-06_2024-07-05\",\"body\":{\"code\":\"FORMAT_TAX_YEAR\",\"message\":\"The taxYear format is invalid\"},\"requestBody\":nu"
+      "path": "/individuals/business/self-employment/TB116925D/XBIS12345678901/period/2024-25/2024-04-06_2024-07-05",
+      "snippet": "{\"ok\":true,\"status\":200,\"path\":\"/individuals/business/self-employment/TB116925D/XBIS12345678901/period/2024-25/2024-04-06_2024-07-05\",\"method\":\"GET\",\"label\":\"se_period_retrieve\",\"url\":\"https://test-api.service.hmrc.gov.uk/individuals/business/self-employment/TB116925D/XBIS12345678901/period/2024-25/2024-04-06_2024-07-05\",\"body\":{\"periodDates\":{\"periodStartDate\":\"2019-01-01\",\"periodEndDate\":\"2020-0"
     },
     {
       "name": "uk_period_create",
@@ -110,10 +110,10 @@
     {
       "name": "bsas_trigger",
       "ok": true,
-      "status": 502,
+      "status": 200,
       "label": null,
       "path": "/individuals/self-assessment/adjustable-summary/TB116925D/trigger",
-      "snippet": "{\"ok\":false,\"status\":429,\"path\":\"/individuals/self-assessment/adjustable-summary/TB116925D/trigger\",\"method\":\"POST\",\"label\":\"bsas_trigger\",\"url\":\"https://test-api.service.hmrc.gov.uk/individuals/self-assessment/adjustable-summary/TB116925D/trigger\",\"body\":{\"code\":\"MESSAGE_THROTTLED_OUT\",\"message\":\"The request for the API is throttled as you have exceeded your quota.\"},\"requestBody\":{\"accountingPer"
+      "snippet": "{\"ok\":true,\"status\":200,\"path\":\"/individuals/self-assessment/adjustable-summary/TB116925D/trigger\",\"method\":\"POST\",\"label\":\"bsas_trigger\",\"url\":\"https://test-api.service.hmrc.gov.uk/individuals/self-assessment/adjustable-summary/TB116925D/trigger\",\"body\":{\"calculationId\":\"717f3a7a-db8e-11e9-8a34-2a2ae2dbcce4\"},\"requestBody\":{\"accountingPeriod\":{\"startDate\":\"2024-04-06\",\"endDate\":\"2025-04-05\"},\"typ"
     },
     {
       "name": "itsa_status",
@@ -151,6 +151,6 @@
   "summary": {
     "total": 18,
     "httpTouched": 16,
-    "okish": 15
+    "okish": 16
   }
 }
