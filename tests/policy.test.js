@@ -30,6 +30,30 @@ describe('IP and LICENSE', () => {
     assert.match(lic, /subscription/i);
     assert.match(lic, /companies/i);
   });
+
+  it('package.json and lock root are proprietary, not MIT', () => {
+    const pkg = JSON.parse(
+      fs.readFileSync(path.join(root, 'package.json'), 'utf8')
+    );
+    assert.ok(
+      pkg.license === 'UNLICENSED' ||
+        /^SEE LICENSE$/i.test(String(pkg.license)) ||
+        /proprietary/i.test(String(pkg.license)),
+      `package.json license must be proprietary, got ${pkg.license}`
+    );
+    assert.notEqual(pkg.license, 'MIT');
+    const lock = JSON.parse(
+      fs.readFileSync(path.join(root, 'package-lock.json'), 'utf8')
+    );
+    const rootPkg = lock.packages && lock.packages[''];
+    assert.ok(rootPkg, 'package-lock packages[""] missing');
+    assert.equal(
+      rootPkg.license,
+      pkg.license,
+      'package-lock root license must match package.json'
+    );
+    assert.notEqual(rootPkg.license, 'MIT');
+  });
 });
 
 describe('no language enumerations in product source', () => {
