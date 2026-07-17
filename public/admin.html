@@ -26,6 +26,23 @@
       <div class="stat-card"><div class="n" id="m-subs">—</div><div class="l">Submissions</div></div>
       <div class="stat-card"><div class="n" id="m-cta">—</div><div class="l">CTA events</div></div>
     </div>
+    <section class="panel" id="audit-panel" hidden>
+      <h2>Recent firm activity</h2>
+      <div class="form-row">
+        <label>Firm for audit
+          <select id="audit-firm"></select>
+        </label>
+        <div style="display:flex;align-items:flex-end">
+          <button type="button" class="btn btn-ghost" id="audit-refresh">Refresh</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>When</th><th>Action</th><th>Entity</th></tr></thead>
+          <tbody id="audit-body"></tbody>
+        </table>
+      </div>
+    </section>
     <section class="panel" id="invite-panel" hidden>
       <h2>Invite team member</h2>
       <p class="muted">Sends a stub email with an accept link. Invitee must register/sign in with the same email.</p>
@@ -61,23 +78,50 @@
       }
       document.getElementById('stats').hidden = false;
       document.getElementById('invite-panel').hidden = false;
+      document.getElementById('audit-panel').hidden = false;
       const m = await fetch('/api/metrics/summary').then((r) => r.json());
       document.getElementById('m-users').textContent = m.users ?? '—';
       document.getElementById('m-drafts').textContent = m.drafts ?? '—';
       document.getElementById('m-subs').textContent = m.submissionAttempts ?? '—';
       document.getElementById('m-cta').textContent = m.ctaEvents ?? '—';
       const sel = document.getElementById('firm-select');
+      const auditSel = document.getElementById('audit-firm');
       sel.innerHTML = '';
+      auditSel.innerHTML = '';
       for (const x of me.memberships || []) {
         const o = document.createElement('option');
         o.value = x.firmId;
         o.textContent = x.firmName;
         sel.appendChild(o);
+        const o2 = o.cloneNode(true);
+        auditSel.appendChild(o2);
       }
       if (!sel.options.length) {
         document.getElementById('invite-panel').hidden = true;
+        document.getElementById('audit-panel').hidden = true;
+      } else {
+        loadAudit();
       }
     }
+    async function loadAudit() {
+      const firmId = document.getElementById('audit-firm').value;
+      if (!firmId) return;
+      const res = await fetch(`/api/me/audit?firmId=${encodeURIComponent(firmId)}`);
+      const data = await res.json();
+      const tbody = document.getElementById('audit-body');
+      tbody.innerHTML = '';
+      for (const e of data.events || []) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${esc(e.createdAt)}</td><td>${esc(e.action)}</td>
+          <td>${esc((e.entityType || '') + ' ' + (e.entityId || '').slice(0, 8))}</td>`;
+        tbody.appendChild(tr);
+      }
+    }
+    function esc(s) {
+      return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;');
+    }
+    document.getElementById('audit-refresh')?.addEventListener('click', loadAudit);
+    document.getElementById('audit-firm')?.addEventListener('change', loadAudit);
     document.getElementById('invite-btn')?.addEventListener('click', async () => {
       const msg = document.getElementById('invite-msg');
       const err = document.getElementById('invite-err');

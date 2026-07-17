@@ -51,6 +51,8 @@ import {
   recordSubmissionAttempt,
   writeAudit,
   getIdempotentResponse,
+  listAuditForFirm,
+  listAuditForUser,
 } from './lib/drafts.js';
 import { runDeadlineReminders, purgeAnonymousDrafts } from './lib/jobs.js';
 import {
@@ -181,13 +183,16 @@ app.get('/health', (_req, res) => {
   } catch {
     dbOk = false;
   }
-  res.json({
-    ok: true,
+  const ready = dbOk;
+  res.status(ready ? 200 : 503).json({
+    ok: ready,
     service: 'spreadsheet-tax',
+    version: '1.1.0',
     bridging: true,
     db: dbOk,
     oauthMock: oauthConfig().mock,
     liveSubmitEnabled: process.env.HMRC_ALLOW_LIVE_SUBMIT === '1',
+    volumeDataDir: process.env.DATA_DIR || null,
     portals: ['accountant', 'practice', 'client', 'workspace'],
   });
 });
@@ -298,6 +303,55 @@ app.get('/accept-invite', (_req, res) => {
 
 app.get('/admin', (_req, res) => {
   res.sendFile(path.join(publicDir, 'admin.html'));
+});
+
+app.get('/robots.txt', (_req, res) => {
+  res.type('text/plain').send(`User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /account
+Disallow: /workspace
+Disallow: /admin
+Disallow: /history
+Sitemap: https://spreadsheet-tax-production.up.railway.app/sitemap.xml
+`);
+});
+
+app.get('/sitemap.xml', (_req, res) => {
+  const base =
+    process.env.PUBLIC_BASE_URL ||
+    'https://spreadsheet-tax-production.up.railway.app';
+  const paths = [
+    '/',
+    '/self-employed',
+    '/landlords',
+    '/professionals',
+    '/firms',
+    '/pricing',
+    '/how-it-works',
+    '/templates',
+    '/security',
+    '/help',
+    '/license',
+    '/legal',
+    '/app',
+  ];
+  const body =
+    `<?xml version="1.0" encoding="UTF-8"?>\n` +
+    `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
+    paths
+      .map((p) => `  <url><loc>${base}${p}</loc></url>`)
+      .join('\n') +
+    `\n</urlset>\n`;
+  res.type('application/xml').send(body);
+});
+
+app.get('/.well-known/security.txt', (_req, res) => {
+  res.type('text/plain').send(`Contact: mailto:lee@4ucic.org
+Preferred-Languages: en
+Canonical: https://spreadsheet-tax-production.up.railway.app/.well-known/security.txt
+Policy: https://spreadsheet-tax-production.up.railway.app/security
+`);
 });
 
 /**
@@ -1071,6 +1125,20 @@ app.post('/api/me/firm-invites/accept', (req, res) => {
     meta: { role: result.role },
   });
   res.json({ ok: true, ...result });
+});
+
+app.get('/api/me/audit', (req, res) => {
+  const user = requireUser(req, res);
+  if (!user) return;
+  const firmId =
+    typeof req.query.firmId === 'string' ? req.query.firmId : null;
+  if (firmId) {
+    if (!userCanAccessFirm(user.id, firmId)) {
+      return res.status(403).json({ error: 'Not allowed for this firm.' });
+    }
+    return res.json({ ok: true, events: listAuditForFirm(firmId, 80) });
+  }
+  res.json({ ok: true, events: listAuditForUser(user.id, 40) });
 });
 
 /** Attach import to client (practice) */

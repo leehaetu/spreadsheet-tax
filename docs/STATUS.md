@@ -7,11 +7,12 @@
 
 | Item | Status |
 |------|--------|
-| Firm team invites | `/admin` + `/accept-invite` |
-| Ops metrics page | `/admin` |
-| History empty states | `/history` |
-| Import busy/loading UI | App dropzone |
-| Tests | **73** unit · **19** e2e |
+| Cookie notice (essential only) | Sales + app |
+| robots.txt / sitemap.xml | Live routes |
+| security.txt | `/.well-known/security.txt` |
+| Firm audit viewer | `/admin` activity table |
+| Health version + readiness | `/health` → `version`, `db` |
+| Tests | **77** unit · **19** e2e |
 
 ## Demo
 
@@ -19,7 +20,7 @@
 
 ## Railway
 
-Volume + env vars in place. See [RAILWAY.md](./RAILWAY.md).
+Volume `/app/data` · env secrets · GitHub main auto/manual deploy.
 
 ## External remaining
 

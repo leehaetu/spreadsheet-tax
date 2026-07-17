@@ -160,3 +160,50 @@ export function writeAudit({
       new Date().toISOString()
     );
 }
+
+/**
+ * List audit events for a firm (no secrets/NINO in meta by convention).
+ * @param {string} firmId
+ * @param {number} [limit]
+ */
+export function listAuditForFirm(firmId, limit = 50) {
+  return getDb()
+    .prepare(
+      `SELECT id, firm_id, user_id, action, entity_type, entity_id, meta_json, created_at
+       FROM audit_events WHERE firm_id = ? ORDER BY created_at DESC LIMIT ?`
+    )
+    .all(firmId, limit)
+    .map((r) => ({
+      id: r.id,
+      firmId: r.firm_id,
+      userId: r.user_id,
+      action: r.action,
+      entityType: r.entity_type,
+      entityId: r.entity_id,
+      meta: r.meta_json ? JSON.parse(r.meta_json) : null,
+      createdAt: r.created_at,
+    }));
+}
+
+/**
+ * @param {string} userId
+ * @param {number} [limit]
+ */
+export function listAuditForUser(userId, limit = 30) {
+  return getDb()
+    .prepare(
+      `SELECT id, firm_id, user_id, action, entity_type, entity_id, meta_json, created_at
+       FROM audit_events WHERE user_id = ? ORDER BY created_at DESC LIMIT ?`
+    )
+    .all(userId, limit)
+    .map((r) => ({
+      id: r.id,
+      firmId: r.firm_id,
+      userId: r.user_id,
+      action: r.action,
+      entityType: r.entity_type,
+      entityId: r.entity_id,
+      meta: r.meta_json ? JSON.parse(r.meta_json) : null,
+      createdAt: r.created_at,
+    }));
+}
