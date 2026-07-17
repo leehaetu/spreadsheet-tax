@@ -174,8 +174,8 @@ export function registerHmrcMtdRoutes(app, deps) {
   app.post('/api/hmrc/mtd/period/se', async (req, res) => {
     const ctx = requireLiveToken(req, res);
     if (!ctx) return;
-    let body = req.body?.body || req.body?.periodBody;
-    if (req.body?.draftId) {
+    let body = req.body?.body || req.body?.periodBody || null;
+    if (!body && req.body?.draftId) {
       const draft = getDraft(String(req.body.draftId));
       body = periodBodyFromDraft(draft, 'self_employment');
       if (!body) {
@@ -231,8 +231,8 @@ export function registerHmrcMtdRoutes(app, deps) {
   app.post('/api/hmrc/mtd/period/uk', async (req, res) => {
     const ctx = requireLiveToken(req, res);
     if (!ctx) return;
-    let body = req.body?.body || req.body?.periodBody;
-    if (req.body?.draftId) {
+    let body = req.body?.body || req.body?.periodBody || null;
+    if (!body && req.body?.draftId) {
       const draft = getDraft(String(req.body.draftId));
       body = periodBodyFromDraft(draft, 'uk_property');
       if (!body) {
@@ -273,8 +273,10 @@ export function registerHmrcMtdRoutes(app, deps) {
   );
 
   app.post('/api/hmrc/mtd/period/foreign', async (req, res) => {
-    let body = req.body?.body || req.body?.periodBody;
-    if (req.body?.draftId) {
+    const ctx = requireLiveToken(req, res);
+    if (!ctx) return;
+    let body = req.body?.body || req.body?.periodBody || null;
+    if (!body && req.body?.draftId) {
       const draft = getDraft(String(req.body.draftId));
       body = periodBodyFromDraft(draft, 'foreign_property');
       if (!body) {

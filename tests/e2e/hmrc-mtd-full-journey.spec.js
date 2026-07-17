@@ -123,7 +123,19 @@ test.describe('Full MTD sandbox journey (operator)', () => {
       drafts[sample] = imp.body?.draftId;
     }
 
-    // Ensure property businesses exist (SA Test Support)
+    // Ensure property businesses exist (SA Test Support) — use returned businessIds
+    let bidUk = '';
+    let bidFp = '';
+    const idsPath = path.join(process.cwd(), 'docs', 'hmrc', 'sandbox-business-ids.json');
+    let cached = {};
+    try {
+      cached = JSON.parse(fs.readFileSync(idsPath, 'utf8'));
+    } catch {
+      cached = {};
+    }
+    bidUk = cached.uk || '';
+    bidFp = cached.foreign || '';
+
     for (const typeOfBusiness of ['uk-property', 'foreign-property']) {
       const created = await page.evaluate(
         async ({ n, typeOfBusiness }) => {
@@ -136,12 +148,21 @@ test.describe('Full MTD sandbox journey (operator)', () => {
         },
         { n: NINO, typeOfBusiness }
       );
+      const newId =
+        created.body?.body?.businessId ||
+        created.body?.response?.businessId ||
+        null;
+      const already =
+        created.body?.body?.code === 'RULE_PROPERTY_BUSINESS_ADDED' ||
+        created.body?.status === 400;
       logStep(`create_test_business_${typeOfBusiness}`, {
-        ok: created.status === 200 || created.status === 201 || created.body?.status === 201,
+        ok: Boolean(newId) || already,
         status: created.status,
         body: created.body,
         path: created.body?.path,
       });
+      if (typeOfBusiness === 'uk-property' && newId) bidUk = newId;
+      if (typeOfBusiness === 'foreign-property' && newId) bidFp = newId;
     }
 
     // Businesses
@@ -161,16 +182,36 @@ test.describe('Full MTD sandbox journey (operator)', () => {
       businesses.body?.body?.businesses ||
       [];
     let bidSe = '';
-    let bidUk = '';
-    let bidFp = '';
+    const nonSe = [];
     for (const row of Array.isArray(list) ? list : []) {
       const id = row.businessId || row.id || '';
       const t = String(row.typeOfBusiness || row.type || '').toLowerCase();
       if (t.includes('self')) bidSe = id;
-      else if (t.includes('uk')) bidUk = id;
-      else if (t.includes('foreign')) bidFp = id;
+      else if (id) {
+        nonSe.push({ id, t });
+        if ((t.includes('uk') || t.includes('property')) && !t.includes('foreign') && !bidUk)
+          bidUk = id;
+        if (t.includes('foreign') && !bidFp) bidFp = id;
+      }
     }
+    // If list omits types but we have extra IDs, assign by position
+    if (!bidUk && nonSe[0]) bidUk = nonSe[0].id;
+    if (!bidFp && nonSe[1]) bidFp = nonSe[1].id;
     if (!bidSe && list[0]) bidSe = list[0].businessId || list[0].id || '';
+
+    // Persist for next runs when create returns ALREADY_ADDED without id
+    try {
+      fs.writeFileSync(
+        idsPath,
+        JSON.stringify(
+          { uk: bidUk, foreign: bidFp, se: bidSe, updatedAt: new Date().toISOString() },
+          null,
+          2
+        )
+      );
+    } catch {
+      /* ignore */
+    }
 
     // Obligations
     const obl = await page.evaluate(async (n) => {
@@ -230,10 +271,18 @@ test.describe('Full MTD sandbox journey (operator)', () => {
       });
     }
 
-    // UK property
-    if (bidUk && drafts.uk_property) {
+    // UK property — explicit HMRC-shaped body (also exercises draft path if present)
+    if (bidUk) {
+      const ukBody = {
+        fromDate: '2024-04-06',
+        toDate: '2024-07-05',
+        ukOtherProperty: {
+          income: { periodAmount: 7200 },
+          expenses: { premisesRunningCosts: 420, repairsAndMaintenance: 100 },
+        },
+      };
       const uk = await page.evaluate(
-        async ({ n, bid, draftId }) => {
+        async ({ n, bid, draftId, periodBody }) => {
           const r = await fetch('/api/hmrc/mtd/period/uk', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -242,14 +291,20 @@ test.describe('Full MTD sandbox journey (operator)', () => {
               businessId: bid,
               draftId,
               taxYear: '2024-25',
+              body: periodBody,
             }),
           });
           return { status: r.status, body: await r.json() };
         },
-        { n: NINO, bid: bidUk, draftId: drafts.uk_property }
+        {
+          n: NINO,
+          bid: bidUk,
+          draftId: drafts.uk_property,
+          periodBody: ukBody,
+        }
       );
       logStep('uk_period_create', {
-        ok: uk.body?.ok || uk.status === 200,
+        ok: uk.body?.ok === true || uk.body?.status === 200,
         status: uk.status,
         body: uk.body,
         path: uk.body?.path,
@@ -258,14 +313,25 @@ test.describe('Full MTD sandbox journey (operator)', () => {
       logStep('uk_period_create', {
         ok: false,
         status: null,
-        body: { skip: true, reason: 'no uk business id in list' },
+        body: { skip: true, reason: 'no uk business id' },
       });
     }
 
     // Foreign property
-    if (bidFp && drafts.foreign_property) {
+    if (bidFp) {
+      const fpBody = {
+        fromDate: '2024-04-06',
+        toDate: '2024-07-05',
+        foreignProperty: [
+          {
+            countryCode: 'ESP',
+            income: { rentIncome: { rentAmount: 1500 } },
+            expenses: { premisesRunningCosts: 100 },
+          },
+        ],
+      };
       const fp = await page.evaluate(
-        async ({ n, bid, draftId }) => {
+        async ({ n, bid, draftId, periodBody }) => {
           const r = await fetch('/api/hmrc/mtd/period/foreign', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -274,14 +340,20 @@ test.describe('Full MTD sandbox journey (operator)', () => {
               businessId: bid,
               draftId,
               taxYear: '2024-25',
+              body: periodBody,
             }),
           });
           return { status: r.status, body: await r.json() };
         },
-        { n: NINO, bid: bidFp, draftId: drafts.foreign_property }
+        {
+          n: NINO,
+          bid: bidFp,
+          draftId: drafts.foreign_property,
+          periodBody: fpBody,
+        }
       );
       logStep('fp_period_create', {
-        ok: fp.body?.ok || fp.status === 200,
+        ok: fp.body?.ok === true || fp.body?.status === 200,
         status: fp.status,
         body: fp.body,
         path: fp.body?.path,
@@ -290,7 +362,7 @@ test.describe('Full MTD sandbox journey (operator)', () => {
       logStep('fp_period_create', {
         ok: false,
         status: null,
-        body: { skip: true, reason: 'no foreign business id in list' },
+        body: { skip: true, reason: 'no foreign business id' },
       });
     }
 
