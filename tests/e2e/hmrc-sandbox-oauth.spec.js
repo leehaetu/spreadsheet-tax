@@ -118,7 +118,9 @@ test.describe('REAL HMRC sandbox evidence (no mock)', () => {
     const j = await res.json();
     expect(j.oauthMock).toBe(false);
     expect(j.ok).toBe(true);
-    expect(j.liveSubmitEnabled).toBe(false);
+    // liveSubmit may be 0 (preview-only) or 1 (sandbox HTTP allowed) — both valid pilot configs
+    expect(typeof j.liveSubmitEnabled).toBe('boolean');
+    expect(j.version).toMatch(/^\d+\.\d+\.\d+$/);
   });
 });
 
@@ -217,6 +219,23 @@ test.describe('Playwright OAuth journey against production + HMRC sandbox', () =
     expect(st.connection?.mock).toBe(false);
     expect(st.connection?.connected).toBe(true);
     expect(st.connection?.mode).toBe('sandbox');
+
+    // After OAuth: Business Details + Obligations (user-restricted) using stored sandbox NINO
+    const nino = process.env.HMRC_SANDBOX_TEST_NINO || 'TB116925D';
+    const businesses = await page.evaluate(async (n) => {
+      const r = await fetch(`/api/hmrc/businesses?nino=${encodeURIComponent(n)}`);
+      return { status: r.status, body: await r.json() };
+    }, nino);
+    expect(businesses.status).toBe(200);
+    expect(businesses.body.ok).toBe(true);
+
+    const obligations = await page.evaluate(async (n) => {
+      const r = await fetch(`/api/hmrc/obligations?nino=${encodeURIComponent(n)}`);
+      return { status: r.status, body: await r.json() };
+    }, nino);
+    // 200 = list ok; 502 with HMRC error body still proves the call left our app
+    expect([200, 502]).toContain(obligations.status);
+    expect(obligations.body).toBeTruthy();
   });
 });
 

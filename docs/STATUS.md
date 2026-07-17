@@ -2,9 +2,10 @@
 
 **Last updated:** 2026-07-17  
 **Live:** https://spreadsheet-tax-production.up.railway.app  
-**Version target:** 1.10.0  
+**Live version:** **1.10.0** (confirm via `/health` — do not trust chat memory)  
+**Truth inventory:** [DONE-VS-NOT.md](./DONE-VS-NOT.md) ← read this before “next steps”  
 **Truth audit:** [TRUTH-AUDIT.md](./TRUTH-AUDIT.md)  
-**Production APIs pack:** [HMRC-PRODUCTION-ACCESS.md](./HMRC-PRODUCTION-ACCESS.md)
+**Production APIs pack:** [HMRC-PRODUCTION-ACCESS.md](./HMRC-PRODUCTION-ACCESS.md) (only when sandbox evidence is enough)
 
 ## Priority (Lee)
 
