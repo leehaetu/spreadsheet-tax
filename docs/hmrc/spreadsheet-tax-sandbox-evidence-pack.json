@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-17T21:15:00+01:00",
+  "generatedAt": "2026-07-17T22:30:00+01:00",
   "product": "Spreadsheet Tax",
   "intellectualProperty": "Lee Hine",
   "liveUrl": "https://spreadsheet-tax-production.up.railway.app",
@@ -10,11 +10,12 @@
   "environment": "sandbox",
   "oauthEnv": "sandbox",
   "connectionMethod": "WEB_APP_VIA_SERVER",
-  "notTheSameAs": {
-    "productName": "QuarterLink",
-    "note": "June 2026 evidence pack on Desktop (hmrc-sandbox-evidence-pack.json), NINO TZ222092B, correlations, and EPI962 were for QuarterLink. Do not present those as Spreadsheet Tax logs without re-stating product name.",
-    "quarterLinkEvidenceFile": "/Users/leehine/Desktop/hmrc-sandbox-evidence-pack.json"
-  },
+  "sandboxApplicationId": "e6751be5-fd22-4447-9e77-aa51729b1b46",
+  "productionApplicationId": null,
+  "productionAppliedFor": false,
+  "readyToSendSdsTeam": false,
+  "officialHMRCDeliverable": "Production Approvals Checklist docx in HMRC form format + sandbox API logs for sandboxApplicationId",
+  "internalNotesOnly": "This JSON is operator notes — HMRC review checklist + their logs, not this file",
   "hubSubscriptionsOnSandboxApp": [
     "Business Details (MTD) 2.0",
     "Obligations (MTD) 3.0",
