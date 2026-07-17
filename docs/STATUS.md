@@ -2,24 +2,26 @@
 
 **Last updated:** 2026-07-17  
 **Live:** https://spreadsheet-tax-production.up.railway.app  
-**Version:** 1.4.0
+**Version:** 1.4.1
 
-## This slice
+## This session (shipped)
 
-| Item | Status |
-|------|--------|
-| Delete client | workspace + `DELETE /api/me/clients/:id` |
-| Rename firm | workspace + `PATCH /api/me/firms/:id` |
-| Saved HMRC identifiers | `/account` + app prefill |
-| Practice needs-action dashboard | `/workspace` |
-| Submissions / receipts export | history + download |
-| Auth rate limits | login / register / forgot-password |
-| Tests | **85** unit |
+| Slice | Version | Notes |
+|-------|---------|--------|
+| Draft rename, client search, help search, `/readyz` | 1.2.0 | History + workspace + probes |
+| Practice needs-action dashboard, submissions CSV | 1.3.0 | Portfolio stats + export |
+| Saved HMRC identifiers, receipt download | 1.3.1 | Account prefill for app |
+| Client delete, firm rename | 1.4.0 | Workspace practice CRUD |
+| Create practice firm | 1.4.1 | New accountants onboard without invite |
+
+## Tests
+
+**86** unit tests passing.
 
 ## Demo
 
 `demo@spreadsheet-tax.example` / `DemoPass123!`
 
-## External remaining
+## External remaining (not code)
 
-HMRC production credentials, card billing, pen-test, legal pack, interviews.
+HMRC production Client ID/Secret + approval, real card billing, pen-test, legal/GDPR pack, customer interviews / pricing lock.
