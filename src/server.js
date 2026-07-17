@@ -91,6 +91,11 @@ import {
   pingHmrcHelloApplication,
 } from './lib/hmrc-oauth.js';
 import {
+  createSandboxIndividual,
+  validateFraudPreventionHeaders,
+  sandboxReadiness,
+} from './lib/hmrc-sandbox.js';
+import {
   ensureFreePlan,
   getUserPlan,
   setUserPlan,
@@ -151,7 +156,7 @@ app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'SAMEORIGIN');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  res.setHeader('X-App-Version', '1.7.0');
+  res.setHeader('X-App-Version', '1.8.0');
   res.setHeader(
     'Content-Security-Policy',
     "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self'"
@@ -209,7 +214,7 @@ app.get('/health', (_req, res) => {
   res.status(ready ? 200 : 503).json({
     ok: ready,
     service: 'spreadsheet-tax',
-    version: '1.7.0',
+    version: '1.8.0',
     bridging: true,
     db: dbOk,
     oauthMock: oauthConfig().mock,
@@ -236,7 +241,7 @@ app.get('/health', (_req, res) => {
 app.get('/readyz', (_req, res) => {
   try {
     getDb().prepare('SELECT 1 AS x').get();
-    res.status(200).json({ ready: true, version: '1.7.0' });
+    res.status(200).json({ ready: true, version: '1.8.0' });
   } catch {
     res.status(503).json({ ready: false });
   }
@@ -1119,6 +1124,7 @@ app.get('/api/hmrc/status', (req, res) => {
 app.get('/api/hmrc/sandbox-check', async (req, res) => {
   try {
     const result = await pingHmrcHelloApplication();
+    const ready = await sandboxReadiness();
     const ok =
       result.openAccess?.ok &&
       result.application?.ok === true &&
@@ -1126,12 +1132,22 @@ app.get('/api/hmrc/sandbox-check', async (req, res) => {
     res.status(ok ? 200 : 503).json({
       ok,
       ...result,
+      readiness: ready,
+      storedTestUser: process.env.HMRC_SANDBOX_TEST_USER_ID
+        ? {
+            userId: process.env.HMRC_SANDBOX_TEST_USER_ID,
+            nino: process.env.HMRC_SANDBOX_TEST_NINO || null,
+            mtdItId: process.env.HMRC_SANDBOX_TEST_MTD_IT_ID || null,
+            // password never returned from this public endpoint
+            passwordStored: Boolean(process.env.HMRC_SANDBOX_TEST_USER_PASSWORD),
+          }
+        : null,
       nextSteps: ok
         ? [
-            'Create a sandbox individual test user (Create Test User API / Hub tooling)',
-            'Sign in to Spreadsheet Tax → Connect HMRC (user OAuth)',
-            'Validate fraud headers via Test Fraud Prevention Headers API',
-            'Only then enable HMRC_ALLOW_LIVE_SUBMIT=1 for a controlled sandbox period submit',
+            'Sign in to Spreadsheet Tax',
+            'Open /connect-hmrc → Start connect journey',
+            'At HMRC sign-in use the sandbox test user ID + password (operator has these)',
+            'Then run fraud-header validate and a controlled sandbox period submit',
           ]
         : [
             'Confirm HMRC_CLIENT_ID/SECRET and HMRC_OAUTH_MOCK=0 on Railway',
@@ -1145,6 +1161,90 @@ app.get('/api/hmrc/sandbox-check', async (req, res) => {
       error: e instanceof Error ? e.message : 'sandbox-check failed',
     });
   }
+});
+
+/**
+ * Create a new HMRC sandbox individual (MTD IT enrolments).
+ * Requires signed-in operator. Returns credentials once (HMRC does not re-show).
+ */
+app.post('/api/hmrc/create-test-user', async (req, res) => {
+  const user = requireUser(req, res);
+  if (!user) return;
+  try {
+    const result = await createSandboxIndividual();
+    if (!result.ok) {
+      return res.status(502).json(result);
+    }
+    writeAudit({
+      userId: user.id,
+      action: 'hmrc_test_user_created',
+      entityType: 'hmrc_sandbox',
+      meta: {
+        userId: result.user.userId,
+        nino: result.user.nino,
+        mtdItId: result.user.mtdItId,
+      },
+    });
+    res.status(201).json(result);
+  } catch (e) {
+    res.status(500).json({
+      ok: false,
+      error: e instanceof Error ? e.message : 'create-test-user failed',
+    });
+  }
+});
+
+/**
+ * Probe fraud-prevention headers against HMRC test validator (sandbox).
+ */
+app.post('/api/hmrc/validate-fraud-headers', async (req, res) => {
+  const user = requireUser(req, res);
+  if (!user) return;
+  try {
+    const result = await validateFraudPreventionHeaders(req, {
+      userId: user.id,
+    });
+    res.status(result.ok ? 200 : 502).json(result);
+  } catch (e) {
+    res.status(500).json({
+      ok: false,
+      error: e instanceof Error ? e.message : 'validate-fraud-headers failed',
+    });
+  }
+});
+
+/**
+ * Operator view of stored sandbox test user (password only if DEMO_SHOW_TEST_PASSWORD=1).
+ */
+app.get('/api/hmrc/sandbox-test-user', (req, res) => {
+  const user = requireUser(req, res);
+  if (!user) return;
+  if (!process.env.HMRC_SANDBOX_TEST_USER_ID) {
+    return res.status(404).json({
+      ok: false,
+      error: 'No stored sandbox test user. POST /api/hmrc/create-test-user',
+    });
+  }
+  res.json({
+    ok: true,
+    user: {
+      userId: process.env.HMRC_SANDBOX_TEST_USER_ID,
+      nino: process.env.HMRC_SANDBOX_TEST_NINO || null,
+      mtdItId: process.env.HMRC_SANDBOX_TEST_MTD_IT_ID || null,
+      saUtr: process.env.HMRC_SANDBOX_TEST_SA_UTR || null,
+      password:
+        process.env.DEMO_SHOW_TEST_PASSWORD === '1'
+          ? process.env.HMRC_SANDBOX_TEST_USER_PASSWORD || null
+          : '(set DEMO_SHOW_TEST_PASSWORD=1 on server to reveal once for pilot)',
+    },
+    connectSteps: [
+      'Sign in to Spreadsheet Tax (your product account)',
+      'Open /connect-hmrc and click Start connect journey',
+      'At HMRC sandbox login enter the test userId + password',
+      'Approve read:self-assessment and write:self-assessment scopes',
+      'You return to Spreadsheet Tax with a real sandbox OAuth token',
+    ],
+  });
 });
 
 /** Billing / plans (stub — no card processing) */

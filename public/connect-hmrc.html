@@ -40,7 +40,12 @@
     <section class="panel">
       <h2>Sandbox connectivity</h2>
       <p class="muted">Checks Hub credentials via Hello World (no tax data).</p>
-      <button type="button" class="btn btn-ghost" id="sandbox-check-btn">Run sandbox check</button>
+      <div class="hero-actions" style="margin-top:0.5rem;flex-wrap:wrap;gap:0.5rem">
+        <button type="button" class="btn btn-ghost" id="sandbox-check-btn">Run sandbox check</button>
+        <button type="button" class="btn btn-ghost" id="create-test-user-btn">Create test user</button>
+        <button type="button" class="btn btn-ghost" id="fraud-validate-btn">Validate fraud headers</button>
+        <button type="button" class="btn btn-ghost" id="show-test-user-btn">Show stored test user</button>
+      </div>
       <pre id="sandbox-check" class="code-block" style="margin-top:0.75rem">Not run yet</pre>
     </section>
   </main>
@@ -86,17 +91,25 @@
       await fetch('/api/hmrc/disconnect', { method: 'POST' });
       refresh();
     };
-    document.getElementById('sandbox-check-btn').onclick = async () => {
+    async function showJson(label, url, method) {
       const el = document.getElementById('sandbox-check');
-      el.textContent = 'Checking…';
+      el.textContent = label + '…';
       try {
-        const res = await fetch('/api/hmrc/sandbox-check');
+        const res = await fetch(url, { method: method || 'GET' });
         const data = await res.json();
         el.textContent = JSON.stringify(data, null, 2);
       } catch (e) {
         el.textContent = String(e);
       }
-    };
+    }
+    document.getElementById('sandbox-check-btn').onclick = () =>
+      showJson('Checking', '/api/hmrc/sandbox-check');
+    document.getElementById('create-test-user-btn').onclick = () =>
+      showJson('Creating', '/api/hmrc/create-test-user', 'POST');
+    document.getElementById('fraud-validate-btn').onclick = () =>
+      showJson('Validating headers', '/api/hmrc/validate-fraud-headers', 'POST');
+    document.getElementById('show-test-user-btn').onclick = () =>
+      showJson('Loading', '/api/hmrc/sandbox-test-user');
     refresh();
   </script>
 </body>
