@@ -35,6 +35,7 @@ import {
   listMemberships,
   ensureDemoAuthSeed,
   userCanAccessFirm,
+  newId,
 } from './lib/auth.js';
 import {
   createDraft,
@@ -117,6 +118,16 @@ const upload = multer({
 });
 
 app.use(express.json({ limit: '2mb' }));
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader(
+    'Content-Security-Policy',
+    "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self'"
+  );
+  next();
+});
 app.use(express.static(publicDir));
 
 /**
@@ -885,6 +896,77 @@ app.get('/api/me/workflow-statuses', (req, res) => {
   const user = requireUser(req, res);
   if (!user) return;
   res.json({ ok: true, statuses: listWorkflowStatusCatalog() });
+});
+
+app.post('/api/me/clients', (req, res) => {
+  const user = requireUser(req, res);
+  if (!user) return;
+  const firmId = String(req.body?.firmId || '');
+  const name = String(req.body?.name || '').trim();
+  if (!firmId || !userCanAccessFirm(user.id, firmId)) {
+    return res.status(403).json({ error: 'Not allowed for this firm.' });
+  }
+  if (!name) return res.status(400).json({ error: 'Client name required.' });
+  const id = newId();
+  const now = new Date().toISOString();
+  getDb()
+    .prepare(
+      `INSERT INTO clients (id, firm_id, display_name, workflow_status, assignee_user_id, due_date, portal_enabled, created_at, updated_at)
+       VALUES (?, ?, ?, 'awaiting_records', ?, ?, 1, ?, ?)`
+    )
+    .run(id, firmId, name, user.id, req.body?.dueDate || null, now, now);
+  writeAudit({
+    firmId,
+    userId: user.id,
+    action: 'client_created',
+    entityType: 'client',
+    entityId: id,
+  });
+  res.status(201).json({ ok: true, client: getClientRow(id) });
+});
+
+app.get('/api/receipts/:attemptId', (req, res) => {
+  const user = requireUser(req, res);
+  if (!user) return;
+  const row = getDb()
+    .prepare(`SELECT * FROM submission_attempts WHERE id = ?`)
+    .get(req.params.attemptId);
+  if (!row) return res.status(404).json({ error: 'Receipt not found' });
+  if (row.user_id && row.user_id !== user.id) {
+    return res.status(403).json({ error: 'Not allowed' });
+  }
+  res.json({
+    ok: true,
+    receipt: {
+      id: row.id,
+      draftId: row.draft_id,
+      mode: row.mode,
+      ok: Boolean(row.ok),
+      createdAt: row.created_at,
+      results: JSON.parse(row.results_json),
+    },
+  });
+});
+
+app.get('/api/me/submissions', (req, res) => {
+  const user = requireUser(req, res);
+  if (!user) return;
+  const rows = getDb()
+    .prepare(
+      `SELECT id, draft_id, mode, ok, created_at FROM submission_attempts
+       WHERE user_id = ? ORDER BY created_at DESC LIMIT 50`
+    )
+    .all(user.id);
+  res.json({
+    ok: true,
+    submissions: rows.map((r) => ({
+      id: r.id,
+      draftId: r.draft_id,
+      mode: r.mode,
+      ok: Boolean(r.ok),
+      createdAt: r.created_at,
+    })),
+  });
 });
 
 app.get('/api/status', (_req, res) => {

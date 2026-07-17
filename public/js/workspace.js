@@ -85,6 +85,25 @@ async function init() {
   firmSel.addEventListener('change', loadClients);
   await loadClients();
 
+  const addBtn = document.getElementById('add-client-btn');
+  if (addBtn) {
+    addBtn.addEventListener('click', async () => {
+      const name = window.prompt('Client name');
+      if (!name) return;
+      const res = await fetch('/api/me/clients', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ firmId: firmSel.value, name }),
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        alert(body.error || 'Could not add client');
+        return;
+      }
+      loadClients();
+    });
+  }
+
   document.getElementById('logout-btn')?.addEventListener('click', async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
     location.href = '/signin';

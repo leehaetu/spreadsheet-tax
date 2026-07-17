@@ -1,44 +1,48 @@
 # Project status
 
-**Last updated:** 2026-07-17 (continuous session)  
-**Highest proven gate:** **Gate 0 complete** · **Pilot foundation largely in-repo** (auth, drafts, workspace, OAuth mock, fraud headers, billing stub)
+**Last updated:** 2026-07-17 (end of continuous automated session)  
+**Branch:** `main` (pushed)
 
-## Status slice — HMRC OAuth + fraud headers + billing
+## Highest proven capability
 
-| Field | Value |
+| Label | Status |
 |-------|--------|
-| Gate | 0 proven; pilot features present with mock OAuth |
-| Done | Encrypted HMRC token storage; OAuth authorize/callback (mock or real credentials); fraud-prevention headers on API requests; plan entitlements stub; rate limit on submit; account/billing/connect pages; legal privacy summary |
-| Tests | unit **66 pass** · e2e **15 pass** (incl. visual + mock HMRC connect) |
-| Visual | Screenshots regenerated (sales, app, workspace, billing, connect) |
-| Commits | Continuous push to main |
-| Next / external | Real HMRC Developer Hub app + production approval; card billing; pen-test; interviews; WCAG audit sign-off |
+| **Gate 0 Safe demo** | **Done** |
+| **Pilot foundation (in-repo)** | **Done** — auth, SQLite, drafts, workspace, mock OAuth, fraud headers, billing stub |
+| **Production ready** | **Not done** — needs real HMRC approval, pen-test, legal pack, live billing |
 
-### Demo credentials
+## Tests (latest)
 
-`demo@spreadsheet-tax.example` / `DemoPass123!`
+- `npm test` → **66 pass**
+- `npm run test:e2e` → **15 pass** (smoke + visual + mock HMRC connect)
 
-### Key URLs
+## Commits this session (main)
 
-| Path | Purpose |
-|------|---------|
-| `/app` | Free spreadsheet check |
-| `/signin` | Auth |
-| `/workspace` | Practice clients |
-| `/connect-hmrc` | OAuth connect (mock by default) |
-| `/billing` | Plan select (no charges) |
-| `/account` | Account summary |
+1. Gate 0 safe demo + docs OS + CI + Playwright  
+2. Auth + drafts + workspace  
+3. HMRC OAuth mock/real + fraud headers + billing stub  
+4. Security headers + create client + submission history  
 
-### Env
+## What you can use now
 
-| Variable | Meaning |
-|----------|---------|
-| `HMRC_CLIENT_ID` / `HMRC_CLIENT_SECRET` / `HMRC_REDIRECT_URI` | Real OAuth |
-| `HMRC_OAUTH_MOCK=1` | Force mock connect (default when no client id) |
-| `HMRC_ALLOW_LIVE_SUBMIT=1` | Allow non-double submit with user/env token |
-| `TOKEN_ENCRYPTION_KEY` or `SESSION_SECRET` | Token encryption at rest |
+| URL | Feature |
+|-----|---------|
+| `/` | Sales hub |
+| `/app` | Free check → review → preview submit |
+| `/signin` | Auth (`demo@spreadsheet-tax.example` / `DemoPass123!`) |
+| `/workspace` | Practice clients + add client + advance status |
+| `/connect-hmrc` | Mock (or real) OAuth connect |
+| `/billing` | Plan select (no cards) |
+| `/account` | Account + plan + HMRC status |
 
-### Honest claims
+## Still external / human
 
-- **Yes:** demo product with safe preview submit, sign-in, drafts, mock HMRC connect, practice workspace  
-- **No:** independent pen-test passed; production HMRC approval; real card billing; “complete” launch gate  
+- HMRC Developer Hub production approval  
+- Real card payments  
+- Independent pen-test & legal counsel  
+- Customer interviews for price lock  
+- Full WCAG audit sign-off  
+
+## Env flags
+
+See README / prior STATUS for `HMRC_*`, `DEMO_PRACTICE_WRITES`, `DATA_DIR`.
