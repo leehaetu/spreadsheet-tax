@@ -34,6 +34,27 @@
       <h2>Profile</h2>
       <ul class="profile-list" id="profile"></ul>
     </section>
+    <section class="panel" id="prefs-panel" hidden>
+      <h2>Notifications</h2>
+      <p class="muted">Email is stubbed in demo (logged on server). Preferences are stored for your account.</p>
+      <label class="muted" style="display:flex;gap:0.5rem;align-items:center;margin:0.5rem 0">
+        <input type="checkbox" id="pref-reminders" /> Deadline and client reminders
+      </label>
+      <label class="muted" style="display:flex;gap:0.5rem;align-items:center;margin:0.5rem 0">
+        <input type="checkbox" id="pref-product" /> Product updates (optional)
+      </label>
+      <button type="button" class="btn btn-primary btn-sm" id="pref-save">Save preferences</button>
+      <p id="pref-msg" class="success-box" hidden></p>
+    </section>
+    <section class="panel" id="activity-panel" hidden>
+      <h2>Your activity</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>When</th><th>Action</th></tr></thead>
+          <tbody id="activity-body"></tbody>
+        </table>
+      </div>
+    </section>
     <section class="panel" id="pw-panel" hidden>
       <h2>Change password</h2>
       <form id="pw-form" class="form-row">
@@ -79,7 +100,22 @@
       document.getElementById('stats').hidden = false;
       document.getElementById('profile-panel').hidden = false;
       document.getElementById('pw-panel').hidden = false;
+      document.getElementById('prefs-panel').hidden = false;
+      document.getElementById('activity-panel').hidden = false;
       document.getElementById('subs-panel').hidden = false;
+      const prefs = await fetch('/api/me/preferences').then((r) => r.json());
+      if (prefs.preferences) {
+        document.getElementById('pref-reminders').checked = !!prefs.preferences.emailReminders;
+        document.getElementById('pref-product').checked = !!prefs.preferences.emailProduct;
+      }
+      const audit = await fetch('/api/me/audit').then((r) => r.json());
+      const abody = document.getElementById('activity-body');
+      abody.innerHTML = '';
+      for (const e of (audit.events || []).slice(0, 15)) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${esc(e.createdAt)}</td><td>${esc(e.action)}</td>`;
+        abody.appendChild(tr);
+      }
       document.getElementById('st-plan').textContent = me.plan?.label || me.plan?.planId || '—';
       document.getElementById('st-hmrc').textContent = me.hmrc?.connected
         ? 'Connected'
@@ -110,6 +146,28 @@
       await fetch('/api/auth/logout', { method: 'POST' });
       location.href = '/';
     };
+    document.getElementById('pref-save')?.addEventListener('click', async () => {
+      const msg = document.getElementById('pref-msg');
+      msg.hidden = true;
+      const res = await fetch('/api/me/preferences', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          emailReminders: document.getElementById('pref-reminders').checked,
+          emailProduct: document.getElementById('pref-product').checked,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        msg.textContent = data.error || 'Could not save';
+        msg.className = 'error';
+        msg.hidden = false;
+        return;
+      }
+      msg.className = 'success-box';
+      msg.textContent = 'Preferences saved.';
+      msg.hidden = false;
+    });
     document.getElementById('pw-form')?.addEventListener('submit', async (e) => {
       e.preventDefault();
       const msg = document.getElementById('pw-msg');

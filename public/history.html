@@ -60,9 +60,27 @@
       for (const d of dlist) {
         const tr = document.createElement('tr');
         tr.innerHTML = `<td>${esc(d.filename)}</td><td>${esc(d.state)}</td><td>${esc(d.createdAt)}</td>
-          <td><a class="btn btn-primary btn-sm" href="/app?draftId=${esc(d.id)}">Open</a></td>`;
+          <td>
+            <a class="btn btn-primary btn-sm" href="/app?draftId=${esc(d.id)}">Open</a>
+            <button type="button" class="btn btn-ghost btn-sm del-draft" data-id="${esc(d.id)}">Delete</button>
+          </td>`;
         dbody.appendChild(tr);
       }
+      dbody.querySelectorAll('.del-draft').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          if (!confirm('Delete this draft?')) return;
+          const id = btn.getAttribute('data-id');
+          const res = await fetch(`/api/drafts/${encodeURIComponent(id)}`, {
+            method: 'DELETE',
+          });
+          if (!res.ok) {
+            const data = await res.json();
+            alert(data.error || 'Delete failed');
+            return;
+          }
+          load();
+        });
+      });
       const subs = await fetch('/api/me/submissions').then((r) => r.json());
       const sbody = document.getElementById('subs');
       sbody.innerHTML = '';

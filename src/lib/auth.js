@@ -59,6 +59,56 @@ export function findUserById(id) {
   return getDb().prepare(`SELECT * FROM users WHERE id = ?`).get(id);
 }
 
+/**
+ * @param {string} userId
+ */
+export function getUserPreferences(userId) {
+  const row = getDb()
+    .prepare(`SELECT * FROM user_preferences WHERE user_id = ?`)
+    .get(userId);
+  if (!row) {
+    return {
+      userId,
+      emailReminders: true,
+      emailProduct: false,
+    };
+  }
+  return {
+    userId,
+    emailReminders: Boolean(row.email_reminders),
+    emailProduct: Boolean(row.email_product),
+    updatedAt: row.updated_at,
+  };
+}
+
+/**
+ * @param {string} userId
+ * @param {{ emailReminders?: boolean, emailProduct?: boolean }} prefs
+ */
+export function setUserPreferences(userId, prefs) {
+  const current = getUserPreferences(userId);
+  const emailReminders =
+    prefs.emailReminders !== undefined
+      ? Boolean(prefs.emailReminders)
+      : current.emailReminders;
+  const emailProduct =
+    prefs.emailProduct !== undefined
+      ? Boolean(prefs.emailProduct)
+      : current.emailProduct;
+  const now = new Date().toISOString();
+  getDb()
+    .prepare(
+      `INSERT INTO user_preferences (user_id, email_reminders, email_product, updated_at)
+       VALUES (?, ?, ?, ?)
+       ON CONFLICT(user_id) DO UPDATE SET
+         email_reminders = excluded.email_reminders,
+         email_product = excluded.email_product,
+         updated_at = excluded.updated_at`
+    )
+    .run(userId, emailReminders ? 1 : 0, emailProduct ? 1 : 0, now);
+  return getUserPreferences(userId);
+}
+
 export function createSession(userId) {
   const database = getDb();
   const id = newId();

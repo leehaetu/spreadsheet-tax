@@ -41,6 +41,8 @@ import {
   consumePasswordResetToken,
   destroyAllSessionsForUser,
   findUserById,
+  getUserPreferences,
+  setUserPreferences,
 } from './lib/auth.js';
 import { sendEmail } from './lib/email.js';
 import {
@@ -53,6 +55,7 @@ import {
   getIdempotentResponse,
   listAuditForFirm,
   listAuditForUser,
+  deleteDraft,
 } from './lib/drafts.js';
 import { runDeadlineReminders, purgeAnonymousDrafts } from './lib/jobs.js';
 import {
@@ -1221,6 +1224,44 @@ app.get('/api/drafts/:draftId', (req, res) => {
     return res.status(403).json({ error: 'Not allowed to view this draft.' });
   }
   res.json({ ok: true, draft });
+});
+
+app.delete('/api/drafts/:draftId', (req, res) => {
+  const user = requireUser(req, res);
+  if (!user) return;
+  const result = deleteDraft(req.params.draftId, user.id);
+  if (result.error) {
+    return res.status(result.status || 400).json({ error: result.error });
+  }
+  writeAudit({
+    userId: user.id,
+    action: 'draft_deleted',
+    entityType: 'draft',
+    entityId: req.params.draftId,
+  });
+  res.json({ ok: true });
+});
+
+app.get('/api/me/preferences', (req, res) => {
+  const user = requireUser(req, res);
+  if (!user) return;
+  res.json({ ok: true, preferences: getUserPreferences(user.id) });
+});
+
+app.put('/api/me/preferences', (req, res) => {
+  const user = requireUser(req, res);
+  if (!user) return;
+  const preferences = setUserPreferences(user.id, {
+    emailReminders: req.body?.emailReminders,
+    emailProduct: req.body?.emailProduct,
+  });
+  writeAudit({
+    userId: user.id,
+    action: 'preferences_updated',
+    entityType: 'user',
+    entityId: user.id,
+  });
+  res.json({ ok: true, preferences });
 });
 
 /** Authenticated practice (persistent) */

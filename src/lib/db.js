@@ -193,6 +193,13 @@ function migrate(database) {
       created_at TEXT NOT NULL,
       accepted_at TEXT
     );
+
+    CREATE TABLE IF NOT EXISTS user_preferences (
+      user_id TEXT PRIMARY KEY,
+      email_reminders INTEGER NOT NULL DEFAULT 1,
+      email_product INTEGER NOT NULL DEFAULT 0,
+      updated_at TEXT NOT NULL
+    );
   `);
   // Lightweight column add for portal token on clients (ignore if exists)
   try {

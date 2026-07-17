@@ -80,6 +80,23 @@ export function markDraftSubmitted(draftId) {
     .run(now, draftId);
 }
 
+/**
+ * @param {string} draftId
+ * @param {string|null} userId
+ */
+export function deleteDraft(draftId, userId) {
+  const draft = getDraft(draftId);
+  if (!draft) return { error: 'Draft not found', status: 404 };
+  if (draft.userId && userId && draft.userId !== userId) {
+    return { error: 'Not allowed', status: 403 };
+  }
+  if (draft.userId && !userId) {
+    return { error: 'Sign in required', status: 401 };
+  }
+  getDb().prepare(`DELETE FROM drafts WHERE id = ?`).run(draftId);
+  return { ok: true };
+}
+
 export function recordSubmissionAttempt({
   draftId,
   userId,

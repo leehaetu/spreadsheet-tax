@@ -38,13 +38,38 @@ async function init() {
     return;
   }
 
+  const statusFilter = document.getElementById('status-filter');
+  if (statusFilter && statusFilter.options.length <= 1) {
+    fetch('/api/me/workflow-statuses')
+      .then((r) => r.json())
+      .then((data) => {
+        for (const s of data.statuses || []) {
+          const opt = document.createElement('option');
+          opt.value = s.id;
+          opt.textContent = s.label;
+          statusFilter.appendChild(opt);
+        }
+      })
+      .catch(() => {});
+  }
+  statusFilter?.addEventListener('change', () => loadClients());
+
   async function loadClients() {
     const firmId = firmSel.value;
     const res = await fetch(`/api/me/clients?firmId=${encodeURIComponent(firmId)}`);
     const data = await res.json();
     const tbody = document.getElementById('client-body');
     tbody.innerHTML = '';
-    for (const c of data.clients || []) {
+    const filter = statusFilter?.value || '';
+    const list = (data.clients || []).filter(
+      (c) => !filter || c.status === filter
+    );
+    if (!list.length) {
+      tbody.innerHTML =
+        '<tr><td colspan="4"><div class="empty-state"><strong>No clients match</strong>Try another filter or add a client.</div></td></tr>';
+      return;
+    }
+    for (const c of list) {
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td><strong>${esc(c.name)}</strong></td>
