@@ -132,89 +132,121 @@ export function parseMoney(raw) {
 }
 
 /**
- * Alias map: common spreadsheet labels → canonical field keys.
+ * Shared aliases safe across all income sources (no conflicting meanings).
  */
-const FIELD_ALIASES = {
-  // Self-employment income
-  turnover: 'turnover',
-  sales: 'turnover',
-  income: 'turnover',
-  revenue: 'turnover',
-  other_income: 'other',
-  other: 'other',
-  // SE expenses (common labels)
-  cost_of_goods: 'cost_of_goods',
-  cost_of_sales: 'cost_of_goods',
-  materials: 'cost_of_goods',
-  subcontractors: 'payments_to_subcontractors',
-  payments_to_subcontractors: 'payments_to_subcontractors',
-  wages: 'wages_and_staff_costs',
-  wages_and_staff_costs: 'wages_and_staff_costs',
-  staff_costs: 'wages_and_staff_costs',
-  car_van_travel: 'car_van_travel_expenses',
-  car_van_travel_expenses: 'car_van_travel_expenses',
-  travel: 'car_van_travel_expenses',
+const SHARED_FIELD_ALIASES = {
+  premiums_of_lease_grant: 'premiums_of_lease_grant',
+  reverse_premiums: 'reverse_premiums',
   premises_running_costs: 'premises_running_costs',
-  rent: 'premises_running_costs',
   premises: 'premises_running_costs',
-  maintenance: 'maintenance_costs',
-  maintenance_costs: 'maintenance_costs',
-  repairs: 'maintenance_costs',
-  admin: 'admin_costs',
-  admin_costs: 'admin_costs',
-  office_costs: 'admin_costs',
-  entertainment: 'business_entertainment_costs',
-  business_entertainment_costs: 'business_entertainment_costs',
-  advertising: 'advertising_costs',
-  advertising_costs: 'advertising_costs',
-  marketing: 'advertising_costs',
-  interest: 'interest_on_bank_other_loans',
-  interest_on_bank_other_loans: 'interest_on_bank_other_loans',
-  finance_charges: 'finance_charges',
-  bank_charges: 'finance_charges',
-  bad_debts: 'irrecoverable_debts',
-  irrecoverable_debts: 'irrecoverable_debts',
   professional_fees: 'professional_fees',
   accountancy: 'professional_fees',
   legal: 'professional_fees',
-  depreciation: 'depreciation',
-  other_expenses: 'other_expenses',
-  sundry: 'other_expenses',
-  // UK property income
-  period_amount: 'period_amount',
-  rental_income: 'period_amount',
-  rent_income: 'period_amount',
-  rents_received: 'period_amount',
-  premiums_of_lease_grant: 'premiums_of_lease_grant',
-  reverse_premiums: 'reverse_premiums',
-  tax_deducted: 'tax_deducted',
-  rent_a_room_rents_received: 'rent_a_room_rents_received',
-  // UK property expenses
-  repairs_and_maintenance: 'repairs_and_maintenance',
-  financial_costs: 'financial_costs',
   cost_of_services: 'cost_of_services',
+  financial_costs: 'financial_costs',
   residential_financial_cost: 'residential_financial_cost',
   travel_costs: 'travel_costs',
-  residential_financial_costs_carried_forward:
-    'residential_financial_costs_carried_forward',
-  rent_a_room_amount_claimed: 'rent_a_room_amount_claimed',
-  // Foreign property
-  foreign_rent_income: 'rent_income',
-  other_property_income: 'other_property_income',
-  foreign_tax_paid_or_deducted: 'foreign_tax_paid_or_deducted',
-  special_withholding_tax_or_uk_tax_paid:
-    'special_withholding_tax_or_uk_tax_paid',
-  brought_fwd_residential_financial_cost:
-    'brought_fwd_residential_financial_cost',
 };
 
 /**
+ * Section-specific aliases. SE "other_income"→"other" must NOT apply to property,
+ * where other_income is income and other is an expense.
+ * @type {Record<IncomeSource, Record<string, string>>}
+ */
+const SECTION_FIELD_ALIASES = {
+  self_employment: {
+    turnover: 'turnover',
+    sales: 'turnover',
+    income: 'turnover',
+    revenue: 'turnover',
+    other_income: 'other',
+    other: 'other',
+    cost_of_goods: 'cost_of_goods',
+    cost_of_sales: 'cost_of_goods',
+    materials: 'cost_of_goods',
+    subcontractors: 'payments_to_subcontractors',
+    payments_to_subcontractors: 'payments_to_subcontractors',
+    wages: 'wages_and_staff_costs',
+    wages_and_staff_costs: 'wages_and_staff_costs',
+    staff_costs: 'wages_and_staff_costs',
+    car_van_travel: 'car_van_travel_expenses',
+    car_van_travel_expenses: 'car_van_travel_expenses',
+    travel: 'car_van_travel_expenses',
+    rent: 'premises_running_costs',
+    maintenance: 'maintenance_costs',
+    maintenance_costs: 'maintenance_costs',
+    repairs: 'maintenance_costs',
+    admin: 'admin_costs',
+    admin_costs: 'admin_costs',
+    office_costs: 'admin_costs',
+    entertainment: 'business_entertainment_costs',
+    business_entertainment_costs: 'business_entertainment_costs',
+    advertising: 'advertising_costs',
+    advertising_costs: 'advertising_costs',
+    marketing: 'advertising_costs',
+    interest: 'interest_on_bank_other_loans',
+    interest_on_bank_other_loans: 'interest_on_bank_other_loans',
+    finance_charges: 'finance_charges',
+    bank_charges: 'finance_charges',
+    bad_debts: 'irrecoverable_debts',
+    irrecoverable_debts: 'irrecoverable_debts',
+    depreciation: 'depreciation',
+    other_expenses: 'other_expenses',
+    sundry: 'other_expenses',
+  },
+  uk_property: {
+    period_amount: 'period_amount',
+    rental_income: 'period_amount',
+    rent_income: 'period_amount',
+    rents_received: 'period_amount',
+    // income: keep other_income distinct from expense "other"
+    other_income: 'other_income',
+    other: 'other',
+    tax_deducted: 'tax_deducted',
+    rent_a_room_rents_received: 'rent_a_room_rents_received',
+    repairs_and_maintenance: 'repairs_and_maintenance',
+    repairs: 'repairs_and_maintenance',
+    maintenance: 'repairs_and_maintenance',
+    residential_financial_costs_carried_forward:
+      'residential_financial_costs_carried_forward',
+    rent_a_room_amount_claimed: 'rent_a_room_amount_claimed',
+  },
+  foreign_property: {
+    rent_income: 'rent_income',
+    foreign_rent_income: 'rent_income',
+    rental_income: 'rent_income',
+    period_amount: 'rent_income',
+    turnover: 'rent_income',
+    // income aliases → other_property_income (not SE "other" or UK expense "other")
+    other_income: 'other_property_income',
+    other_property_income: 'other_property_income',
+    other: 'other_property_income',
+    foreign_tax_paid_or_deducted: 'foreign_tax_paid_or_deducted',
+    special_withholding_tax_or_uk_tax_paid:
+      'special_withholding_tax_or_uk_tax_paid',
+    repairs_and_maintenance: 'repairs_and_maintenance',
+    repairs: 'repairs_and_maintenance',
+    brought_fwd_residential_financial_cost:
+      'brought_fwd_residential_financial_cost',
+  },
+};
+
+/**
+ * Canonicalize a spreadsheet field name for a given income source section.
+ * Section-aware so SE aliases (e.g. other_income→other) do not corrupt
+ * UK property income.otherIncome or foreign otherPropertyIncome.
  * @param {string} field
+ * @param {IncomeSource | null | undefined} [section]
  * @returns {string}
  */
-export function canonicalizeField(field) {
+export function canonicalizeField(field, section = null) {
   const key = normalizeHeader(field);
-  return FIELD_ALIASES[key] ?? key;
+  if (section && SECTION_FIELD_ALIASES[section]?.[key]) {
+    return SECTION_FIELD_ALIASES[section][key];
+  }
+  if (SHARED_FIELD_ALIASES[key]) return SHARED_FIELD_ALIASES[key];
+  // Fallback without section: only shared + identity (no SE-only remaps)
+  return key;
 }
 
 /**
@@ -349,7 +381,7 @@ function applyFigure(
   foreignByCountry,
   allTraces
 ) {
-  const canonical = canonicalizeField(rawCanonical);
+  const canonical = canonicalizeField(rawCanonical, section);
   /** @type {FieldTrace} */
   const trace = {
     sourceField: String(sourceField),
@@ -378,12 +410,7 @@ function applyFigure(
       bucket = { figures: {}, trace: [] };
       foreignByCountry.set(code, bucket);
     }
-    // Foreign rent often labelled period_amount or rental_income → rent_income
-    let fKey = canonical;
-    if (fKey === 'period_amount' || fKey === 'turnover') fKey = 'rent_income';
-    if (fKey === 'other') fKey = 'other_property_income';
-    trace.canonicalField = fKey;
-    bucket.figures[fKey] = (bucket.figures[fKey] ?? 0) + money;
+    bucket.figures[canonical] = (bucket.figures[canonical] ?? 0) + money;
     bucket.trace.push(trace);
     allTraces.push(trace);
   }

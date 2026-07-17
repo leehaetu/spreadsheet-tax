@@ -323,4 +323,92 @@ describe('mapRowsToPeriod aliases', () => {
     const payloads = buildQuarterlyPayloads(mapped);
     assert.equal(payloads.selfEmployment.periodIncome.turnover, 500);
   });
+
+  it('maps SE other_income to periodIncome.other (SE-only alias)', () => {
+    const mapped = mapRowsToPeriod([
+      { section: 'self_employment', field: 'other_income', value: '75' },
+    ]);
+    assert.equal(mapped.selfEmployment.figures.other, 75);
+    assert.equal(mapped.selfEmployment.figures.other_income, undefined);
+    const payloads = buildQuarterlyPayloads(mapped);
+    assert.equal(payloads.selfEmployment.periodIncome.other, 75);
+  });
+
+  it('keeps UK other_income and other separate (no SE alias bleed)', () => {
+    // Regression: global other_income→other wrongly summed into expenses.other
+    const mapped = mapRowsToPeriod([
+      { section: 'uk_property', field: 'other_income', value: '99' },
+      { section: 'uk_property', field: 'other', value: '25' },
+    ]);
+    assert.equal(mapped.ukProperty.figures.other_income, 99);
+    assert.equal(mapped.ukProperty.figures.other, 25);
+    const payloads = buildQuarterlyPayloads(mapped);
+    assert.equal(payloads.ukProperty.ukOtherProperty.income.otherIncome, 99);
+    assert.equal(payloads.ukProperty.ukOtherProperty.expenses.other, 25);
+    // Must not collapse into expenses.other only
+    assert.notEqual(
+      payloads.ukProperty.ukOtherProperty.expenses.other,
+      99 + 25
+    );
+  });
+
+  it('maps foreign other_income to otherPropertyIncome, not UK expense other', () => {
+    const mapped = mapRowsToPeriod([
+      {
+        section: 'foreign_property',
+        field: 'other_income',
+        value: '40',
+        country: 'FRA',
+      },
+      {
+        section: 'foreign_property',
+        field: 'other',
+        value: '10',
+        country: 'FRA',
+      },
+    ]);
+    const figs = mapped.foreignProperty[0].figures;
+    assert.equal(figs.other_property_income, 50); // 40 + 10 both income-side
+    assert.equal(figs.other, undefined);
+    const payloads = buildQuarterlyPayloads(mapped);
+    assert.equal(
+      payloads.foreignProperty.foreignProperty[0].income.otherPropertyIncome,
+      50
+    );
+  });
+});
+
+describe('shipped template — UK other_income vs other', () => {
+  it('pipeline on period-summary-template keeps otherIncome and expenses.other apart', () => {
+    const templatePath = path.join(
+      __dirname,
+      '..',
+      'templates',
+      'period-summary-template.csv'
+    );
+    const csv = fs.readFileSync(templatePath, 'utf8');
+    const ukExpected = expectedFromFixture(csv, 'uk_property');
+    // Ground truth from template file itself
+    assert.equal(ukExpected.other_income, 99);
+    assert.equal(ukExpected.other, 25);
+
+    const result = processLocalFile(
+      Buffer.from(csv),
+      'period-summary-template.csv'
+    );
+    assert.ok(result.mapped.ukProperty);
+    assert.equal(result.mapped.ukProperty.figures.other_income, ukExpected.other_income);
+    assert.equal(result.mapped.ukProperty.figures.other, ukExpected.other);
+
+    const uk = result.payloads.ukProperty;
+    assert.equal(
+      uk.ukOtherProperty.income.otherIncome,
+      ukExpected.other_income
+    );
+    assert.equal(uk.ukOtherProperty.expenses.other, ukExpected.other);
+    assert.equal(
+      uk.ukOtherProperty.income.periodAmount,
+      ukExpected.period_amount
+    );
+  });
 });
