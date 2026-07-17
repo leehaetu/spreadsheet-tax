@@ -75,6 +75,16 @@ test.describe('Auth workspace journey', () => {
     await shot(page, 'history-signed-out');
   });
 
+  test('account page after demo login', async ({ page }) => {
+    await page.goto('/signin?next=/account');
+    await page.fill('#email', 'demo@spreadsheet-tax.example');
+    await page.fill('#password', 'DemoPass123!');
+    await page.click('button[type=submit]');
+    await page.waitForURL(/account/);
+    await expect(page.locator('#stats')).toBeVisible({ timeout: 10_000 });
+    await shot(page, 'account-signed-in');
+  });
+
   test('mock HMRC connect journey', async ({ page }) => {
     await page.goto('/signin?next=/connect-hmrc');
     await page.fill('#email', 'demo@spreadsheet-tax.example');

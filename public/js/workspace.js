@@ -53,10 +53,30 @@ async function init() {
         <td>
           <button type="button" class="btn btn-primary btn-sm import-for" data-id="${esc(c.id)}" data-name="${esc(c.name)}">Import file</button>
           <button type="button" class="btn btn-ghost btn-sm invite" data-id="${esc(c.id)}">Portal link</button>
+          <button type="button" class="btn btn-ghost btn-sm due" data-id="${esc(c.id)}" data-due="${esc(c.dueDate || '')}">Due date</button>
           <button type="button" class="btn btn-ghost btn-sm advance" data-id="${esc(c.id)}" data-status="${esc(c.status)}">Advance</button>
         </td>`;
       tbody.appendChild(tr);
     }
+    tbody.querySelectorAll('.due').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const id = btn.getAttribute('data-id');
+        const current = btn.getAttribute('data-due') || '';
+        const dueDate = window.prompt('Due date (YYYY-MM-DD)', current);
+        if (dueDate === null) return;
+        const res = await fetch(`/api/me/clients/${encodeURIComponent(id)}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ dueDate }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          alert(data.error || 'Could not update due date');
+          return;
+        }
+        loadClients();
+      });
+    });
     tbody.querySelectorAll('.invite').forEach((btn) => {
       btn.addEventListener('click', async () => {
         const id = btn.getAttribute('data-id');
@@ -138,6 +158,12 @@ async function init() {
       loadClients();
     });
   }
+
+  document.getElementById('export-clients-btn')?.addEventListener('click', () => {
+    const firmId = firmSel.value;
+    if (!firmId) return;
+    window.location.href = `/api/me/clients/export?firmId=${encodeURIComponent(firmId)}`;
+  });
 
   document.getElementById('logout-btn')?.addEventListener('click', async () => {
     await fetch('/api/auth/logout', { method: 'POST' });

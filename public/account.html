@@ -12,6 +12,7 @@
       <a class="logo" href="/"><span class="logo-mark">ST</span> Spreadsheet Tax</a>
       <nav>
         <a href="/app">App</a>
+        <a href="/history">History</a>
         <a href="/workspace">Workspace</a>
         <a href="/connect-hmrc">HMRC</a>
         <a href="/billing">Billing</a>
@@ -19,27 +20,73 @@
       </nav>
     </div>
   </header>
-  <main class="wrap app-main" style="max-width:720px">
+  <main class="wrap app-main">
     <h1>Your account</h1>
-    <pre id="outbox" class="code-block">Loading…</pre>
+    <p id="gate" class="error" hidden></p>
+    <div class="stat-cards" id="stats" hidden>
+      <div class="stat-card"><div class="n" id="st-plan">—</div><div class="l">Plan</div></div>
+      <div class="stat-card"><div class="n" id="st-hmrc">—</div><div class="l">HMRC</div></div>
+      <div class="stat-card"><div class="n" id="st-drafts">—</div><div class="l">Drafts</div></div>
+      <div class="stat-card"><div class="n" id="st-subs">—</div><div class="l">Submissions</div></div>
+    </div>
+    <section class="panel" id="profile-panel" hidden>
+      <h2>Profile</h2>
+      <ul class="profile-list" id="profile"></ul>
+    </section>
+    <section class="panel" id="subs-panel" hidden>
+      <h2>Recent submissions</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>When</th><th>Mode</th><th>OK</th><th></th></tr></thead>
+          <tbody id="subs-body"></tbody>
+        </table>
+      </div>
+    </section>
     <div class="hero-actions">
       <a class="btn btn-primary" href="/app">Open bridging app</a>
-      <a class="btn btn-ghost" href="/api/drafts" id="drafts-link">Drafts API</a>
+      <a class="btn btn-ghost" href="/history">Full history</a>
     </div>
   </main>
   <script>
+    function esc(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+    }
     async function load() {
       const me = await fetch('/api/auth/me').then((r) => r.json());
       if (!me.user) {
-        location.href = '/signin?next=/account';
+        document.getElementById('gate').hidden = false;
+        document.getElementById('gate').innerHTML =
+          '<a href="/signin?next=/account">Sign in</a> to view your account.';
         return;
       }
+      document.getElementById('stats').hidden = false;
+      document.getElementById('profile-panel').hidden = false;
+      document.getElementById('subs-panel').hidden = false;
+      document.getElementById('st-plan').textContent = me.plan?.label || me.plan?.planId || '—';
+      document.getElementById('st-hmrc').textContent = me.hmrc?.connected
+        ? 'Connected'
+        : me.hmrc?.expired
+          ? 'Expired'
+          : 'Not connected';
+      document.getElementById('profile').innerHTML = [
+        ['Name', me.user.name],
+        ['Email', me.user.email],
+        ['Firms', (me.memberships || []).map((m) => m.firmName).join(', ') || '—'],
+      ]
+        .map(([k, v]) => `<li><span>${esc(k)}</span><span><strong>${esc(v)}</strong></span></li>`)
+        .join('');
       const drafts = await fetch('/api/drafts').then((r) => r.json());
-      document.getElementById('outbox').textContent = JSON.stringify(
-        { user: me.user, plan: me.plan, hmrc: me.hmrc, memberships: me.memberships, draftCount: (drafts.drafts || []).length },
-        null,
-        2
-      );
+      const subs = await fetch('/api/me/submissions').then((r) => r.json());
+      document.getElementById('st-drafts').textContent = String((drafts.drafts || []).length);
+      document.getElementById('st-subs').textContent = String((subs.submissions || []).length);
+      const tbody = document.getElementById('subs-body');
+      tbody.innerHTML = '';
+      for (const s of (subs.submissions || []).slice(0, 10)) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${esc(s.createdAt)}</td><td>${esc(s.mode)}</td><td>${s.ok ? 'Yes' : 'No'}</td>
+          <td><a class="btn btn-ghost btn-sm" href="/api/receipts/${esc(s.id)}">Receipt</a></td>`;
+        tbody.appendChild(tr);
+      }
     }
     document.getElementById('out').onclick = async () => {
       await fetch('/api/auth/logout', { method: 'POST' });

@@ -129,6 +129,54 @@ export function getClientByPortalToken(token) {
   };
 }
 
+/**
+ * @param {{ clientId: string, userId: string, dueDate?: string|null, displayName?: string }} opts
+ */
+export function updateClientDetails({ clientId, userId, dueDate, displayName }) {
+  const client = getClientRow(clientId);
+  if (!client) return { error: 'Client not found', status: 404 };
+  if (!userCanAccessFirm(userId, client.firmId)) {
+    return { error: 'Not allowed for this firm.', status: 403 };
+  }
+  const now = new Date().toISOString();
+  const name = displayName != null ? String(displayName).trim() : client.name;
+  const due =
+    dueDate === undefined
+      ? client.dueDate
+      : dueDate === '' || dueDate === null
+        ? null
+        : String(dueDate).slice(0, 10);
+  if (!name) return { error: 'Client name required.', status: 400 };
+  getDb()
+    .prepare(
+      `UPDATE clients SET display_name = ?, due_date = ?, updated_at = ? WHERE id = ?`
+    )
+    .run(name, due, now, clientId);
+  return { client: getClientRow(clientId) };
+}
+
+/**
+ * CSV export of firm clients for practice reporting.
+ * @param {string} firmId
+ */
+export function exportClientsCsv(firmId) {
+  const clients = listClients(firmId);
+  const header = 'client_id,name,status,status_label,due_date,portal_access\n';
+  const rows = clients
+    .map((c) =>
+      [
+        c.id,
+        `"${String(c.name).replace(/"/g, '""')}"`,
+        c.status,
+        `"${String(c.statusLabel || '').replace(/"/g, '""')}"`,
+        c.dueDate || '',
+        c.portalAccess ? 'yes' : 'no',
+      ].join(',')
+    )
+    .join('\n');
+  return header + rows + (rows ? '\n' : '');
+}
+
 export function updateClientStatus({
   clientId,
   userId,

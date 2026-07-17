@@ -7,19 +7,17 @@
 
 | Item | Status |
 |------|--------|
-| Portal invites (token links) | Done — workspace “Portal link” |
-| Portal page by token | Done — `/portal?token=` |
-| Production submit prefers server draftId | Done |
-| Railway volume `/app/data` | Ready |
-| App env vars on Railway | Set |
-| Docs: RAILWAY.md | Added |
-| Tests | 69 unit · e2e suite |
+| Client CSV export | `/api/me/clients/export?firmId=` + workspace button |
+| Due date edit | Workspace per client |
+| Account dashboard | Plan, HMRC, drafts count, recent submissions |
+| Portal invites | Prior slice |
+| Railway volume + env | In place |
+| Tests | 69 unit · 18 e2e |
 
 ## Demo
 
-`demo@spreadsheet-tax.example` / `DemoPass123!`  
-Workspace → Portal link → copy URL for client.
+`demo@spreadsheet-tax.example` / `DemoPass123!`
 
-## Still external
+## External remaining
 
 HMRC production credentials, card billing, pen-test, legal pack, interviews.

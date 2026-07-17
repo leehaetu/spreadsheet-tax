@@ -91,5 +91,35 @@ describe('portal invites', () => {
     assert.equal(portal.status, 200);
     const pj = JSON.parse(portal.body);
     assert.ok(pj.client.name);
+
+    const exportRes = await request(
+      'GET',
+      `/api/me/clients/export?firmId=${encodeURIComponent(firmId)}`
+    );
+    // need cookie again after cookie cleared for portal
+    cookie = '';
+    await request(
+      'POST',
+      '/api/auth/login',
+      JSON.stringify({
+        email: 'demo@spreadsheet-tax.example',
+        password: 'DemoPass123!',
+      })
+    );
+    const exportRes2 = await request(
+      'GET',
+      `/api/me/clients/export?firmId=${encodeURIComponent(firmId)}`
+    );
+    assert.equal(exportRes2.status, 200);
+    assert.match(exportRes2.body, /client_id,name,status/);
+
+    const patchDue = await request(
+      'PATCH',
+      `/api/me/clients/${clientId}`,
+      JSON.stringify({ dueDate: '2026-10-05' })
+    );
+    assert.equal(patchDue.status, 200);
+    const updated = JSON.parse(patchDue.body);
+    assert.equal(updated.client.dueDate, '2026-10-05');
   });
 });

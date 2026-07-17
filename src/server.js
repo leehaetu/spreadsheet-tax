@@ -56,6 +56,8 @@ import {
   listWorkflowStatusCatalog,
   createPortalInvite,
   getClientByPortalToken,
+  updateClientDetails,
+  exportClientsCsv,
 } from './lib/practice-db.js';
 import { getDb } from './lib/db.js';
 import {
@@ -1109,6 +1111,44 @@ app.get('/api/me/submissions', (req, res) => {
       createdAt: r.created_at,
     })),
   });
+});
+
+app.get('/api/me/clients/export', (req, res) => {
+  const user = requireUser(req, res);
+  if (!user) return;
+  const firmId = typeof req.query.firmId === 'string' ? req.query.firmId : '';
+  if (!firmId || !userCanAccessFirm(user.id, firmId)) {
+    return res.status(403).json({ error: 'Not allowed for this firm.' });
+  }
+  const csv = exportClientsCsv(firmId);
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader(
+    'Content-Disposition',
+    'attachment; filename="clients-export.csv"'
+  );
+  res.status(200).send(csv);
+});
+
+app.patch('/api/me/clients/:clientId', (req, res) => {
+  const user = requireUser(req, res);
+  if (!user) return;
+  const result = updateClientDetails({
+    clientId: req.params.clientId,
+    userId: user.id,
+    dueDate: req.body?.dueDate,
+    displayName: req.body?.name,
+  });
+  if (result.error) {
+    return res.status(result.status || 400).json({ error: result.error });
+  }
+  writeAudit({
+    firmId: result.client.firmId,
+    userId: user.id,
+    action: 'client_updated',
+    entityType: 'client',
+    entityId: result.client.id,
+  });
+  res.json({ ok: true, client: result.client });
 });
 
 app.post('/api/me/clients/:clientId/portal-invite', (req, res) => {
