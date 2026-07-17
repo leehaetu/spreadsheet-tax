@@ -109,12 +109,41 @@ import {
   PLAN_PROFESSIONAL,
 } from './lib/entitlements.js';
 import { buildFraudPreventionHeaders } from './lib/fraud-headers.js';
+import {
+  hmrcRecognitionPublic,
+  HMRC_RECOGNITION_BANNER,
+} from './lib/hmrc-recognition.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, '..');
 const publicDir = path.join(root, 'public');
 const templatesDir = path.join(root, 'templates');
 const testSpreadsheetsDir = path.join(root, 'test-spreadsheets');
+const APP_VERSION = '1.10.2';
+
+/**
+ * Serve HTML with site-chrome (HMRC recognition banner/footer) injected once.
+ * @param {import('express').Response} res
+ * @param {string} filename - file under public/
+ */
+function sendPublicHtml(res, filename) {
+  const file = path.join(publicDir, filename);
+  if (!fs.existsSync(file)) {
+    return res.status(404).send('Not found');
+  }
+  let html = fs.readFileSync(file, 'utf8');
+  if (!html.includes('/js/site-chrome.js')) {
+    const tag = '<script src="/js/site-chrome.js" defer></script>';
+    if (/<\/body>/i.test(html)) {
+      html = html.replace(/<\/body>/i, `${tag}\n</body>`);
+    } else {
+      html += `\n${tag}\n`;
+    }
+  }
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-cache');
+  return res.status(200).send(html);
+}
 
 const TEMPLATE_NAME = 'period-summary-template.csv';
 const templatePath = path.join(templatesDir, TEMPLATE_NAME);
@@ -162,13 +191,24 @@ app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'SAMEORIGIN');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  res.setHeader('X-App-Version', '1.10.1');
+  res.setHeader('X-App-Version', APP_VERSION);
   res.setHeader(
     'Content-Security-Policy',
     "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self'"
   );
   next();
 });
+
+// HTML pages always get recognition chrome (before static, so .html is not raw-served)
+app.get(/.*\.html$/i, (req, res, next) => {
+  const rel = path.normalize(req.path).replace(/^(\.\.(\/|\\|$))+/, '');
+  const base = path.basename(rel);
+  if (!base.endsWith('.html')) return next();
+  const full = path.join(publicDir, base);
+  if (!full.startsWith(publicDir) || !fs.existsSync(full)) return next();
+  return sendPublicHtml(res, base);
+});
+
 app.use(express.static(publicDir));
 
 /**
@@ -221,13 +261,11 @@ app.get('/health', (_req, res) => {
     ok: ready,
     service: 'spreadsheet-tax',
     /** Our software release number (semver: major.minor.patch). Not an HMRC receipt/submit id. */
-    version: '1.10.1',
-    appVersion: '1.10.1',
+    version: APP_VERSION,
+    appVersion: APP_VERSION,
     versionMeaning:
       'Spreadsheet Tax application release (semantic version). Not HMRC-recognised software ID, not a submission reference, not a tax year.',
-    hmrcRecognisedSoftware: false,
-    hmrcRecognisedNote:
-      'Not on HMRC’s list of recognised MTD software. Public go-live filing for real taxpayers only after HMRC Production access and recognition process — not claimed now.',
+    ...hmrcRecognitionPublic(),
     bridging: true,
     db: dbOk,
     oauthMock: oauthConfig().mock,
@@ -256,9 +294,9 @@ app.get('/readyz', (_req, res) => {
     getDb().prepare('SELECT 1 AS x').get();
     res.status(200).json({
       ready: true,
-      version: '1.10.1',
-      appVersion: '1.10.1',
-      hmrcRecognisedSoftware: false,
+      version: APP_VERSION,
+      appVersion: APP_VERSION,
+      ...hmrcRecognitionPublic(),
     });
   } catch {
     res.status(503).json({ ready: false });
@@ -266,120 +304,120 @@ app.get('/readyz', (_req, res) => {
 });
 
 app.get('/', (_req, res) => {
-  res.sendFile(path.join(publicDir, 'sales.html'));
+  sendPublicHtml(res, 'sales.html');
 });
 
 app.get('/app', (_req, res) => {
-  res.sendFile(path.join(publicDir, 'app.html'));
+  sendPublicHtml(res, 'app.html');
 });
 
 app.get('/self-employed', (_req, res) => {
-  res.sendFile(path.join(publicDir, 'self-employed.html'));
+  sendPublicHtml(res, 'self-employed.html');
 });
 
 app.get('/landlords', (_req, res) => {
-  res.sendFile(path.join(publicDir, 'landlords.html'));
+  sendPublicHtml(res, 'landlords.html');
 });
 
 app.get('/professionals', (_req, res) => {
-  res.sendFile(path.join(publicDir, 'professionals.html'));
+  sendPublicHtml(res, 'professionals.html');
 });
 
 app.get('/firms', (_req, res) => {
-  res.sendFile(path.join(publicDir, 'firms.html'));
+  sendPublicHtml(res, 'firms.html');
 });
 
 app.get('/accountant', (_req, res) => {
-  res.sendFile(path.join(publicDir, 'accountant.html'));
+  sendPublicHtml(res, 'accountant.html');
 });
 
 app.get('/practice', (_req, res) => {
-  res.sendFile(path.join(publicDir, 'practice.html'));
+  sendPublicHtml(res, 'practice.html');
 });
 
 app.get('/portal', (_req, res) => {
-  res.sendFile(path.join(publicDir, 'portal.html'));
+  sendPublicHtml(res, 'portal.html');
 });
 
 app.get('/license', (_req, res) => {
-  res.sendFile(path.join(publicDir, 'license.html'));
+  sendPublicHtml(res, 'license.html');
 });
 
 app.get('/legal', (_req, res) => {
-  res.sendFile(path.join(publicDir, 'legal.html'));
+  sendPublicHtml(res, 'legal.html');
 });
 
 app.get('/pricing', (_req, res) => {
-  res.sendFile(path.join(publicDir, 'pricing.html'));
+  sendPublicHtml(res, 'pricing.html');
 });
 
 app.get('/how-it-works', (_req, res) => {
-  res.sendFile(path.join(publicDir, 'how-it-works.html'));
+  sendPublicHtml(res, 'how-it-works.html');
 });
 
 app.get('/security', (_req, res) => {
-  res.sendFile(path.join(publicDir, 'security.html'));
+  sendPublicHtml(res, 'security.html');
 });
 app.get('/integrity', (_req, res) => {
-  res.sendFile(path.join(publicDir, 'integrity.html'));
+  sendPublicHtml(res, 'integrity.html');
 });
 app.get('/privacy', (_req, res) => {
-  res.sendFile(path.join(publicDir, 'privacy.html'));
+  sendPublicHtml(res, 'privacy.html');
 });
 app.get('/terms', (_req, res) => {
-  res.sendFile(path.join(publicDir, 'terms.html'));
+  sendPublicHtml(res, 'terms.html');
 });
 
 app.get('/help', (_req, res) => {
-  res.sendFile(path.join(publicDir, 'help.html'));
+  sendPublicHtml(res, 'help.html');
 });
 
 app.get('/templates', (_req, res) => {
-  res.sendFile(path.join(publicDir, 'templates.html'));
+  sendPublicHtml(res, 'templates.html');
 });
 
 app.get('/signin', (_req, res) => {
-  res.sendFile(path.join(publicDir, 'signin.html'));
+  sendPublicHtml(res, 'signin.html');
 });
 
 app.get('/register', (_req, res) => {
-  res.sendFile(path.join(publicDir, 'register.html'));
+  sendPublicHtml(res, 'register.html');
 });
 
 app.get('/workspace', (_req, res) => {
-  res.sendFile(path.join(publicDir, 'workspace.html'));
+  sendPublicHtml(res, 'workspace.html');
 });
 
 app.get('/connect-hmrc', (_req, res) => {
-  res.sendFile(path.join(publicDir, 'connect-hmrc.html'));
+  sendPublicHtml(res, 'connect-hmrc.html');
 });
 
 app.get('/billing', (_req, res) => {
-  res.sendFile(path.join(publicDir, 'billing.html'));
+  sendPublicHtml(res, 'billing.html');
 });
 
 app.get('/account', (_req, res) => {
-  res.sendFile(path.join(publicDir, 'account.html'));
+  sendPublicHtml(res, 'account.html');
 });
 
 app.get('/history', (_req, res) => {
-  res.sendFile(path.join(publicDir, 'history.html'));
+  sendPublicHtml(res, 'history.html');
 });
 
 app.get('/forgot-password', (_req, res) => {
-  res.sendFile(path.join(publicDir, 'forgot-password.html'));
+  sendPublicHtml(res, 'forgot-password.html');
 });
 
 app.get('/reset-password', (_req, res) => {
-  res.sendFile(path.join(publicDir, 'reset-password.html'));
+  sendPublicHtml(res, 'reset-password.html');
 });
 
 app.get('/accept-invite', (_req, res) => {
-  res.sendFile(path.join(publicDir, 'accept-invite.html'));
+  sendPublicHtml(res, 'accept-invite.html');
 });
 
 app.get('/admin', (_req, res) => {
-  res.sendFile(path.join(publicDir, 'admin.html'));
+  sendPublicHtml(res, 'admin.html');
 });
 
 app.get('/robots.txt', (_req, res) => {
@@ -2200,6 +2238,8 @@ app.get('/api/status', (_req, res) => {
   const oauth = oauthConfig();
   res.json({
     ok: true,
+    appVersion: APP_VERSION,
+    ...hmrcRecognitionPublic(),
     hmrcMode: client.mode,
     liveSubmitEnabled: process.env.HMRC_ALLOW_LIVE_SUBMIT === '1',
     previewOnly: client.mode === 'double',
@@ -2217,6 +2257,7 @@ app.get('/api/status', (_req, res) => {
     pilotFeatures: ['auth', 'drafts', 'workspace'],
     honesty: {
       publicSubmitIsPreview: client.mode === 'double',
+      hmrcRecognisedSoftware: false,
       realHmrcRequires:
         'HMRC Developer Hub app + OAuth credentials + HMRC_ALLOW_LIVE_SUBMIT=1 + non-mock token',
       demoPracticeStore: true,
@@ -2243,11 +2284,13 @@ app.get('/api/integrity', (_req, res) => {
     ok: true,
     product: 'Spreadsheet Tax',
     intellectualProperty: 'Lee Hine',
-    version: '1.10.1',
-    appVersion: '1.10.1',
-    hmrcRecognisedSoftware: false,
-    hmrcRecognisedNote:
-      'Not HMRC-recognised software. Sandbox integration and pilot only until Production approval and recognition. Do not market as recognised.',
+    version: APP_VERSION,
+    appVersion: APP_VERSION,
+    ...hmrcRecognitionPublic(),
+    display: {
+      banner: HMRC_RECOGNITION_BANNER,
+      siteChrome: '/js/site-chrome.js',
+    },
     productType: 'in-year bridging (quarterly updates)',
     layers: {
       spreadsheetImportMapping: {

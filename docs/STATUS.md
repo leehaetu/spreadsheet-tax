@@ -2,8 +2,8 @@
 
 **Last updated:** 2026-07-17  
 **Live:** https://spreadsheet-tax-production.up.railway.app  
-**Live app version:** confirm via `/health` → `version` / `appVersion` (semantic software release, e.g. 1.10.x — **not** HMRC recognition ID)  
-**HMRC recognised:** **No** — never claim otherwise until recognition is granted  
+**Live app version:** confirm via `/health` → `version` / `appVersion` (semantic software release — **not** HMRC recognition ID)  
+**HMRC recognised:** **No** — site-wide banner + footer via `site-chrome.js`; flip only in `src/lib/hmrc-recognition.js` when granted  
 **Truth inventory:** [DONE-VS-NOT.md](./DONE-VS-NOT.md) ← read this before “next steps”  
 **Truth audit:** [TRUTH-AUDIT.md](./TRUTH-AUDIT.md)  
 **Production APIs pack:** [HMRC-PRODUCTION-ACCESS.md](./HMRC-PRODUCTION-ACCESS.md) (only when sandbox evidence is enough)

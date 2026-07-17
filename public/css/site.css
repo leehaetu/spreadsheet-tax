@@ -640,6 +640,54 @@ nav a.btn-ghost { color: var(--text); }
 .cta-banner h2 { margin: 0 0 0.4rem; font-size: 1.55rem; }
 .cta-banner p { margin: 0; color: var(--muted); max-width: 42ch; }
 
+/* HMRC recognition status — always visible until recognition granted */
+.hmrc-recognition-banner {
+  background: var(--warn-soft);
+  border-bottom: 1px solid rgba(251, 191, 36, 0.35);
+  color: var(--text-soft);
+  font-size: 0.88rem;
+  padding: 0.55rem 0;
+}
+.hmrc-recognition-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem 0.85rem;
+}
+.hmrc-recognition-badge {
+  display: inline-block;
+  background: rgba(251, 191, 36, 0.2);
+  color: #fde68a;
+  border: 1px solid rgba(251, 191, 36, 0.45);
+  border-radius: 999px;
+  padding: 0.15rem 0.65rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+.hmrc-recognition-text {
+  flex: 1 1 16rem;
+  color: var(--muted);
+  line-height: 1.4;
+}
+.hmrc-recognition-link {
+  font-weight: 600;
+  white-space: nowrap;
+}
+.hmrc-recognition-footer-line {
+  width: 100%;
+  margin: 0.65rem 0 0;
+  padding-top: 0.65rem;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+.hmrc-recognition-footer-line strong {
+  color: #fde68a;
+}
+
 /* Footer */
 .site-footer {
   border-top: 1px solid var(--border);

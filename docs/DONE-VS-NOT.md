@@ -28,7 +28,7 @@ This file exists so we stop re-listing finished work as “next steps.”
 | Deployed app version | From `/health` → **1.10.0** | Also `Gov-Vendor-Version` |
 | Vendor license id (FPH) | SHA-256 of license statement | Not an HMRC-issued number |
 | HMRC Hub application | Sandbox client credentials on Railway | **Sandbox** app, not Production credentials |
-| Official HMRC “recognised software” list ID | **None yet** | Only after Production access + listing process |
+| Official HMRC “recognised software” list ID | **None yet** | Displayed everywhere as **Not HMRC-recognised** until granted (`src/lib/hmrc-recognition.js` + site-chrome banner) |
 | Railway service | `spreadsheet-tax` online | Volume `/app/data` |
 
 There is **no separate HMRC “software number”** issued until you are further through Production / recognition. What we have is product name + version + Hub client id (secret stays on Railway).
