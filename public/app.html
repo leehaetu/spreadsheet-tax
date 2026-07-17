@@ -3,7 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Bridging app — Spreadsheet Tax (local file → HMRC MTD ITSA)</title>
+  <title>Submit your quarterly update — Spreadsheet Tax</title>
+  <meta name="description" content="Upload your spreadsheet, review your figures, and submit HMRC Making Tax Digital quarterly updates for self-employment and property." />
   <link rel="stylesheet" href="/css/site.css" />
 </head>
 <body class="app-body">
@@ -11,56 +12,66 @@
     <div class="wrap header-inner">
       <a class="logo" href="/">Spreadsheet Tax</a>
       <nav>
-        <a href="/">Sales site</a>
-        <a href="/accountant">Accountants</a>
+        <a href="/">Home</a>
+        <a href="/accountant">For accountants</a>
         <a href="/portal">Client portal</a>
         <a href="/download/template">Download template</a>
-        <span id="hmrc-mode" class="badge">HMRC: …</span>
+        <span id="connection-status" class="badge">Checking connection…</span>
       </nav>
     </div>
   </header>
 
   <main class="wrap app-main">
-    <h1>MTD ITSA bridging app</h1>
+    <h1>Submit your quarterly update</h1>
     <p class="lead">
-      Upload your <strong>local spreadsheet or CSV</strong> for self-employment, UK property, and/or
-      foreign property. Figures are mapped to HMRC quarterly update payloads — no re-keying of line totals.
+      Upload the spreadsheet you already keep for your business or property.
+      We match your income and expenses to HMRC Making Tax Digital quarterly updates —
+      <strong>no retyping totals</strong>.
     </p>
 
     <section class="panel" id="upload-panel">
-      <h2>1. Import local file</h2>
-      <p class="muted">Accepted: <code>.csv</code>, <code>.xlsx</code>. Use the
+      <h2>1. Upload your spreadsheet</h2>
+      <p class="muted">
+        Use Excel or CSV. Prefer our free
         <a href="/download/template">period summary template</a>
-        or matching column layout (<code>section</code>, <code>field</code>, <code>value</code>).
-        Sample files for testing live in the project <code>test-spreadsheets/</code> folder.</p>
+        so every income and expense line maps cleanly.
+        Self-employment, UK property and foreign property can share one file.
+      </p>
       <form id="upload-form" class="upload-form">
         <label class="file-drop" for="file-input">
           <input type="file" id="file-input" name="file" accept=".csv,.xlsx,.xls" required />
-          <span id="file-label">Choose spreadsheet file…</span>
+          <span id="file-label">Choose your spreadsheet…</span>
         </label>
-        <button type="submit" class="btn btn-primary" id="import-btn">Map file to quarterly figures</button>
+        <button type="submit" class="btn btn-primary" id="import-btn">Review my figures</button>
       </form>
       <p id="upload-error" class="error" hidden></p>
     </section>
 
     <section class="panel" id="preview-panel" hidden>
-      <h2>2. Preview mapped figures &amp; payloads</h2>
+      <h2>2. Check your figures before sending</h2>
+      <p class="muted">Confirm everything looks right. You can still go back and fix your spreadsheet if needed.</p>
       <div id="sources-summary" class="sources-summary"></div>
       <div class="grid-2">
         <div>
-          <h3>Figures from your file</h3>
+          <h3>Income &amp; expenses from your file</h3>
           <pre id="figures-out" class="code-block"></pre>
         </div>
         <div>
-          <h3>HMRC quarterly payloads</h3>
+          <h3>What will be sent to HMRC</h3>
           <pre id="payloads-out" class="code-block"></pre>
         </div>
       </div>
-      <h3>Digital link (file field → payload path)</h3>
+      <h3>How your spreadsheet lines match the update</h3>
+      <p class="muted">Each amount below comes from a field in your file — so you can see exactly what is included.</p>
       <div class="table-wrap">
         <table id="links-table">
           <thead>
-            <tr><th>Source</th><th>File field</th><th>Payload path</th><th>Value</th></tr>
+            <tr>
+              <th>Income source</th>
+              <th>Line in your file</th>
+              <th>Included as</th>
+              <th>Amount</th>
+            </tr>
           </thead>
           <tbody></tbody>
         </table>
@@ -68,26 +79,48 @@
     </section>
 
     <section class="panel" id="submit-panel" hidden>
-      <h2>3. Submit to HMRC</h2>
-      <p class="muted">Uses the sandbox client when credentials exist; otherwise the in-process test double with the same request shape.</p>
+      <h2>3. Send to HMRC</h2>
+      <p class="muted">
+        Enter your tax identifiers if they were not already in the file, then send your quarterly update.
+        When HMRC credentials are connected for your account, submissions go to HMRC;
+        otherwise you still get a full confirmation of what would be sent.
+      </p>
       <div class="form-row">
-        <label>NINO <input type="text" id="nino" placeholder="AA123456A" /></label>
-        <label>Tax year <input type="text" id="tax-year" placeholder="2024-25" /></label>
+        <label>National Insurance number
+          <input type="text" id="nino" placeholder="e.g. QQ123456C" autocomplete="off" />
+        </label>
+        <label>Tax year
+          <input type="text" id="tax-year" placeholder="e.g. 2024-25" />
+        </label>
       </div>
       <div class="form-row">
-        <label>SE business id <input type="text" id="bid-se" placeholder="XAIS…" /></label>
-        <label>UK property id <input type="text" id="bid-uk" placeholder="XPIS…" /></label>
-        <label>Foreign property id <input type="text" id="bid-fp" placeholder="XFIS…" /></label>
+        <label>Self-employment business ID
+          <input type="text" id="bid-se" placeholder="From your HMRC account" />
+        </label>
+        <label>UK property business ID
+          <input type="text" id="bid-uk" placeholder="From your HMRC account" />
+        </label>
+        <label>Foreign property business ID
+          <input type="text" id="bid-fp" placeholder="From your HMRC account" />
+        </label>
       </div>
-      <button type="button" class="btn btn-primary" id="submit-btn">Submit quarterly update(s)</button>
+      <button type="button" class="btn btn-primary" id="submit-btn">Submit quarterly update</button>
       <p id="submit-error" class="error" hidden></p>
-      <pre id="submit-out" class="code-block" hidden></pre>
+      <div id="submit-success" class="panel" style="margin-top:1rem;display:none" hidden>
+        <h3>Submission result</h3>
+        <p id="submit-summary" class="muted"></p>
+        <pre id="submit-out" class="code-block" hidden></pre>
+      </div>
     </section>
   </main>
 
   <footer class="site-footer">
     <div class="wrap">
-      <p class="muted">Bridging only — your records stay in the local file you uploaded. Not a full bookkeeping product.</p>
+      <p class="muted">
+        Bridging only — your records stay in the spreadsheet you uploaded.
+        Need the template? <a href="/download/template">Download it free</a>.
+        <a href="/">Back to home</a>
+      </p>
     </div>
   </footer>
   <script src="/js/app.js"></script>

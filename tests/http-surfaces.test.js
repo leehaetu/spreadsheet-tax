@@ -92,6 +92,7 @@ describe('sales site customer focus', () => {
     const res = await request('GET', '/');
     assert.equal(res.status, 200);
     const html = res.body.toString('utf8');
+    assert.ok(html.length > 500, 'sales HTML must be non-empty');
     assert.match(html, /Upload|Start|Get started|Download/i);
     assert.match(html, /bookkeeper|accountant/i);
     assert.match(html, /practice|firm/i);
@@ -100,6 +101,40 @@ describe('sales site customer focus', () => {
     assert.match(html, /Lee Hine/i);
     assert.doesNotMatch(html, /\bAI\b|artificial intelligence|ChatGPT|OpenAI/i);
     assert.doesNotMatch(html, /implementer|TODO for Lee|advice for me/i);
+    assert.doesNotMatch(html, /test double|sandbox client|test-spreadsheets\//i);
+  });
+});
+
+describe('bridging app customer focus', () => {
+  it('presents task language without developer-only default copy', async () => {
+    const res = await request('GET', '/app');
+    assert.equal(res.status, 200);
+    const html = res.body.toString('utf8');
+    assert.ok(html.length > 400, 'app HTML must be non-empty');
+    // Customer task flow
+    assert.match(html, /Upload your spreadsheet|Upload your/i);
+    assert.match(html, /Check your figures|Review my figures|before sending/i);
+    assert.match(html, /Submit quarterly update|Send to HMRC/i);
+    // Must not surface implementer/dev defaults as primary copy
+    assert.doesNotMatch(html, /test double/i);
+    assert.doesNotMatch(html, /sandbox client/i);
+    assert.doesNotMatch(html, /test-spreadsheets\//i);
+    assert.doesNotMatch(html, /in-process test double/i);
+    assert.doesNotMatch(html, /HMRC:\s*…|HMRC:\s*double|HMRC:\s*sandbox/i);
+    assert.doesNotMatch(html, /\bAI\b|artificial intelligence|ChatGPT|OpenAI/i);
+    assert.doesNotMatch(html, /implementer|TODO for Lee|advice for me/i);
+    // Prefer customer framing over raw "payload" headings
+    assert.doesNotMatch(html, /Preview mapped figures\s*&\s*payloads/i);
+    assert.doesNotMatch(html, /Payload path/i);
+  });
+
+  it('ships app client without developer mode labels as default UI text', async () => {
+    const jsPath = path.join(root, 'public', 'js', 'app.js');
+    const js = fs.readFileSync(jsPath, 'utf8');
+    // connectionLabel must map modes to customer wording
+    assert.match(js, /connectionLabel|Ready to submit|Connected to HMRC/i);
+    assert.doesNotMatch(js, /textContent\s*=\s*`HMRC:\s*\$\{/);
+    assert.doesNotMatch(js, /test double/i);
   });
 });
 
