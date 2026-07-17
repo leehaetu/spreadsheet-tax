@@ -165,6 +165,20 @@ async function init() {
     window.location.href = `/api/me/clients/export?firmId=${encodeURIComponent(firmId)}`;
   });
 
+  document.getElementById('reminders-btn')?.addEventListener('click', async () => {
+    const res = await fetch('/api/me/jobs/deadline-reminders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ withinDays: 30 }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      alert(data.error || 'Could not run reminders');
+      return;
+    }
+    alert(`Deadline reminders queued (stub email): ${data.count || 0}`);
+  });
+
   document.getElementById('logout-btn')?.addEventListener('click', async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
     location.href = '/signin';

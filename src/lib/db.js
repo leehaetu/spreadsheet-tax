@@ -175,6 +175,14 @@ function migrate(database) {
       created_at TEXT NOT NULL,
       expires_at TEXT
     );
+
+    CREATE TABLE IF NOT EXISTS password_resets (
+      token TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      expires_at TEXT NOT NULL,
+      used_at TEXT
+    );
   `);
   // Lightweight column add for portal token on clients (ignore if exists)
   try {

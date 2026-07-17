@@ -100,6 +100,69 @@ export function destroySession(sessionId) {
   getDb().prepare(`DELETE FROM sessions WHERE id = ?`).run(sessionId);
 }
 
+/**
+ * @param {string} userId
+ * @param {string} [exceptSessionId]
+ */
+export function destroyAllSessionsForUser(userId, exceptSessionId = null) {
+  if (exceptSessionId) {
+    getDb()
+      .prepare(`DELETE FROM sessions WHERE user_id = ? AND id != ?`)
+      .run(userId, exceptSessionId);
+  } else {
+    getDb().prepare(`DELETE FROM sessions WHERE user_id = ?`).run(userId);
+  }
+}
+
+/**
+ * @param {string} userId
+ * @param {string} newPassword
+ */
+export function updatePassword(userId, newPassword) {
+  getDb()
+    .prepare(`UPDATE users SET password_hash = ? WHERE id = ?`)
+    .run(hashPassword(newPassword), userId);
+}
+
+/**
+ * Create a one-time password reset token (1 hour).
+ * @param {string} email
+ */
+export function createPasswordResetToken(email) {
+  const user = findUserByEmail(email);
+  if (!user) return null;
+  const token = crypto.randomBytes(24).toString('hex');
+  const now = new Date();
+  const expires = new Date(now.getTime() + 3600e3);
+  getDb()
+    .prepare(
+      `INSERT INTO password_resets (token, user_id, created_at, expires_at, used_at)
+       VALUES (?, ?, ?, ?, NULL)`
+    )
+    .run(token, user.id, now.toISOString(), expires.toISOString());
+  return { token, userId: user.id, email: user.email, expiresAt: expires };
+}
+
+/**
+ * @param {string} token
+ * @param {string} newPassword
+ */
+export function consumePasswordResetToken(token, newPassword) {
+  const row = getDb()
+    .prepare(`SELECT * FROM password_resets WHERE token = ?`)
+    .get(token);
+  if (!row || row.used_at) return { error: 'Invalid or used reset link.' };
+  if (new Date(row.expires_at) < new Date()) {
+    return { error: 'Reset link has expired.' };
+  }
+  updatePassword(row.user_id, newPassword);
+  getDb()
+    .prepare(`UPDATE password_resets SET used_at = ? WHERE token = ?`)
+    .run(new Date().toISOString(), token);
+  destroyAllSessionsForUser(row.user_id);
+  return { ok: true, userId: row.user_id };
+}
+
 export function parseCookies(req) {
   const header = req.headers?.cookie || '';
   /** @type {Record<string, string>} */

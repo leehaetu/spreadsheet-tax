@@ -36,7 +36,13 @@ import {
   ensureDemoAuthSeed,
   userCanAccessFirm,
   newId,
+  updatePassword,
+  createPasswordResetToken,
+  consumePasswordResetToken,
+  destroyAllSessionsForUser,
+  findUserById,
 } from './lib/auth.js';
+import { sendEmail } from './lib/email.js';
 import {
   createDraft,
   getDraft,
@@ -274,6 +280,14 @@ app.get('/account', (_req, res) => {
 
 app.get('/history', (_req, res) => {
   res.sendFile(path.join(publicDir, 'history.html'));
+});
+
+app.get('/forgot-password', (_req, res) => {
+  res.sendFile(path.join(publicDir, 'forgot-password.html'));
+});
+
+app.get('/reset-password', (_req, res) => {
+  res.sendFile(path.join(publicDir, 'reset-password.html'));
 });
 
 /**
@@ -719,6 +733,78 @@ app.post('/api/auth/logout', (req, res) => {
   res.json({ ok: true });
 });
 
+app.post('/api/auth/change-password', (req, res) => {
+  const user = requireUser(req, res);
+  if (!user) return;
+  const current = String(req.body?.currentPassword || '');
+  const next = String(req.body?.newPassword || '');
+  if (next.length < 8) {
+    return res.status(400).json({ error: 'New password must be at least 8 characters.' });
+  }
+  const row = findUserById(user.id);
+  if (!row || !verifyPassword(current, row.password_hash)) {
+    return res.status(401).json({ error: 'Current password is incorrect.' });
+  }
+  updatePassword(user.id, next);
+  const sid = getSessionIdFromRequest(req);
+  destroyAllSessionsForUser(user.id, sid);
+  writeAudit({
+    userId: user.id,
+    action: 'password_changed',
+    entityType: 'user',
+    entityId: user.id,
+  });
+  res.json({ ok: true });
+});
+
+app.post('/api/auth/forgot-password', (req, res) => {
+  const email = String(req.body?.email || '').trim();
+  // Always same response to avoid account enumeration
+  const created = email ? createPasswordResetToken(email) : null;
+  if (created) {
+    const base =
+      process.env.PUBLIC_BASE_URL ||
+      `${req.protocol}://${req.get('host')}`;
+    const link = `${base}/reset-password?token=${created.token}`;
+    sendEmail({
+      kind: 'password_reset',
+      to: created.email,
+      subject: 'Reset your Spreadsheet Tax password',
+      body: `Use this link within one hour to reset your password:\n${link}\n\nIf you did not request this, ignore this message.`,
+    });
+    writeAudit({
+      userId: created.userId,
+      action: 'password_reset_requested',
+      entityType: 'user',
+      entityId: created.userId,
+    });
+  }
+  res.json({
+    ok: true,
+    message:
+      'If an account exists for that email, a reset link has been sent (check server logs in demo).',
+  });
+});
+
+app.post('/api/auth/reset-password', (req, res) => {
+  const token = String(req.body?.token || '');
+  const password = String(req.body?.password || '');
+  if (password.length < 8) {
+    return res.status(400).json({ error: 'Password must be at least 8 characters.' });
+  }
+  const result = consumePasswordResetToken(token, password);
+  if (result.error) {
+    return res.status(400).json({ error: result.error });
+  }
+  writeAudit({
+    userId: result.userId,
+    action: 'password_reset_completed',
+    entityType: 'user',
+    entityId: result.userId,
+  });
+  res.json({ ok: true, message: 'Password updated. You can sign in.' });
+});
+
 app.get('/api/auth/me', (req, res) => {
   const user = getSessionUser(getSessionIdFromRequest(req));
   if (!user) return res.json({ ok: true, user: null });
@@ -911,6 +997,23 @@ app.post('/api/jobs/run', (req, res) => {
     error: 'Unknown job',
     jobs: ['deadline_reminders', 'purge_anonymous_drafts'],
   });
+});
+
+/** Signed-in practice can trigger deadline reminders for their firm book (stub email) */
+app.post('/api/me/jobs/deadline-reminders', (req, res) => {
+  const user = requireUser(req, res);
+  if (!user) return;
+  const memberships = listMemberships(user.id);
+  if (!memberships.length) {
+    return res.status(403).json({ error: 'No firm membership.' });
+  }
+  const result = runDeadlineReminders(Number(req.body?.withinDays) || 14);
+  writeAudit({
+    userId: user.id,
+    action: 'deadline_reminders_run',
+    meta: { count: result.count },
+  });
+  res.json(result);
 });
 
 /** Attach import to client (practice) */

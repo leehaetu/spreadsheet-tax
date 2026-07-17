@@ -33,6 +33,22 @@
       <h2>Profile</h2>
       <ul class="profile-list" id="profile"></ul>
     </section>
+    <section class="panel" id="pw-panel" hidden>
+      <h2>Change password</h2>
+      <form id="pw-form" class="form-row">
+        <label>Current password
+          <input type="password" id="pw-current" required autocomplete="current-password" />
+        </label>
+        <label>New password
+          <input type="password" id="pw-new" required minlength="8" autocomplete="new-password" />
+        </label>
+        <div style="display:flex;align-items:flex-end">
+          <button type="submit" class="btn btn-primary">Update password</button>
+        </div>
+      </form>
+      <p id="pw-msg" class="success-box" hidden></p>
+      <p id="pw-err" class="error" hidden></p>
+    </section>
     <section class="panel" id="subs-panel" hidden>
       <h2>Recent submissions</h2>
       <div class="table-wrap">
@@ -61,6 +77,7 @@
       }
       document.getElementById('stats').hidden = false;
       document.getElementById('profile-panel').hidden = false;
+      document.getElementById('pw-panel').hidden = false;
       document.getElementById('subs-panel').hidden = false;
       document.getElementById('st-plan').textContent = me.plan?.label || me.plan?.planId || '—';
       document.getElementById('st-hmrc').textContent = me.hmrc?.connected
@@ -92,6 +109,30 @@
       await fetch('/api/auth/logout', { method: 'POST' });
       location.href = '/';
     };
+    document.getElementById('pw-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const msg = document.getElementById('pw-msg');
+      const err = document.getElementById('pw-err');
+      msg.hidden = true;
+      err.hidden = true;
+      const res = await fetch('/api/auth/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          currentPassword: document.getElementById('pw-current').value,
+          newPassword: document.getElementById('pw-new').value,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        err.textContent = data.error || 'Could not change password';
+        err.hidden = false;
+        return;
+      }
+      msg.textContent = 'Password updated. Other sessions were signed out.';
+      msg.hidden = false;
+      e.target.reset();
+    });
     load();
   </script>
 </body>
