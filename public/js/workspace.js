@@ -52,11 +52,32 @@ async function init() {
         <td>${esc(c.dueDate || '—')}</td>
         <td>
           <button type="button" class="btn btn-primary btn-sm import-for" data-id="${esc(c.id)}" data-name="${esc(c.name)}">Import file</button>
-          <a class="btn btn-ghost btn-sm" href="/app">Personal app</a>
+          <button type="button" class="btn btn-ghost btn-sm invite" data-id="${esc(c.id)}">Portal link</button>
           <button type="button" class="btn btn-ghost btn-sm advance" data-id="${esc(c.id)}" data-status="${esc(c.status)}">Advance</button>
         </td>`;
       tbody.appendChild(tr);
     }
+    tbody.querySelectorAll('.invite').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const id = btn.getAttribute('data-id');
+        const res = await fetch(
+          `/api/me/clients/${encodeURIComponent(id)}/portal-invite`,
+          { method: 'POST' }
+        );
+        const data = await res.json();
+        if (!res.ok) {
+          alert(data.error || 'Could not create invite');
+          return;
+        }
+        const url = data.url || `${location.origin}${data.path}`;
+        try {
+          await navigator.clipboard.writeText(url);
+          alert(`Portal link copied:\n${url}`);
+        } catch {
+          prompt('Copy portal link:', url);
+        }
+      });
+    });
     tbody.querySelectorAll('.import-for').forEach((btn) => {
       btn.addEventListener('click', () => {
         const panel = document.getElementById('import-panel');

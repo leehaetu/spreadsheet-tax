@@ -167,7 +167,23 @@ function migrate(database) {
       response_json TEXT NOT NULL,
       created_at TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS portal_invites (
+      token TEXT PRIMARY KEY,
+      client_id TEXT NOT NULL,
+      firm_id TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      expires_at TEXT
+    );
   `);
+  // Lightweight column add for portal token on clients (ignore if exists)
+  try {
+    database.exec(
+      `ALTER TABLE clients ADD COLUMN portal_token TEXT`
+    );
+  } catch {
+    /* already exists */
+  }
 }
 
 export function closeDb() {

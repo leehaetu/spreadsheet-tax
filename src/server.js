@@ -54,6 +54,8 @@ import {
   allowedTransitions as dbAllowedTransitions,
   updateClientStatus,
   listWorkflowStatusCatalog,
+  createPortalInvite,
+  getClientByPortalToken,
 } from './lib/practice-db.js';
 import { getDb } from './lib/db.js';
 import {
@@ -541,17 +543,17 @@ app.post('/api/submit', async (req, res) => {
       payloads = draft.payloads;
     } else if (
       clientPayloads &&
-      process.env.ALLOW_CLIENT_PAYLOAD_SUBMIT === '1'
+      (process.env.ALLOW_CLIENT_PAYLOAD_SUBMIT === '1' ||
+        process.env.NODE_ENV !== 'production')
     ) {
-      payloads = clientPayloads;
-    } else if (clientPayloads) {
-      // Free-check fallback when draft persist failed
+      // Dev/test fallback only — production requires draftId
       payloads = clientPayloads;
     }
 
     if (!payloads) {
       return res.status(400).json({
-        error: 'Missing draftId from import. Import a spreadsheet first.',
+        error:
+          'Missing draftId from import. Import a spreadsheet first so the server owns the figures.',
       });
     }
 
@@ -1106,6 +1108,50 @@ app.get('/api/me/submissions', (req, res) => {
       ok: Boolean(r.ok),
       createdAt: r.created_at,
     })),
+  });
+});
+
+app.post('/api/me/clients/:clientId/portal-invite', (req, res) => {
+  const user = requireUser(req, res);
+  if (!user) return;
+  const result = createPortalInvite({
+    clientId: req.params.clientId,
+    userId: user.id,
+  });
+  if (result.error) {
+    return res.status(result.status || 400).json({ error: result.error });
+  }
+  writeAudit({
+    firmId: result.client.firmId,
+    userId: user.id,
+    action: 'portal_invite_created',
+    entityType: 'client',
+    entityId: result.client.id,
+  });
+  res.json({
+    ok: true,
+    token: result.token,
+    path: result.path,
+    url: `${req.protocol}://${req.get('host')}${result.path}`,
+  });
+});
+
+app.get('/api/portal/client', (req, res) => {
+  const token = String(req.query.token || '');
+  const client = getClientByPortalToken(token);
+  if (!client) {
+    return res.status(404).json({ error: 'Invalid or expired portal link.' });
+  }
+  res.json({
+    ok: true,
+    client: {
+      name: client.name,
+      status: client.status,
+      statusLabel: client.statusLabel,
+      dueDate: client.dueDate,
+      firmName: client.firmName,
+      portalAccess: true,
+    },
   });
 });
 

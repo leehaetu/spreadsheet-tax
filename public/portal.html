@@ -4,21 +4,18 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Client portal — Spreadsheet Tax</title>
-  <meta name="description" content="Client portal for clients of bookkeepers, accountants and multi-accountant practices using Spreadsheet Tax." />
+  <meta name="description" content="Client portal for clients of bookkeepers and accountants using Spreadsheet Tax." />
   <link rel="stylesheet" href="/css/site.css" />
 </head>
 <body class="app-body">
   <header class="site-header">
     <div class="wrap header-inner">
-      <a class="logo" href="/">
-        <span class="logo-mark">ST</span>
-        Spreadsheet Tax
-      </a>
+      <a class="logo" href="/"><span class="logo-mark">ST</span> Spreadsheet Tax</a>
       <nav>
         <span class="badge">Client portal</span>
         <a href="/">Home</a>
-        <a href="/app">Upload period file</a>
-        <a class="btn btn-primary btn-sm" href="/download/template">Download template</a>
+        <a href="/download/template">Template</a>
+        <a class="btn btn-primary btn-sm" href="/app">Upload period file</a>
       </nav>
     </div>
   </header>
@@ -27,22 +24,19 @@
     <div class="app-hero">
       <h1>Client portal</h1>
       <p class="lead">
-        For clients of bookkeepers, accountants and multi-accountant practices.
-        View your bridging profile and open the import path for your local spreadsheet.
+        Open the secure link from your accountant, or use a portal token they share with you.
       </p>
     </div>
 
-    <section class="panel">
-      <h2>Select your client access</h2>
-      <p class="muted">Choose the client profile your firm has granted portal access to. In production this would be your secure sign-in.</p>
+    <section class="panel" id="token-panel">
+      <h2>Enter portal access</h2>
+      <p class="muted">Your firm sends a link like <code>/portal?token=…</code>. Paste the token if needed.</p>
       <div class="form-row">
-        <label>Client
-          <select id="client-select">
-            <option value="">Choose…</option>
-          </select>
+        <label>Portal token
+          <input type="text" id="token-input" placeholder="Token from your accountant" autocomplete="off" />
         </label>
         <div style="display:flex;align-items:flex-end">
-          <button type="button" class="btn btn-primary" id="enter-portal">Enter portal</button>
+          <button type="button" class="btn btn-primary" id="open-portal">Open portal</button>
         </div>
       </div>
       <p id="portal-error" class="error" hidden></p>
@@ -52,53 +46,17 @@
       <div class="panel-header">
         <div>
           <h2 id="client-name">Client</h2>
-          <p class="muted" id="client-firm-line">Your firm workspace</p>
+          <p class="muted" id="client-firm-line"></p>
         </div>
         <span id="client-status" class="status-pill">—</span>
       </div>
-
-      <div id="client-summary" class="sources-summary"></div>
-
-      <div class="client-profile">
-        <div>
-          <h3 style="margin-top:0;font-size:1rem">Your details</h3>
-          <ul class="profile-list" id="client-profile-list"></ul>
-        </div>
-        <div class="hero-card" style="box-shadow:none;margin:0">
-          <div class="card-title">What you can do</div>
-          <ul class="checklist">
-            <li>Download the period-summary template</li>
-            <li>Upload your local spreadsheet for mapping</li>
-            <li>Preview figures before your firm submits</li>
-            <li>Keep records in the file you already use</li>
-          </ul>
-          <div class="hero-actions" style="margin-top:1rem">
-            <a class="btn btn-primary" href="/app">Upload my period file</a>
-            <a class="btn btn-ghost" href="/download/template">Get template</a>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="panel">
-      <h2>Need help from your firm?</h2>
-      <p class="muted">
-        Your bookkeeper or accountant can prepare the period file with you, or you can fill the free template
-        and upload it yourself for review.
-      </p>
-      <div class="hero-actions">
-        <a class="btn btn-ghost" href="/download/template">Download free template</a>
-        <a class="btn btn-ghost" href="/">About Spreadsheet Tax</a>
+      <ul class="profile-list" id="profile-list"></ul>
+      <div class="hero-actions" style="margin-top:1rem">
+        <a class="btn btn-primary" href="/app" id="upload-link">Upload my period file</a>
+        <a class="btn btn-ghost" href="/download/template">Get template</a>
       </div>
     </section>
   </main>
-
-  <footer class="site-footer">
-    <div class="wrap footer-bottom" style="border:0;padding:0">
-      <p class="muted">Client portal for clients of licensed practices and practitioners. IP © Lee Hine.</p>
-      <p class="muted"><a href="/">Home</a></p>
-    </div>
-  </footer>
   <script src="/js/portal.js"></script>
 </body>
 </html>

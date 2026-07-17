@@ -81,6 +81,54 @@ export function allowedTransitions(status) {
   }));
 }
 
+/**
+ * Create a portal invite token for a client (firm-scoped).
+ * @param {{ clientId: string, userId: string }} opts
+ */
+export function createPortalInvite({ clientId, userId }) {
+  const client = getClientRow(clientId);
+  if (!client) return { error: 'Client not found', status: 404 };
+  if (!userCanAccessFirm(userId, client.firmId)) {
+    return { error: 'Not allowed for this firm.', status: 403 };
+  }
+  const token = newId().replace(/-/g, '');
+  const now = new Date().toISOString();
+  getDb()
+    .prepare(
+      `INSERT INTO portal_invites (token, client_id, firm_id, created_at, expires_at)
+       VALUES (?, ?, ?, ?, NULL)`
+    )
+    .run(token, clientId, client.firmId, now);
+  getDb()
+    .prepare(`UPDATE clients SET portal_token = ?, updated_at = ? WHERE id = ?`)
+    .run(token, now, clientId);
+  return {
+    ok: true,
+    token,
+    path: `/portal?token=${token}`,
+    client,
+  };
+}
+
+/**
+ * @param {string} token
+ */
+export function getClientByPortalToken(token) {
+  if (!token) return null;
+  const row = getDb()
+    .prepare(
+      `SELECT c.*, f.name AS firm_name FROM clients c
+       JOIN firms f ON f.id = c.firm_id
+       WHERE c.portal_token = ? OR c.id IN (SELECT client_id FROM portal_invites WHERE token = ?)`
+    )
+    .get(token, token);
+  if (!row) return null;
+  return {
+    ...mapClient(row),
+    firmName: row.firm_name,
+  };
+}
+
 export function updateClientStatus({
   clientId,
   userId,

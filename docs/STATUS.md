@@ -3,27 +3,23 @@
 **Last updated:** 2026-07-17  
 **Live:** https://spreadsheet-tax-production.up.railway.app  
 
-## This slice (continue plan)
+## This slice
 
 | Item | Status |
 |------|--------|
-| Railway **volume** `/app/data` (5GB) | **Ready** — SQLite persists across redeploys |
-| `DATA_DIR=/app/data` | Set on production |
-| App env secrets (session, token key, mock OAuth) | Set |
-| Audience modes `?mode=self-employed` / `property` | Shipped |
-| Workspace **import file for client** | Shipped |
-| Professional CTAs → `/workspace` | Shipped |
-| GitHub push + Railway deploy | `b12ef16` |
+| Portal invites (token links) | Done — workspace “Portal link” |
+| Portal page by token | Done — `/portal?token=` |
+| Production submit prefers server draftId | Done |
+| Railway volume `/app/data` | Ready |
+| App env vars on Railway | Set |
+| Docs: RAILWAY.md | Added |
+| Tests | 69 unit · e2e suite |
 
-## Tests
+## Demo
 
-- Unit: 68 pass  
-- E2E: 17 pass  
+`demo@spreadsheet-tax.example` / `DemoPass123!`  
+Workspace → Portal link → copy URL for client.
 
-## Demo login
+## Still external
 
-`demo@spreadsheet-tax.example` / `DemoPass123!`
-
-## Still not production launch
-
-Real HMRC Hub credentials, card billing, pen-test, legal pack, interviews.
+HMRC production credentials, card billing, pen-test, legal pack, interviews.
