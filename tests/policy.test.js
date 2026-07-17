@@ -129,4 +129,30 @@ describe('practice-store real module', () => {
     const clients = listClientsForFirm({ firmId: firms[0].id });
     assert.ok(Array.isArray(clients));
   });
+
+  it('enforces professional workflow transitions and firm-scoped ownership', async () => {
+    const {
+      ensureDemoData,
+      getClient,
+      updateClientWorkflow,
+      allowedClientTransitions,
+    } = await import('../src/lib/practice-store.js');
+    ensureDemoData();
+    const client = getClient('cli-2');
+    assert.equal(client.status, 'awaiting_file');
+    assert.ok(allowedClientTransitions(client.id).some((x) => x.id === 'mapping_required'));
+
+    const moved = updateClientWorkflow(client.id, {
+      status: 'mapping_required',
+      actor: 'Test practitioner',
+    });
+    assert.equal(moved.client.status, 'mapping_required');
+    assert.match(moved.client.activity[0].action, /Mapping required/i);
+
+    const invalid = updateClientWorkflow(client.id, { status: 'submitted' });
+    assert.equal(invalid.status, 422);
+
+    const crossFirm = updateClientWorkflow(client.id, { accountantId: 'acc-3' });
+    assert.equal(crossFirm.status, 422);
+  });
 });

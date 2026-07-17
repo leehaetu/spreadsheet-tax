@@ -9,16 +9,23 @@
 <body class="app-body">
   <header class="site-header">
     <div class="wrap header-inner">
-      <a class="logo" href="/">Spreadsheet Tax</a>
+      <a class="logo" href="/">
+        <span class="logo-mark">ST</span>
+        Spreadsheet Tax
+      </a>
       <nav>
         <a href="/license">Licensing</a>
-        <a href="/">Sales</a>
+        <a class="btn btn-primary btn-sm" href="/">Sales</a>
       </nav>
     </div>
   </header>
 
   <main class="wrap app-main">
-    <h1>Legal notice</h1>
+    <div class="app-hero">
+      <h1>Legal notice</h1>
+      <p class="lead">Ownership, commercial licensing, and HMRC disclaimer for Spreadsheet Tax.</p>
+    </div>
+
     <section class="panel">
       <h2>Ownership of intellectual property</h2>
       <p>
@@ -40,11 +47,22 @@
         with Lee Hine (or the licensing entity designated by Lee Hine).
       </p>
       <p class="muted">This page is a product notice. Formal license agreements supersede marketing copy.</p>
+      <a class="btn btn-primary" href="/license">View licensing page</a>
     </section>
     <section class="panel">
       <h2>HMRC disclaimer</h2>
-      <p>Spreadsheet Tax is not affiliated with or endorsed by HMRC. Use of HMRC APIs is subject to HMRC terms and your own credentials and compliance obligations.</p>
+      <p>
+        Spreadsheet Tax is not affiliated with or endorsed by HMRC. Use of HMRC APIs is subject to HMRC terms
+        and your own credentials and compliance obligations.
+      </p>
     </section>
   </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-bottom" style="border:0;padding:0">
+      <p class="muted">© Lee Hine · Spreadsheet Tax</p>
+      <p class="muted"><a href="/">Home</a></p>
+    </div>
+  </footer>
 </body>
 </html>

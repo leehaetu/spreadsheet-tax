@@ -5,6 +5,8 @@
 import { parseCsvText, parseFileBuffer } from './parse.js';
 import { mapRowsToPeriod } from './map.js';
 import { buildQuarterlyPayloads } from './payloads.js';
+import { buildCustomerSummary } from './summary.js';
+import { validateImport } from './validation.js';
 
 /**
  * Process a local file into mapped figures and HMRC quarterly payloads.
@@ -19,10 +21,14 @@ export function processLocalFile(input, filename = 'upload.csv') {
 
   const mapped = mapRowsToPeriod(rows);
   const payloads = buildQuarterlyPayloads(mapped);
+  const summary = buildCustomerSummary(mapped, payloads);
+  const validation = validateImport(mapped, payloads);
 
   return {
     rowCount: rows.length,
     mapped,
     payloads,
+    summary,
+    validation,
   };
 }

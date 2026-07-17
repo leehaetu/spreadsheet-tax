@@ -1,6 +1,8 @@
 /** Customer bridging app: upload → review figures → submit */
 
 let lastPayloads = null;
+let lastSummary = null;
+let lastValidation = null;
 
 /** Customer-friendly connection label (no developer mode names in the UI). */
 function connectionLabel(mode) {
@@ -9,12 +11,24 @@ function connectionLabel(mode) {
   return 'Ready';
 }
 
+function setWizardStep(step) {
+  document.querySelectorAll('.wizard-step').forEach((el) => {
+    const n = Number(el.getAttribute('data-step'));
+    el.classList.remove('active', 'done');
+    if (n < step) el.classList.add('done');
+    if (n === step) el.classList.add('active');
+  });
+}
+
 async function loadStatus() {
   try {
     const res = await fetch('/api/status');
     const data = await res.json();
     const el = document.getElementById('connection-status');
-    if (el) el.textContent = connectionLabel(data.hmrcMode);
+    if (el) {
+      el.textContent = connectionLabel(data.hmrcMode);
+      el.classList.add('ok');
+    }
   } catch {
     const el = document.getElementById('connection-status');
     if (el) el.textContent = 'Ready';
@@ -23,51 +37,143 @@ async function loadStatus() {
 
 const fileInput = document.getElementById('file-input');
 const fileLabel = document.getElementById('file-label');
-if (fileInput && fileLabel) {
+const fileChosen = document.getElementById('file-chosen');
+const dropzone = document.getElementById('dropzone');
+
+function showChosenFile(name) {
+  if (fileLabel) fileLabel.textContent = name || 'No file chosen';
+  if (fileChosen) fileChosen.classList.toggle('show', Boolean(name));
+}
+
+if (fileInput) {
   fileInput.addEventListener('change', () => {
-    fileLabel.textContent =
-      fileInput.files?.[0]?.name || 'Choose your spreadsheet…';
+    showChosenFile(fileInput.files?.[0]?.name || '');
   });
+}
+
+if (dropzone) {
+  ['dragenter', 'dragover'].forEach((evt) => {
+    dropzone.addEventListener(evt, (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dropzone.classList.add('dragover');
+    });
+  });
+  ['dragleave', 'drop'].forEach((evt) => {
+    dropzone.addEventListener(evt, (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dropzone.classList.remove('dragover');
+    });
+  });
+  dropzone.addEventListener('drop', (e) => {
+    const files = e.dataTransfer?.files;
+    if (files?.length && fileInput) {
+      fileInput.files = files;
+      showChosenFile(files[0].name);
+    }
+  });
+}
+
+function setImportBusy(busy, label) {
+  const btn = document.getElementById('import-btn');
+  if (!btn) return;
+  btn.disabled = busy;
+  btn.textContent = label || (busy ? 'Reading your file…' : 'Review my figures');
+  document.querySelectorAll('.sample-btn').forEach((b) => {
+    b.disabled = busy;
+  });
+}
+
+async function importFromFormData(fd) {
+  const res = await fetch('/api/import', { method: 'POST', body: fd });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'We could not read that file.');
+  return data;
+}
+
+async function importSample(sampleId) {
+  const res = await fetch('/api/import/sample', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sample: sampleId }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'We could not load that sample.');
+  return data;
+}
+
+function handleImportSuccess(data) {
+  lastPayloads = data.payloads;
+  lastSummary = data.summary || null;
+  lastValidation = data.validation || { ready: true, errors: [], warnings: [] };
+  showPreview(data);
+
+  if (data.payloads?.meta?.taxYear) {
+    const ty = document.getElementById('tax-year');
+    if (ty) ty.value = data.payloads.meta.taxYear;
+  }
+  if (data.metadata?.nino) {
+    const nino = document.getElementById('nino');
+    if (nino) nino.value = data.metadata.nino;
+  }
+  if (data.metadata?.business_id) {
+    const se = document.getElementById('bid-se');
+    if (se && !se.value) se.value = data.metadata.business_id;
+  }
+
+  setWizardStep(2);
+  document.getElementById('preview-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 document.getElementById('upload-form')?.addEventListener('submit', async (e) => {
   e.preventDefault();
   const errEl = document.getElementById('upload-error');
-  errEl.hidden = true;
+  if (errEl) errEl.hidden = true;
   const file = fileInput?.files?.[0];
   if (!file) {
-    errEl.textContent = 'Please choose a spreadsheet file to upload.';
-    errEl.hidden = false;
+    if (errEl) {
+      errEl.textContent = 'Please choose a spreadsheet file to upload.';
+      errEl.hidden = false;
+    }
     return;
   }
 
-  const btn = document.getElementById('import-btn');
-  btn.disabled = true;
-  btn.textContent = 'Reading your file…';
-
+  setImportBusy(true, 'Reading your file…');
   try {
     const fd = new FormData();
     fd.append('file', file);
-    const res = await fetch('/api/import', { method: 'POST', body: fd });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'We could not read that file.');
-
-    lastPayloads = data.payloads;
-    showPreview(data);
-
-    if (data.payloads?.meta?.taxYear) {
-      document.getElementById('tax-year').value = data.payloads.meta.taxYear;
-    }
-    if (data.metadata?.nino) {
-      document.getElementById('nino').value = data.metadata.nino;
-    }
+    const data = await importFromFormData(fd);
+    handleImportSuccess(data);
   } catch (err) {
-    errEl.textContent = err.message || String(err);
-    errEl.hidden = false;
+    if (errEl) {
+      errEl.textContent = err.message || String(err);
+      errEl.hidden = false;
+    }
   } finally {
-    btn.disabled = false;
-    btn.textContent = 'Review my figures';
+    setImportBusy(false);
   }
+});
+
+document.querySelectorAll('.sample-btn').forEach((btn) => {
+  btn.addEventListener('click', async () => {
+    const errEl = document.getElementById('upload-error');
+    if (errEl) errEl.hidden = true;
+    const sampleId = btn.getAttribute('data-sample') || 'combined';
+    setImportBusy(true, 'Loading sample…');
+    showChosenFile(`Sample: ${btn.querySelector('strong')?.textContent || sampleId}`);
+    try {
+      const data = await importSample(sampleId);
+      handleImportSuccess(data);
+    } catch (err) {
+      if (errEl) {
+        errEl.textContent = err.message || String(err);
+        errEl.hidden = false;
+      }
+    } finally {
+      setImportBusy(false);
+    }
+  });
 });
 
 function friendlySource(source) {
@@ -81,77 +187,42 @@ function friendlySource(source) {
 }
 
 function friendlyPath(path) {
-  // Present a short plain-language label rather than a developer API path
   const p = String(path || '');
   if (/turnover|periodAmount|rentAmount|rentIncome/i.test(p)) return 'Income';
   if (/otherIncome|otherPropertyIncome|periodIncome\.other/i.test(p))
     return 'Other income';
-  if (/expense|costOf|Fees|Costs|repairs|financial|travel|admin|advertising|wages|goods|subcontractor|depreciation|entertainment|interest|finance|debts|maintenance|premises|services/i.test(
-    p
-  ))
+  if (
+    /expense|costOf|Fees|Costs|repairs|financial|travel|admin|advertising|wages|goods|subcontractor|depreciation|entertainment|interest|finance|debts|maintenance|premises|services/i.test(
+      p
+    )
+  )
     return 'Expense';
   if (/tax/i.test(p)) return 'Tax';
   return 'Included amount';
 }
 
-function showPreview(data) {
-  document.getElementById('preview-panel').hidden = false;
-  document.getElementById('submit-panel').hidden = false;
-
-  const tags = document.getElementById('sources-summary');
-  tags.innerHTML = '';
-  if (data.sources.selfEmployment) {
-    tags.appendChild(tag('Self-employment'));
-  }
-  if (data.sources.ukProperty) {
-    tags.appendChild(tag('UK property'));
-  }
-  for (const c of data.sources.foreignProperty || []) {
-    tags.appendChild(tag(`Foreign property (${c})`));
-  }
-
-  document.getElementById('figures-out').textContent = formatFiguresForCustomer(
-    data.figures
-  );
-  document.getElementById('payloads-out').textContent =
-    formatSubmissionPreview(data.payloads);
-
-  const tbody = document.querySelector('#links-table tbody');
-  tbody.innerHTML = '';
-  for (const link of data.fieldLinks || []) {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${esc(friendlySource(link.source))}</td><td>${esc(link.sourceField)}</td><td>${esc(friendlyPath(link.path))}</td><td>${esc(formatMoney(link.value))}</td>`;
-    tbody.appendChild(tr);
-  }
+function formatMoney(v) {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return String(v ?? '—');
+  return n.toLocaleString('en-GB', {
+    style: 'currency',
+    currency: 'GBP',
+  });
 }
 
-/**
- * Present figures as readable lines, not raw API JSON when possible.
- * @param {object} figures
- */
-function formatFiguresForCustomer(figures) {
-  const lines = [];
-  if (figures?.selfEmployment) {
-    lines.push('Self-employment');
-    for (const [k, v] of Object.entries(figures.selfEmployment)) {
-      lines.push(`  ${labelKey(k)}: ${formatMoney(v)}`);
-    }
-  }
-  if (figures?.ukProperty) {
-    lines.push('UK property');
-    for (const [k, v] of Object.entries(figures.ukProperty)) {
-      lines.push(`  ${labelKey(k)}: ${formatMoney(v)}`);
-    }
-  }
-  if (figures?.foreignProperty?.length) {
-    for (const fp of figures.foreignProperty) {
-      lines.push(`Foreign property (${fp.countryCode})`);
-      for (const [k, v] of Object.entries(fp.figures || {})) {
-        lines.push(`  ${labelKey(k)}: ${formatMoney(v)}`);
-      }
-    }
-  }
-  return lines.length ? lines.join('\n') : JSON.stringify(figures, null, 2);
+function tag(text, cls) {
+  const s = document.createElement('span');
+  s.className = cls ? `tag ${cls}` : 'tag';
+  s.textContent = text;
+  return s;
+}
+
+function esc(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
 /**
@@ -191,60 +262,229 @@ function formatSubmissionPreview(payloads) {
       );
     }
   }
-  return lines.length ? lines.join('\n') : JSON.stringify(payloads, null, 2);
+  return lines.length ? lines.join('\n') : 'Quarterly update package prepared.';
 }
 
-function labelKey(k) {
-  return String(k)
-    .replace(/_/g, ' ')
-    .replace(/\b\w/g, (c) => c.toUpperCase());
+function renderSourceCards(summary) {
+  const root = document.getElementById('source-cards');
+  if (!root) return;
+  root.innerHTML = '';
+
+  for (const src of summary?.sources || []) {
+    const card = document.createElement('article');
+    card.className = 'source-card';
+
+    const incomeHtml = (src.incomeLines || [])
+      .map(
+        (l) =>
+          `<div class="line-item"><span>${esc(l.label)}</span><span class="amt">${esc(formatMoney(l.amount))}</span></div>`
+      )
+      .join('');
+    const expenseHtml = (src.expenseLines || [])
+      .map(
+        (l) =>
+          `<div class="line-item"><span>${esc(l.label)}</span><span class="amt expense">${esc(formatMoney(l.amount))}</span></div>`
+      )
+      .join('');
+
+    card.innerHTML = `
+      <div class="source-card-head">
+        <div>
+          <h3>${esc(src.title)}</h3>
+          ${src.subtitle ? `<p class="sub">${esc(src.subtitle)}</p>` : ''}
+        </div>
+        <div class="source-totals">
+          <span>Income <strong>${esc(formatMoney(src.totalIncome))}</strong></span>
+          <span>Expenses <strong>${esc(formatMoney(src.totalExpenses))}</strong></span>
+          <span>Net <strong>${esc(formatMoney(src.net))}</strong></span>
+        </div>
+      </div>
+      <div class="line-grid">
+        <div class="line-col">
+          <h4>Income</h4>
+          ${incomeHtml || '<p class="muted">No income lines</p>'}
+        </div>
+        <div class="line-col">
+          <h4>Expenses</h4>
+          ${expenseHtml || '<p class="muted">No expense lines</p>'}
+        </div>
+      </div>
+    `;
+    root.appendChild(card);
+  }
 }
 
-function formatMoney(v) {
-  const n = Number(v);
-  if (!Number.isFinite(n)) return String(v);
-  return n.toLocaleString('en-GB', {
-    style: 'currency',
-    currency: 'GBP',
-  });
+function showPreview(data) {
+  const preview = document.getElementById('preview-panel');
+  const submit = document.getElementById('submit-panel');
+  if (preview) preview.hidden = false;
+  if (submit) submit.hidden = false;
+
+  const success = document.getElementById('submit-success');
+  if (success) success.hidden = true;
+  const submitErr = document.getElementById('submit-error');
+  if (submitErr) submitErr.hidden = true;
+
+  const summary = data.summary;
+  lastSummary = summary;
+  lastValidation = data.validation || { ready: true, errors: [], warnings: [] };
+
+  const validationBox = document.getElementById('validation-summary');
+  const validationTitle = document.getElementById('validation-title');
+  const validationList = document.getElementById('validation-list');
+  const issues = [...(lastValidation.errors || []), ...(lastValidation.warnings || [])];
+  if (validationBox && validationTitle && validationList) {
+    validationBox.hidden = false;
+    validationBox.classList.remove('blocked', 'ok');
+    validationList.innerHTML = '';
+    if (lastValidation.errors?.length) {
+      validationBox.classList.add('blocked');
+      validationTitle.textContent = 'Fix these items before continuing';
+    } else if (lastValidation.warnings?.length) {
+      validationTitle.textContent = 'Check these items before continuing';
+    } else {
+      validationBox.classList.add('ok');
+      validationTitle.textContent = 'Spreadsheet checks passed';
+    }
+    for (const item of issues) {
+      const li = document.createElement('li');
+      li.textContent = item.message;
+      validationList.appendChild(li);
+    }
+    if (!issues.length) {
+      const li = document.createElement('li');
+      li.textContent = 'Dates, sources and mapped figures are ready for review.';
+      validationList.appendChild(li);
+    }
+  }
+  const continueBtn = document.getElementById('goto-submit');
+  if (continueBtn) {
+    continueBtn.disabled = !lastValidation.ready;
+    continueBtn.title = lastValidation.ready ? '' : 'Resolve the blocking spreadsheet checks first';
+  }
+
+  const meta = document.getElementById('period-meta');
+  if (meta) {
+    meta.innerHTML = '';
+    const taxYear = summary?.taxYear || data.payloads?.meta?.taxYear;
+    const start = summary?.periodStart || data.payloads?.meta?.periodStartDate;
+    const end = summary?.periodEnd || data.payloads?.meta?.periodEndDate;
+    if (taxYear) meta.appendChild(tag(`Tax year ${taxYear}`, 'green'));
+    if (start && end) meta.appendChild(tag(`Period ${start} → ${end}`));
+    if (data.filename) meta.appendChild(tag(data.filename, 'amber'));
+    if (data.rowCount != null) meta.appendChild(tag(`${data.rowCount} rows read`));
+  }
+
+  const tags = document.getElementById('sources-summary');
+  if (tags) {
+    tags.innerHTML = '';
+    if (data.sources?.selfEmployment) tags.appendChild(tag('Self-employment', 'green'));
+    if (data.sources?.ukProperty) tags.appendChild(tag('UK property', 'green'));
+    for (const c of data.sources?.foreignProperty || []) {
+      tags.appendChild(tag(`Foreign property (${c})`, 'green'));
+    }
+  }
+
+  const totals = summary?.totals || {};
+  const setMetric = (id, value, netStyle) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = value;
+    el.classList.remove('positive', 'negative');
+    if (netStyle) {
+      const n = Number(totals.net);
+      if (Number.isFinite(n)) {
+        el.classList.add(n >= 0 ? 'positive' : 'negative');
+      }
+    }
+  };
+  setMetric('metric-income', formatMoney(totals.totalIncome ?? 0));
+  setMetric('metric-expenses', formatMoney(totals.totalExpenses ?? 0));
+  setMetric('metric-net', formatMoney(totals.net ?? 0), true);
+  setMetric(
+    'metric-sources',
+    String(summary?.sourceCount ?? (data.sources?.selfEmployment ? 1 : 0))
+  );
+
+  // Fix source count if summary missing
+  if (!summary) {
+    let count = 0;
+    if (data.sources?.selfEmployment) count += 1;
+    if (data.sources?.ukProperty) count += 1;
+    count += (data.sources?.foreignProperty || []).length;
+    setMetric('metric-sources', String(count));
+  }
+
+  renderSourceCards(summary);
+
+  const tbody = document.querySelector('#links-table tbody');
+  if (tbody) {
+    tbody.innerHTML = '';
+    for (const link of data.fieldLinks || []) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${esc(friendlySource(link.source))}</td><td>${esc(link.sourceField)}</td><td>${esc(friendlyPath(link.path))}</td><td class="amount-cell">${esc(formatMoney(link.value))}</td>`;
+      tbody.appendChild(tr);
+    }
+  }
+
+  const payloadsOut = document.getElementById('payloads-out');
+  if (payloadsOut) {
+    payloadsOut.textContent = formatSubmissionPreview(data.payloads);
+  }
 }
 
-function tag(text) {
-  const s = document.createElement('span');
-  s.className = 'tag';
-  s.textContent = text;
-  return s;
+function resetToUpload() {
+  lastPayloads = null;
+  lastSummary = null;
+  lastValidation = null;
+  const preview = document.getElementById('preview-panel');
+  const submit = document.getElementById('submit-panel');
+  if (preview) preview.hidden = true;
+  if (submit) submit.hidden = true;
+  const success = document.getElementById('submit-success');
+  if (success) success.hidden = true;
+  if (fileInput) fileInput.value = '';
+  showChosenFile('');
+  setWizardStep(1);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-function esc(s) {
-  return String(s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
+document.getElementById('reset-upload')?.addEventListener('click', resetToUpload);
+document.getElementById('reset-upload-2')?.addEventListener('click', resetToUpload);
+document.getElementById('another-file')?.addEventListener('click', resetToUpload);
+
+document.getElementById('goto-submit')?.addEventListener('click', () => {
+  if (lastValidation && !lastValidation.ready) return;
+  setWizardStep(3);
+  document.getElementById('submit-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+
+document.getElementById('back-to-review')?.addEventListener('click', () => {
+  setWizardStep(2);
+  document.getElementById('preview-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
 
 document.getElementById('submit-btn')?.addEventListener('click', async () => {
   const errEl = document.getElementById('submit-error');
   const successBox = document.getElementById('submit-success');
-  const out = document.getElementById('submit-out');
   const summary = document.getElementById('submit-summary');
-  errEl.hidden = true;
-  if (successBox) {
-    successBox.hidden = true;
-    successBox.style.display = 'none';
-  }
-  if (out) out.hidden = true;
+  const list = document.getElementById('submit-result-list');
+  if (errEl) errEl.hidden = true;
+  if (successBox) successBox.hidden = true;
 
   if (!lastPayloads) {
-    errEl.textContent = 'Please upload your spreadsheet first.';
-    errEl.hidden = false;
+    if (errEl) {
+      errEl.textContent = 'Please upload your spreadsheet first.';
+      errEl.hidden = false;
+    }
     return;
   }
 
   const btn = document.getElementById('submit-btn');
-  btn.disabled = true;
-  btn.textContent = 'Sending…';
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Sending…';
+  }
 
   try {
     const res = await fetch('/api/submit', {
@@ -252,15 +492,18 @@ document.getElementById('submit-btn')?.addEventListener('click', async () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         payloads: lastPayloads,
-        nino: document.getElementById('nino').value || undefined,
-        taxYear: document.getElementById('tax-year').value || undefined,
-        businessIdSe: document.getElementById('bid-se').value || undefined,
-        businessIdUk: document.getElementById('bid-uk').value || undefined,
-        businessIdForeign: document.getElementById('bid-fp').value || undefined,
+        nino: document.getElementById('nino')?.value || undefined,
+        taxYear: document.getElementById('tax-year')?.value || undefined,
+        businessIdSe: document.getElementById('bid-se')?.value || undefined,
+        businessIdUk: document.getElementById('bid-uk')?.value || undefined,
+        businessIdForeign: document.getElementById('bid-fp')?.value || undefined,
       }),
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Submission failed. Please try again.');
+    if (!res.ok) {
+      const messages = data.validation?.errors?.map((item) => item.message).filter(Boolean) || [];
+      throw new Error(messages.length ? messages.join(' ') : (data.error || 'Submission failed. Please try again.'));
+    }
 
     const count = Array.isArray(data.results) ? data.results.length : 0;
     const ok = data.ok;
@@ -269,27 +512,31 @@ document.getElementById('submit-btn')?.addEventListener('click', async () => {
         ? `Your quarterly update${count === 1 ? ' was' : 's were'} accepted (${count} income source${count === 1 ? '' : 's'}).`
         : 'Something went wrong with one or more updates. Review the details below.';
     }
-    if (successBox) {
-      successBox.hidden = false;
-      successBox.style.display = 'block';
-    }
-    // Optional detail for the customer if they want to see confirmation IDs
-    if (out && data.results) {
-      const lines = data.results.map((r) => {
+    if (list) {
+      list.innerHTML = '';
+      for (const r of data.results || []) {
+        const li = document.createElement('li');
         const src = friendlySource(r.request?.source || 'update');
-        const id = r.response?.submissionId || r.response?.message || r.status;
-        return `${src}: ${r.ok ? 'Accepted' : 'Not accepted'} — ${id}`;
-      });
-      out.textContent = lines.join('\n');
-      out.hidden = false;
+        const id = r.response?.submissionId || r.response?.message || r.status || '';
+        li.innerHTML = `<span>${esc(src)}</span><span>${r.ok ? 'Accepted' : 'Not accepted'}${id ? ` · ${esc(String(id))}` : ''}</span>`;
+        list.appendChild(li);
+      }
     }
+    if (successBox) successBox.hidden = false;
+    setWizardStep(4);
+    successBox?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   } catch (err) {
-    errEl.textContent = err.message || String(err);
-    errEl.hidden = false;
+    if (errEl) {
+      errEl.textContent = err.message || String(err);
+      errEl.hidden = false;
+    }
   } finally {
-    btn.disabled = false;
-    btn.textContent = 'Submit quarterly update';
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'Submit quarterly update';
+    }
   }
 });
 
+setWizardStep(1);
 loadStatus();

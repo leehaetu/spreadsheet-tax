@@ -9,6 +9,7 @@
     "dev": "node --watch src/server.js",
     "test": "node --test tests/**/*.test.js",
     "test:unit": "node --test tests/**/*.test.js",
+    "test:e2e": "playwright test",
     "generate:test-spreadsheets": "node scripts/generate-test-spreadsheets.js"
   },
   "author": "Lee Hine",
@@ -29,5 +30,8 @@
     "express": "^4.21.2",
     "multer": "^1.4.5-lts.1",
     "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.51.0"
   }
 }

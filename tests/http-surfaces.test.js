@@ -103,6 +103,25 @@ describe('sales site customer focus', () => {
     assert.doesNotMatch(html, /implementer|TODO for Lee|advice for me/i);
     assert.doesNotMatch(html, /test double|sandbox client|test-spreadsheets\//i);
   });
+
+  it('provides distinct conversion journeys for each primary audience', async () => {
+    const journeys = [
+      ['/self-employed', /sole traders|self-employed/i, /check my spreadsheet/i],
+      ['/landlords', /property landlords|landlord records/i, /property spreadsheet/i],
+      ['/professionals', /bookkeepers and accountants/i, /professional workspace|accountant workspace/i],
+      ['/firms', /accountancy firms|multi-user practices/i, /practice dashboard/i],
+    ];
+
+    for (const [urlPath, audiencePattern, ctaPattern] of journeys) {
+      const res = await request('GET', urlPath);
+      assert.equal(res.status, 200, `${urlPath} should be available`);
+      const html = res.body.toString('utf8');
+      assert.match(html, audiencePattern);
+      assert.match(html, ctaPattern);
+      assert.match(html, /Spreadsheet Tax/i);
+      assert.doesNotMatch(html, /test double|sandbox client|TODO/i);
+    }
+  });
 });
 
 describe('bridging app customer focus', () => {
@@ -115,6 +134,9 @@ describe('bridging app customer focus', () => {
     assert.match(html, /Upload your spreadsheet|Upload your/i);
     assert.match(html, /Check your figures|Review my figures|before sending/i);
     assert.match(html, /Submit quarterly update|Send to HMRC/i);
+    // Polished multi-step product surface
+    assert.match(html, /Drop your spreadsheet|Choose a CSV|Review my figures/i);
+    assert.match(html, /Total income|Total expenses|Continue to send/i);
     // Must not surface implementer/dev defaults as primary copy
     assert.doesNotMatch(html, /test double/i);
     assert.doesNotMatch(html, /sandbox client/i);
@@ -135,6 +157,55 @@ describe('bridging app customer focus', () => {
     assert.match(js, /connectionLabel|Ready to submit|Connected to HMRC/i);
     assert.doesNotMatch(js, /textContent\s*=\s*`HMRC:\s*\$\{/);
     assert.doesNotMatch(js, /test double/i);
+  });
+});
+
+describe('sample import API', () => {
+  it('returns customer summary for a combined sample period', async () => {
+    const res = await new Promise((resolve, reject) => {
+      const body = JSON.stringify({ sample: 'combined' });
+      const req = http.request(
+        {
+          hostname: '127.0.0.1',
+          port,
+          path: '/api/import/sample',
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(body),
+          },
+        },
+        (r) => {
+          const chunks = [];
+          r.on('data', (c) => chunks.push(c));
+          r.on('end', () => {
+            resolve({
+              status: r.statusCode,
+              body: Buffer.concat(chunks),
+            });
+          });
+        }
+      );
+      req.on('error', reject);
+      req.write(body);
+      req.end();
+    });
+    assert.equal(res.status, 200);
+    const data = JSON.parse(res.body.toString('utf8'));
+    assert.equal(data.ok, true);
+    assert.ok(data.summary);
+    assert.ok(data.summary.totals);
+    assert.ok(data.summary.sources?.length >= 1);
+    assert.ok(data.payloads);
+    assert.equal(data.sources.selfEmployment, true);
+  });
+
+  it('lists customer-facing sample scenarios', async () => {
+    const res = await request('GET', '/api/samples');
+    assert.equal(res.status, 200);
+    const data = JSON.parse(res.body.toString('utf8'));
+    assert.ok(data.samples?.length >= 3);
+    assert.ok(data.samples.every((s) => s.label && s.id));
   });
 });
 
@@ -164,6 +235,20 @@ describe('portal surfaces', () => {
     const clients = await request('GET', '/api/clients');
     const cj = JSON.parse(clients.body.toString('utf8'));
     assert.ok(cj.clients.length >= 1);
+  });
+
+  it('exposes accountancy workflow statuses and allowed client transitions', async () => {
+    const statuses = await request('GET', '/api/workflow-statuses');
+    assert.equal(statuses.status, 200);
+    const sj = JSON.parse(statuses.body.toString('utf8'));
+    assert.ok(sj.statuses.some((x) => x.id === 'ready_to_submit'));
+
+    const client = await request('GET', '/api/clients/cli-1');
+    assert.equal(client.status, 200);
+    const cj = JSON.parse(client.body.toString('utf8'));
+    assert.ok(Array.isArray(cj.transitions));
+    assert.ok(cj.client.dueDate);
+    assert.ok(Array.isArray(cj.client.activity));
   });
 });
 

@@ -4,32 +4,50 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Accountant &amp; bookkeeper workspace — Spreadsheet Tax</title>
+  <meta name="description" content="Manage client period files for self-employment and property landlords. Import local spreadsheets and preview quarterly figures." />
   <link rel="stylesheet" href="/css/site.css" />
 </head>
 <body class="app-body">
   <header class="site-header">
     <div class="wrap header-inner">
-      <a class="logo" href="/">Spreadsheet Tax</a>
+      <a class="logo" href="/">
+        <span class="logo-mark">ST</span>
+        Spreadsheet Tax
+      </a>
       <nav>
         <span class="badge">Bookkeeper / Accountant</span>
         <a href="/practice">Practice dashboard</a>
         <a href="/portal">Client portal</a>
         <a href="/app">Bridging app</a>
-        <a class="btn btn-primary" href="/download/template">Template</a>
+        <a class="btn btn-primary btn-sm" href="/download/template">Template</a>
       </nav>
     </div>
   </header>
 
   <main class="wrap app-main">
-    <h1>Accountant &amp; bookkeeper workspace</h1>
-    <p class="lead">
-      Manage client period files for self-employment and property landlords.
-      Import local spreadsheets, preview quarterly figures ready for HMRC, and open the app to submit.
-    </p>
+    <div class="app-hero">
+      <h1>Accountant &amp; bookkeeper workspace</h1>
+      <p class="lead">
+        Manage client period files for self-employment and property landlords.
+        Import local spreadsheets, preview quarterly figures ready for HMRC, and open the app to submit.
+      </p>
+    </div>
+
+    <div class="stat-cards" id="stat-cards">
+      <div class="stat-card"><div class="n" id="stat-clients">—</div><div class="l">Clients</div></div>
+      <div class="stat-card"><div class="n" id="stat-ready">—</div><div class="l">Ready to submit</div></div>
+      <div class="stat-card"><div class="n" id="stat-awaiting">—</div><div class="l">Awaiting file</div></div>
+      <div class="stat-card"><div class="n" id="stat-portal">—</div><div class="l">In review / query</div></div>
+    </div>
 
     <section class="panel">
-      <h2>Your clients</h2>
-      <p class="muted">Demo data for a sole bookkeeper and assigned practice clients. Select a firm filter if you work in a multi-partner firm.</p>
+      <div class="panel-header">
+        <div>
+          <h2>Your clients</h2>
+          <p class="muted">Filter by firm and practitioner. Open the bridging app to import a client period file.</p>
+        </div>
+        <a class="btn btn-primary" href="/app">Import client file</a>
+      </div>
       <div class="form-row">
         <label>Firm
           <select id="firm-filter">
@@ -41,6 +59,18 @@
             <option value="">All practitioners</option>
           </select>
         </label>
+        <label>Workflow status
+          <select id="status-filter">
+            <option value="">All statuses</option>
+            <option value="awaiting_file">Awaiting records</option>
+            <option value="mapping_required">Mapping required</option>
+            <option value="in_review">In review</option>
+            <option value="client_query">Client query</option>
+            <option value="ready_to_submit">Ready to submit</option>
+            <option value="submitted">Submitted</option>
+            <option value="correction_required">Correction required</option>
+          </select>
+        </label>
       </div>
       <div class="table-wrap">
         <table id="clients-table">
@@ -50,7 +80,9 @@
               <th>Type</th>
               <th>Sources</th>
               <th>Last period</th>
-              <th>Portal</th>
+              <th>Due</th>
+              <th>Status</th>
+              <th>Next workflow step</th>
               <th></th>
             </tr>
           </thead>
@@ -61,17 +93,20 @@
 
     <section class="panel">
       <h2>Quick actions</h2>
+      <p class="muted">Common tasks for bookkeepers and accountants handling MTD quarterly updates.</p>
       <div class="hero-actions">
         <a class="btn btn-primary" href="/app">Import client spreadsheet</a>
         <a class="btn btn-ghost" href="/download/template">Download template for clients</a>
         <a class="btn btn-ghost" href="/portal">Preview client portal</a>
+        <a class="btn btn-ghost" href="/practice">Open practice dashboard</a>
       </div>
     </section>
   </main>
 
   <footer class="site-footer">
-    <div class="wrap">
+    <div class="wrap footer-bottom" style="border:0;padding:0">
       <p class="muted">Practitioner surface for bookkeepers and accountants. IP © Lee Hine.</p>
+      <p class="muted"><a href="/">Home</a> · <a href="/license">Licensing</a></p>
     </div>
   </footer>
   <script src="/js/accountant.js"></script>

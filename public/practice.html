@@ -4,31 +4,45 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Multi-accountant practice dashboard — Spreadsheet Tax</title>
+  <meta name="description" content="Firm-wide view of clients and team members for multi-accountant practices that license Spreadsheet Tax." />
   <link rel="stylesheet" href="/css/site.css" />
 </head>
 <body class="app-body">
   <header class="site-header">
     <div class="wrap header-inner">
-      <a class="logo" href="/">Spreadsheet Tax</a>
+      <a class="logo" href="/">
+        <span class="logo-mark">ST</span>
+        Spreadsheet Tax
+      </a>
       <nav>
         <span class="badge">Multi-accountant practice</span>
         <a href="/accountant">Accountant workspace</a>
         <a href="/portal">Client portal</a>
         <a href="/app">Bridging app</a>
-        <a class="btn btn-primary" href="/license">Firm licensing</a>
+        <a class="btn btn-primary btn-sm" href="/license">Firm licensing</a>
       </nav>
     </div>
   </header>
 
   <main class="wrap app-main">
-    <h1>Practice / firm dashboard</h1>
-    <p class="lead">
-      For multi-accountant practices, firms and companies that license Spreadsheet Tax
-      and manage clients across multiple bookkeepers and accountants.
-    </p>
+    <div class="app-hero">
+      <h1>Practice / firm dashboard</h1>
+      <p class="lead">
+        For multi-accountant practices, firms and companies that license Spreadsheet Tax
+        and manage clients across multiple bookkeepers and accountants.
+      </p>
+    </div>
+
+    <div class="stat-cards" id="practice-stats">
+      <div class="stat-card"><div class="n" id="ps-firms">—</div><div class="l">Firms</div></div>
+      <div class="stat-card"><div class="n" id="ps-team">—</div><div class="l">Team members</div></div>
+      <div class="stat-card"><div class="n" id="ps-clients">—</div><div class="l">Clients</div></div>
+      <div class="stat-card"><div class="n" id="ps-portal">—</div><div class="l">With portal access</div></div>
+    </div>
 
     <section class="panel">
       <h2>Firms on this environment</h2>
+      <p class="muted">Each firm can hold a practice or practitioner license and own its client book.</p>
       <div id="firms-list" class="cards"></div>
     </section>
 
@@ -45,18 +59,44 @@
     </section>
 
     <section class="panel">
-      <h2>All clients (firm-scoped)</h2>
+      <div class="panel-header">
+        <div>
+          <h2>All clients (firm-scoped)</h2>
+          <p class="muted">Filter the full client book by firm.</p>
+        </div>
+      </div>
       <div class="form-row">
         <label>Filter by firm
           <select id="practice-firm-filter">
             <option value="">All</option>
           </select>
         </label>
+        <label>Workflow status
+          <select id="practice-status-filter">
+            <option value="">All statuses</option>
+            <option value="awaiting_file">Awaiting records</option>
+            <option value="mapping_required">Mapping required</option>
+            <option value="in_review">In review</option>
+            <option value="client_query">Client query</option>
+            <option value="ready_to_submit">Ready to submit</option>
+            <option value="submitted">Submitted</option>
+            <option value="correction_required">Correction required</option>
+          </select>
+        </label>
       </div>
       <div class="table-wrap">
         <table id="practice-clients">
           <thead>
-            <tr><th>Client</th><th>Firm</th><th>Accountant</th><th>Sources</th><th>Portal</th></tr>
+            <tr>
+              <th>Client</th>
+              <th>Firm</th>
+              <th>Accountant</th>
+              <th>Sources</th>
+              <th>Due</th>
+              <th>Status</th>
+              <th>Assign</th>
+              <th></th>
+            </tr>
           </thead>
           <tbody></tbody>
         </table>
@@ -69,13 +109,15 @@
         <a class="btn btn-primary" href="/app">Run bridging for a client file</a>
         <a class="btn btn-ghost" href="/accountant">Open practitioner workspace</a>
         <a class="btn btn-ghost" href="/portal">Client portal entry</a>
+        <a class="btn btn-ghost" href="/license">Company license terms</a>
       </div>
     </section>
   </main>
 
   <footer class="site-footer">
-    <div class="wrap">
+    <div class="wrap footer-bottom" style="border:0;padding:0">
       <p class="muted">Multi-accountant practice surface. Software licensed to companies that may sell subscriptions to their customers. IP © Lee Hine.</p>
+      <p class="muted"><a href="/">Home</a></p>
     </div>
   </footer>
   <script src="/js/practice.js"></script>
