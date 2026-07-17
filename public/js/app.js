@@ -88,6 +88,17 @@ async function loadStatus() {
         data.honesty?.realHmrcRequires ||
         'Default path is preview-only until HMRC credentials and live flag are set.';
     }
+    // Honest primary button: preview vs sandbox when server would call HMRC
+    const btn = document.getElementById('submit-btn');
+    if (btn) {
+      if (data.previewOnly || data.hmrcMode === 'double' || !data.liveSubmitEnabled) {
+        btn.textContent = 'Run preview submit';
+      } else {
+        btn.textContent = 'Submit to HMRC sandbox';
+        btn.title =
+          'Requires signed-in real HMRC OAuth. Still sandbox host when HMRC_OAUTH_ENV=sandbox — not live taxpayer production APIs.';
+      }
+    }
   } catch {
     const el = document.getElementById('connection-status');
     if (el) el.textContent = 'Preview mode — not sent to HMRC';

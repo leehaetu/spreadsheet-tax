@@ -97,6 +97,9 @@ import {
   listBusinessDetails,
   listIncomeExpenditureObligations,
   submitSelfEmploymentPeriodSandbox,
+  submitUkPropertyPeriodSandbox,
+  submitForeignPropertyPeriodSandbox,
+  taxYearFromPeriodStart,
 } from './lib/hmrc-sandbox.js';
 import {
   ensureFreePlan,
@@ -217,7 +220,7 @@ app.get('/health', (_req, res) => {
   res.status(ready ? 200 : 503).json({
     ok: ready,
     service: 'spreadsheet-tax',
-    version: '1.9.0',
+    version: '1.10.0',
     bridging: true,
     db: dbOk,
     oauthMock: oauthConfig().mock,
@@ -244,7 +247,7 @@ app.get('/health', (_req, res) => {
 app.get('/readyz', (_req, res) => {
   try {
     getDb().prepare('SELECT 1 AS x').get();
-    res.status(200).json({ ready: true, version: '1.8.0' });
+    res.status(200).json({ ready: true, version: '1.10.0' });
   } catch {
     res.status(503).json({ ready: false });
   }
@@ -1299,10 +1302,13 @@ app.get('/api/hmrc/obligations', async (req, res) => {
 });
 
 /**
- * Controlled sandbox SE period submit using stored user OAuth token.
+ * Controlled sandbox period submit (SE / UK property / foreign property).
  * Requires HMRC_ALLOW_LIVE_SUBMIT=1 (still sandbox host when HMRC_OAUTH_ENV=sandbox).
+ * Body: { source: 'self_employment'|'uk_property'|'foreign_property', nino, businessId,
+ *         taxYear?, draftId? | periodBody?, }
+ * Legacy alias: POST /api/hmrc/sandbox-submit-se (source forced to self_employment).
  */
-app.post('/api/hmrc/sandbox-submit-se', async (req, res) => {
+async function handleSandboxPeriodSubmit(req, res, forcedSource) {
   const user = requireUser(req, res);
   if (!user) return;
   if (process.env.HMRC_ALLOW_LIVE_SUBMIT !== '1') {
@@ -1318,6 +1324,24 @@ app.post('/api/hmrc/sandbox-submit-se', async (req, res) => {
       error: 'Real HMRC OAuth connection required.',
     });
   }
+  const source = String(
+    forcedSource || req.body?.source || 'self_employment'
+  ).toLowerCase();
+  const allowed = new Set([
+    'self_employment',
+    'se',
+    'uk_property',
+    'uk',
+    'foreign_property',
+    'foreign',
+  ]);
+  if (!allowed.has(source)) {
+    return res.status(400).json({
+      ok: false,
+      error:
+        'source must be self_employment, uk_property, or foreign_property',
+    });
+  }
   const nino = String(
     req.body?.nino || process.env.HMRC_SANDBOX_TEST_NINO || ''
   )
@@ -1330,49 +1354,140 @@ app.post('/api/hmrc/sandbox-submit-se', async (req, res) => {
       error: 'nino and businessId required',
     });
   }
-  // Prefer server draft payloads
+
+  let draft = null;
   let periodBody = req.body?.periodBody || null;
+  let taxYear = req.body?.taxYear ? String(req.body.taxYear) : '';
+
   if (req.body?.draftId) {
-    const draft = getDraft(String(req.body.draftId));
-    if (!draft?.payloads?.selfEmployment) {
-      return res.status(404).json({
-        ok: false,
-        error: 'Draft not found or has no self-employment payload',
+    draft = getDraft(String(req.body.draftId));
+    if (!draft?.payloads) {
+      return res.status(404).json({ ok: false, error: 'Draft not found' });
+    }
+  }
+
+  const isSe = source === 'self_employment' || source === 'se';
+  const isUk = source === 'uk_property' || source === 'uk';
+  const isFp = source === 'foreign_property' || source === 'foreign';
+
+  if (draft) {
+    if (isSe) {
+      if (!draft.payloads.selfEmployment) {
+        return res.status(404).json({
+          ok: false,
+          error: 'Draft has no self-employment payload',
+        });
+      }
+      periodBody = draft.payloads.selfEmployment;
+    } else if (isUk) {
+      if (!draft.payloads.ukProperty) {
+        return res.status(404).json({
+          ok: false,
+          error: 'Draft has no UK property payload',
+        });
+      }
+      periodBody = draft.payloads.ukProperty;
+    } else if (isFp) {
+      if (!draft.payloads.foreignProperty) {
+        return res.status(404).json({
+          ok: false,
+          error: 'Draft has no foreign property payload',
+        });
+      }
+      periodBody = draft.payloads.foreignProperty;
+    }
+    if (!taxYear && draft.payloads.meta?.taxYear) {
+      taxYear = String(draft.payloads.meta.taxYear);
+    }
+    if (!taxYear && draft.payloads.meta?.periodStartDate) {
+      taxYear = taxYearFromPeriodStart(draft.payloads.meta.periodStartDate);
+    }
+  }
+
+  if (!periodBody) {
+    return res
+      .status(400)
+      .json({ ok: false, error: 'periodBody or draftId required' });
+  }
+
+  if ((isUk || isFp) && !taxYear) {
+    taxYear = taxYearFromPeriodStart(
+      periodBody.fromDate || periodBody.periodDates?.periodStartDate
+    );
+  }
+
+  try {
+    let result;
+    if (isSe) {
+      result = await submitSelfEmploymentPeriodSandbox({
+        accessToken: conn.accessToken,
+        nino,
+        businessId,
+        body: periodBody,
+        req,
+        userId: user.id,
+      });
+    } else if (isUk) {
+      result = await submitUkPropertyPeriodSandbox({
+        accessToken: conn.accessToken,
+        nino,
+        businessId,
+        taxYear,
+        body: periodBody,
+        req,
+        userId: user.id,
+      });
+    } else {
+      result = await submitForeignPropertyPeriodSandbox({
+        accessToken: conn.accessToken,
+        nino,
+        businessId,
+        taxYear,
+        body: periodBody,
+        req,
+        userId: user.id,
       });
     }
-    periodBody = draft.payloads.selfEmployment;
-  }
-  if (!periodBody) {
-    return res.status(400).json({ ok: false, error: 'periodBody or draftId required' });
-  }
-  try {
-    const result = await submitSelfEmploymentPeriodSandbox({
-      accessToken: conn.accessToken,
-      nino,
-      businessId,
-      body: periodBody,
-      req,
-      userId: user.id,
-    });
     writeAudit({
       userId: user.id,
-      action: 'hmrc_sandbox_se_submit',
+      action: `hmrc_sandbox_${isSe ? 'se' : isUk ? 'uk' : 'fp'}_submit`,
       entityType: 'hmrc_submit',
       meta: {
         ok: result.ok,
         status: result.status,
+        source: result.source,
         nino: nino.slice(0, 2) + '****',
         businessId,
+        taxYear: taxYear || null,
+        draftId: draft?.id || null,
       },
     });
-    res.status(result.ok ? 200 : 502).json(result);
+    res.status(result.ok ? 200 : 502).json({
+      ...result,
+      taxYear: taxYear || null,
+      draftId: draft?.id || null,
+      note: 'Sandbox HTTP only. Fixture/draft data — not a live taxpayer filing.',
+    });
   } catch (e) {
     res.status(500).json({
       ok: false,
       error: e instanceof Error ? e.message : 'sandbox submit failed',
     });
   }
-});
+}
+
+app.post('/api/hmrc/sandbox-submit', (req, res) =>
+  handleSandboxPeriodSubmit(req, res, null)
+);
+app.post('/api/hmrc/sandbox-submit-se', (req, res) =>
+  handleSandboxPeriodSubmit(req, res, 'self_employment')
+);
+app.post('/api/hmrc/sandbox-submit-uk', (req, res) =>
+  handleSandboxPeriodSubmit(req, res, 'uk_property')
+);
+app.post('/api/hmrc/sandbox-submit-foreign', (req, res) =>
+  handleSandboxPeriodSubmit(req, res, 'foreign_property')
+);
 
 /**
  * Operator view of stored sandbox test user (password only if DEMO_SHOW_TEST_PASSWORD=1).
@@ -2116,7 +2231,7 @@ app.get('/api/integrity', (_req, res) => {
     ok: true,
     product: 'Spreadsheet Tax',
     intellectualProperty: 'Lee Hine',
-    version: '1.9.0',
+    version: '1.10.0',
     productType: 'in-year bridging (quarterly updates)',
     layers: {
       spreadsheetImportMapping: {
@@ -2135,6 +2250,18 @@ app.get('/api/integrity', (_req, res) => {
         notes: live
           ? 'Live flag on — still requires non-mock OAuth token; host is sandbox when HMRC_OAUTH_ENV=sandbox'
           : 'Disabled until HMRC_ALLOW_LIVE_SUBMIT=1',
+      },
+      sandboxPeriodSources: {
+        selfEmployment: true,
+        ukProperty: true,
+        foreignProperty: true,
+        endpoints: [
+          'POST /api/hmrc/sandbox-submit',
+          'POST /api/hmrc/sandbox-submit-se',
+          'POST /api/hmrc/sandbox-submit-uk',
+          'POST /api/hmrc/sandbox-submit-foreign',
+        ],
+        notes: 'User-restricted sandbox period create; property bodies strip preview-only keys',
       },
       oauth: {
         mockDefault: oauth.mock,

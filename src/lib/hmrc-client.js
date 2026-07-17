@@ -4,6 +4,10 @@
  */
 
 import { buildFraudPreventionHeaders } from './fraud-headers.js';
+import {
+  sanitizeUkPropertyPeriodBody,
+  sanitizeForeignPropertyPeriodBody,
+} from './hmrc-sandbox.js';
 
 /** @typedef {{ userId?: string|null }} FraudOpts */
 
@@ -100,12 +104,20 @@ export function buildSubmitRequest(req, config) {
     headers.Authorization = `Bearer ${config.accessToken}`;
   }
 
+  // Property payloads keep periodDates for UI preview; strip before HMRC HTTP.
+  let outboundBody = body;
+  if (source === 'uk_property') {
+    outboundBody = sanitizeUkPropertyPeriodBody(body);
+  } else if (source === 'foreign_property') {
+    outboundBody = sanitizeForeignPropertyPeriodBody(body);
+  }
+
   return {
     method,
     url: `${base}${path}`,
     path,
     headers,
-    body,
+    body: outboundBody,
     source,
     nino,
     businessId,

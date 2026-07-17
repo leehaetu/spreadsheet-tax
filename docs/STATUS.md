@@ -2,7 +2,7 @@
 
 **Last updated:** 2026-07-17  
 **Live:** https://spreadsheet-tax-production.up.railway.app  
-**Version target:** 1.9.0 (deploy after push)  
+**Version target:** 1.10.0  
 **Truth audit:** [TRUTH-AUDIT.md](./TRUTH-AUDIT.md)  
 **Production APIs pack:** [HMRC-PRODUCTION-ACCESS.md](./HMRC-PRODUCTION-ACCESS.md)
 
@@ -18,6 +18,7 @@ Spreadsheet Tax first. Home-based (Reading area / prefer **Wokingham**). Plumbin
 | Hub credentials | **Set** on Railway (**sandbox** app) |
 | Default public submit | Preview/double unless live flag + real token |
 | Sandbox SE period submit | **Done once** (fixture plumber CSV → 200 + periodId) |
+| Sandbox UK/foreign property submit | **Code paths shipped** (`/api/hmrc/sandbox-submit-uk` / `-foreign`) — run with OAuth + draft to prove HTTP 200 |
 | Business Details | Sandbox list proven; UI “Load businesses” on `/app` |
 | Obligations | API + UI shipped (`GET /api/hmrc/obligations`) — re-test with connected token |
 | Tax estimate | **Signpost** to HMRC account — not calculated in-app |

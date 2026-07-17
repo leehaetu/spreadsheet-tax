@@ -224,7 +224,6 @@ export async function listIncomeExpenditureObligations(opts) {
 }
 
 /**
- * Submit SE period summary to sandbox (user-restricted).
  * @param {{
  *   accessToken: string,
  *   nino: string,
@@ -233,18 +232,19 @@ export async function listIncomeExpenditureObligations(opts) {
  *   req?: import('express').Request|null,
  *   userId?: string|null,
  * }} opts
+ * @param {{ path: string, acceptVersion: string, source: string }} route
  */
-export async function submitSelfEmploymentPeriodSandbox(opts) {
+async function postSandboxPeriod(opts, route) {
   const nino = String(opts.nino || '').replace(/\s+/g, '').toUpperCase();
   const businessId = opts.businessId;
   const fph = buildFraudPreventionHeaders(opts.req || null, {
     userId: opts.userId || null,
   });
-  const url = `${SANDBOX}/individuals/business/self-employment/${nino}/${businessId}/period`;
+  const url = `${SANDBOX}${route.path}`;
   const res = await fetch(url, {
     method: 'POST',
     headers: {
-      Accept: 'application/vnd.hmrc.5.0+json',
+      Accept: `application/vnd.hmrc.${route.acceptVersion}+json`,
       'Content-Type': 'application/json',
       Authorization: `Bearer ${opts.accessToken}`,
       ...fph,
@@ -261,13 +261,145 @@ export async function submitSelfEmploymentPeriodSandbox(opts) {
   return {
     ok: res.ok,
     status: res.status,
+    source: route.source,
     url,
+    path: route.path,
     requestBody: opts.body,
     response: body,
     fraudHeadersSent: fph,
     externalCallMade: true,
     mode: 'sandbox',
   };
+}
+
+/**
+ * Drop preview-only keys so HMRC Property API does not reject unknown fields.
+ * @param {object} body
+ */
+export function sanitizeUkPropertyPeriodBody(body) {
+  if (!body || typeof body !== 'object') return body;
+  return {
+    fromDate: body.fromDate,
+    toDate: body.toDate,
+    ukOtherProperty: body.ukOtherProperty,
+  };
+}
+
+/**
+ * @param {object} body
+ */
+export function sanitizeForeignPropertyPeriodBody(body) {
+  if (!body || typeof body !== 'object') return body;
+  return {
+    fromDate: body.fromDate,
+    toDate: body.toDate,
+    foreignProperty: body.foreignProperty,
+  };
+}
+
+/**
+ * Tax year from period start (UK tax year starting 6 April).
+ * @param {string} [periodStartDate]
+ * @param {string} [fallback]
+ */
+export function taxYearFromPeriodStart(periodStartDate, fallback = '2024-25') {
+  if (!periodStartDate || !/^\d{4}-\d{2}-\d{2}$/.test(periodStartDate)) {
+    return fallback;
+  }
+  const y = Number(periodStartDate.slice(0, 4));
+  const md = periodStartDate.slice(5);
+  // On/after 6 April → tax year y-(y+1); before → (y-1)-y
+  if (md >= '04-06') {
+    return `${y}-${String(y + 1).slice(2)}`;
+  }
+  return `${y - 1}-${String(y).slice(2)}`;
+}
+
+/**
+ * Submit SE period summary to sandbox (user-restricted).
+ * @param {{
+ *   accessToken: string,
+ *   nino: string,
+ *   businessId: string,
+ *   body: object,
+ *   req?: import('express').Request|null,
+ *   userId?: string|null,
+ * }} opts
+ */
+export async function submitSelfEmploymentPeriodSandbox(opts) {
+  const nino = String(opts.nino || '').replace(/\s+/g, '').toUpperCase();
+  const businessId = opts.businessId;
+  const seVersion = process.env.HMRC_SE_API_VERSION || '5.0';
+  return postSandboxPeriod(
+    { ...opts, body: opts.body },
+    {
+      source: 'self_employment',
+      acceptVersion: seVersion,
+      path: `/individuals/business/self-employment/${nino}/${businessId}/period`,
+    }
+  );
+}
+
+/**
+ * Submit UK property period summary to sandbox (Property Business MTD 6.0).
+ * @param {{
+ *   accessToken: string,
+ *   nino: string,
+ *   businessId: string,
+ *   taxYear: string,
+ *   body: object,
+ *   req?: import('express').Request|null,
+ *   userId?: string|null,
+ * }} opts
+ */
+export async function submitUkPropertyPeriodSandbox(opts) {
+  const nino = String(opts.nino || '').replace(/\s+/g, '').toUpperCase();
+  const businessId = opts.businessId;
+  const taxYear = opts.taxYear;
+  if (!taxYear) {
+    throw new Error('taxYear required for UK property period submit');
+  }
+  const propVersion = process.env.HMRC_PROPERTY_API_VERSION || '6.0';
+  const body = sanitizeUkPropertyPeriodBody(opts.body);
+  return postSandboxPeriod(
+    { ...opts, body },
+    {
+      source: 'uk_property',
+      acceptVersion: propVersion,
+      path: `/individuals/business/property/uk/${nino}/${businessId}/period/${taxYear}`,
+    }
+  );
+}
+
+/**
+ * Submit foreign property period summary to sandbox (Property Business MTD 6.0).
+ * @param {{
+ *   accessToken: string,
+ *   nino: string,
+ *   businessId: string,
+ *   taxYear: string,
+ *   body: object,
+ *   req?: import('express').Request|null,
+ *   userId?: string|null,
+ * }} opts
+ */
+export async function submitForeignPropertyPeriodSandbox(opts) {
+  const nino = String(opts.nino || '').replace(/\s+/g, '').toUpperCase();
+  const businessId = opts.businessId;
+  const taxYear = opts.taxYear;
+  if (!taxYear) {
+    throw new Error('taxYear required for foreign property period submit');
+  }
+  const propVersion = process.env.HMRC_PROPERTY_API_VERSION || '6.0';
+  const body = sanitizeForeignPropertyPeriodBody(opts.body);
+  return postSandboxPeriod(
+    { ...opts, body },
+    {
+      source: 'foreign_property',
+      acceptVersion: propVersion,
+      path: `/individuals/business/property/foreign/${nino}/${businessId}/period/${taxYear}`,
+    }
+  );
 }
 
 /**

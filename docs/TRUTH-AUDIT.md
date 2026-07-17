@@ -37,7 +37,7 @@
 | Demo login | Seeded account for product testing |
 | Token encryption key fallback | Dev fallback string if secrets unset — **unsafe for production** if secrets missing |
 | FPH completeness | Many headers omitted when unobtainable; not “full pack validated green” |
-| UK/foreign property sandbox submit | SE period sandbox submit was done; property sources not claimed done in same run |
+| UK/foreign property sandbox submit | Code paths shipped (1.10.0); **HTTP 200 not claimed** until operator runs with OAuth + draft |
 | HMRC Production API credentials | Not granted — sandbox only until Hub Production approval |
 | In-software tax liability estimate | Not implemented — signpost to HMRC online account (honest for in-year product) |
 

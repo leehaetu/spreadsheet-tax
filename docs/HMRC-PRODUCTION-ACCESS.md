@@ -28,7 +28,7 @@ Official guide: [How to integrate — process for Production access](https://dev
 | API | Hub version (sandbox) | Our use | Sandbox tested? |
 |-----|----------------------|---------|-----------------|
 | Self Employment Business (MTD) | 5.0 | Create SE period summary | **Yes** — 200 + periodId from fixture CSV |
-| Property Business (MTD) | 6.0 | UK + foreign period | Payload built + request shape unit-tested; full sandbox submit optional |
+| Property Business (MTD) | 6.0 | UK + foreign period | Paths + sanitizers + pilot UI; run sandbox HTTP with OAuth for log evidence |
 | Business Details (MTD) | 2.0 | List business IDs | **Yes** — list returned `XBIS12345678901` |
 | Obligations (MTD) | 3.0 | Open periods | Code path live (`GET /api/hmrc/obligations`); run after OAuth connect |
 | Individual Calculations (MTD) | — | **Not used** | Signpost to HMRC account instead |
@@ -156,7 +156,7 @@ Both are required for real taxpayer live filing. This document tracks the second
 
 - [ ] Confirm Obligations (MTD) 3.0 subscribed on Sandbox app
 - [ ] Connect sandbox OAuth → Load businesses → Load obligations on `/app`
-- [ ] Optional: UK/foreign property sandbox period submit if HMRC requires endpoint logs
+- [ ] Run UK + foreign property sandbox period submit via `/connect-hmrc` pilot panel (import sample drafts on `/app` first)
 - [ ] Set `VENDOR_PUBLIC_IP` if Railway egress IP known
 - [ ] Create Production application on Hub
 - [ ] Email SDSTeam with sandbox application ID
