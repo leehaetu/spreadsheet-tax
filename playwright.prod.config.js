@@ -3,8 +3,8 @@ import { defineConfig } from '@playwright/test';
 /** Production / remote target — no local webServer. Real HMRC sandbox OAuth. */
 export default defineConfig({
   testDir: 'tests/e2e',
-  testMatch: '**/hmrc-sandbox-oauth.spec.js',
-  timeout: 180_000,
+  testMatch: ['**/hmrc-sandbox-oauth.spec.js', '**/hmrc-mtd-full-journey.spec.js'],
+  timeout: 300_000,
   fullyParallel: false,
   retries: 0,
   use: {

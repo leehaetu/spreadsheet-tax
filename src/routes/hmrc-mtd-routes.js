@@ -8,6 +8,7 @@ import {
   listIncomeExpenditureObligations,
   listFinalDeclarationObligations,
   createSePeriod,
+  listSePeriods,
   retrieveSePeriod,
   amendSePeriod,
   createUkPropertyPeriod,
@@ -181,12 +182,23 @@ export function registerHmrcMtdRoutes(app, deps) {
     );
   });
 
+  app.get('/api/hmrc/mtd/period/se/:businessId', (req, res) =>
+    run(req, res, 'se_period_list', (o) =>
+      listSePeriods({
+        ...o,
+        businessId: req.params.businessId,
+        taxYear: req.query.taxYear || o.taxYear || '2024-25',
+      })
+    )
+  );
+
   app.get('/api/hmrc/mtd/period/se/:businessId/:periodId', (req, res) =>
     run(req, res, 'se_period_get', (o) =>
       retrieveSePeriod({
         ...o,
         businessId: req.params.businessId,
         periodId: req.params.periodId,
+        taxYear: req.query.taxYear || o.taxYear,
       })
     )
   );
@@ -197,6 +209,7 @@ export function registerHmrcMtdRoutes(app, deps) {
         ...o,
         businessId: req.params.businessId,
         periodId: req.params.periodId,
+        taxYear: req.body?.taxYear || o.taxYear,
         body: req.body?.body || req.body,
       })
     )
@@ -326,7 +339,18 @@ export function registerHmrcMtdRoutes(app, deps) {
         ...o,
         businessId: req.body.businessId,
         taxYear: req.body.taxYear,
-        body: req.body.body || req.body.payload,
+        body:
+          req.body.body ||
+          req.body.payload || {
+            // Minimal non-empty annual shape for sandbox evidence
+            allowances: {
+              annualInvestmentAllowance: 0,
+              otherCapitalAllowance: 0,
+            },
+            adjustments: {
+              includedNonTaxableProfits: 0,
+            },
+          },
       })
     )
   );

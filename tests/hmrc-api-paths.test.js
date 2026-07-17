@@ -1,6 +1,10 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { mtdCapabilityMatrix, taxYearFromPeriodStart } from '../src/lib/hmrc-api.js';
+import {
+  mtdCapabilityMatrix,
+  taxYearFromPeriodStart,
+  taxYearFromPeriodId,
+} from '../src/lib/hmrc-api.js';
 
 describe('mtd capability matrix P1-P3', () => {
   it('exposes in-year, eoy, extras and no eops', () => {
@@ -19,8 +23,11 @@ describe('mtd capability matrix P1-P3', () => {
   });
 });
 
-describe('taxYearFromPeriodStart re-export', () => {
+describe('tax year helpers', () => {
   it('maps Q1 start', () => {
     assert.equal(taxYearFromPeriodStart('2024-04-06'), '2024-25');
+  });
+  it('maps periodId to tax year', () => {
+    assert.equal(taxYearFromPeriodId('2024-04-06_2024-07-05'), '2024-25');
   });
 });

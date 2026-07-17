@@ -145,11 +145,23 @@ export async function createSePeriod(opts) {
   });
 }
 
-export async function retrieveSePeriod(opts) {
+export async function listSePeriods(opts) {
   const nino = ninoClean(opts.nino);
+  const taxYear = opts.taxYear || '2024-25';
   return hmrcFetch({
     ...opts,
-    path: `/individuals/business/self-employment/${nino}/${opts.businessId}/period/${opts.periodId}`,
+    path: `/individuals/business/self-employment/${nino}/${opts.businessId}/period/${taxYear}`,
+    accept: `application/vnd.hmrc.${SE()}+json`,
+    label: 'se_period_list',
+  });
+}
+
+export async function retrieveSePeriod(opts) {
+  const nino = ninoClean(opts.nino);
+  const taxYear = opts.taxYear || taxYearFromPeriodId(opts.periodId) || '2024-25';
+  return hmrcFetch({
+    ...opts,
+    path: `/individuals/business/self-employment/${nino}/${opts.businessId}/period/${taxYear}/${opts.periodId}`,
     accept: `application/vnd.hmrc.${SE()}+json`,
     label: 'se_period_retrieve',
   });
@@ -157,14 +169,22 @@ export async function retrieveSePeriod(opts) {
 
 export async function amendSePeriod(opts) {
   const nino = ninoClean(opts.nino);
+  const taxYear = opts.taxYear || taxYearFromPeriodId(opts.periodId) || '2024-25';
   return hmrcFetch({
     ...opts,
     method: 'PUT',
-    path: `/individuals/business/self-employment/${nino}/${opts.businessId}/period/${opts.periodId}`,
+    path: `/individuals/business/self-employment/${nino}/${opts.businessId}/period/${taxYear}/${opts.periodId}`,
     accept: `application/vnd.hmrc.${SE()}+json`,
     body: opts.body,
     label: 'se_period_amend',
   });
+}
+
+/** periodId like 2024-04-06_2024-07-05 → 2024-25 */
+export function taxYearFromPeriodId(periodId) {
+  const m = String(periodId || '').match(/^(\d{4})-\d{2}-\d{2}_/);
+  if (!m) return null;
+  return taxYearFromPeriodStart(`${m[1]}-04-06`);
 }
 
 export async function createUkPropertyPeriod(opts) {
