@@ -82,6 +82,17 @@ describe('seo and security discovery', () => {
     assert.ok(j.version);
     assert.equal(j.db, true);
   });
+
+  it('readyz is ready when db is up', async () => {
+    const res = await request('GET', '/readyz');
+    assert.equal(res.status, 200);
+    assert.equal(JSON.parse(res.body).ready, true);
+  });
+
+  it('sets X-App-Version header', async () => {
+    const res = await request('GET', '/health');
+    assert.match(res.headers['x-app-version'] || '', /1\./);
+  });
 });
 
 describe('audit API', () => {

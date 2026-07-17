@@ -18,24 +18,63 @@
   </header>
   <main class="wrap app-main narrow">
     <h1>Help centre</h1>
-    <div class="faq">
-      <details open>
+    <div class="form-row">
+      <label>Search help
+        <input type="search" id="help-search" placeholder="e.g. portal, password, template" autocomplete="off" />
+      </label>
+    </div>
+    <div class="faq" id="faq">
+      <details open data-tags="account start free check">
         <summary>How do I start without an account?</summary>
         <p>Open the app, download the free template or try a sample, review figures, and use the safe preview submit. Sign in when you want saved history.</p>
       </details>
-      <details>
+      <details data-tags="demo login password">
         <summary>What is the demo login?</summary>
         <p><code>demo@spreadsheet-tax.example</code> / <code>DemoPass123!</code> — includes a sample practice workspace.</p>
       </details>
-      <details>
+      <details data-tags="hmrc live sandbox submit">
         <summary>Is this live HMRC?</summary>
-        <p>Public demo uses a safe preview path. Live HMRC needs pilot controls and OAuth.</p>
+        <p>Public demo uses a safe preview path. Live HMRC needs pilot controls and OAuth credentials.</p>
       </details>
-      <details>
+      <details data-tags="privacy upload file mapping">
         <summary>Where do my files go?</summary>
         <p>Period files are uploaded for mapping and review. Keep ongoing books in your own spreadsheet. See <a href="/security">Security</a>.</p>
       </details>
+      <details data-tags="portal invite client link">
+        <summary>How do client portal links work?</summary>
+        <p>In the workspace, open a client and choose <strong>Portal link</strong>. Share that URL with the client so they can see status and upload a period file.</p>
+      </details>
+      <details data-tags="password reset forgot">
+        <summary>I forgot my password</summary>
+        <p>Use <a href="/forgot-password">Forgot password</a>. In demo, the reset link is written to server logs.</p>
+      </details>
+      <details data-tags="team invite firm accountant">
+        <summary>How do I invite a team member?</summary>
+        <p>Sign in, open <a href="/admin">Admin</a>, enter their email and role, then send the invite. They must register with the same email and open the accept link.</p>
+      </details>
+      <details data-tags="template csv excel download">
+        <summary>Where is the template?</summary>
+        <p><a href="/templates">Templates</a> or <a href="/download/template">direct CSV download</a>.</p>
+      </details>
     </div>
+    <p id="help-empty" class="empty-state" hidden><strong>No matching topics</strong>Try another keyword.</p>
   </main>
+  <script>
+    const input = document.getElementById('help-search');
+    const items = [...document.querySelectorAll('#faq details')];
+    const empty = document.getElementById('help-empty');
+    input?.addEventListener('input', () => {
+      const q = input.value.trim().toLowerCase();
+      let shown = 0;
+      for (const d of items) {
+        const text = (d.textContent + ' ' + (d.getAttribute('data-tags') || '')).toLowerCase();
+        const match = !q || text.includes(q);
+        d.hidden = !match;
+        if (match) shown += 1;
+      }
+      empty.hidden = shown > 0;
+    });
+  </script>
+  <script src="/js/cookie-banner.js"></script>
 </body>
 </html>

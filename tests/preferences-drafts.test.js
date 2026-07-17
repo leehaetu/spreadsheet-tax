@@ -97,9 +97,17 @@ describe('preferences and draft delete', () => {
     );
     const draftId = JSON.parse(sample.body).draftId;
     assert.ok(draftId);
+    const ren = await request(
+      'PATCH',
+      `/api/drafts/${draftId}`,
+      JSON.stringify({ filename: 'renamed-period.csv' })
+    );
+    assert.equal(ren.status, 200);
+    assert.equal(JSON.parse(ren.body).draft.filename, 'renamed-period.csv');
     const del = await request('DELETE', `/api/drafts/${draftId}`);
     assert.equal(del.status, 200);
     const get = await request('GET', `/api/drafts/${draftId}`);
     assert.equal(get.status, 404);
   });
 });
+

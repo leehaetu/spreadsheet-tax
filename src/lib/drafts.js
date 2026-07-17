@@ -97,6 +97,26 @@ export function deleteDraft(draftId, userId) {
   return { ok: true };
 }
 
+/**
+ * @param {string} draftId
+ * @param {string} userId
+ * @param {string} filename
+ */
+export function renameDraft(draftId, userId, filename) {
+  const draft = getDraft(draftId);
+  if (!draft) return { error: 'Draft not found', status: 404 };
+  if (draft.userId !== userId) {
+    return { error: 'Not allowed', status: 403 };
+  }
+  const name = String(filename || '').trim().slice(0, 200);
+  if (!name) return { error: 'Name required', status: 400 };
+  const now = new Date().toISOString();
+  getDb()
+    .prepare(`UPDATE drafts SET filename = ?, updated_at = ? WHERE id = ?`)
+    .run(name, now, draftId);
+  return { ok: true, draft: getDraft(draftId) };
+}
+
 export function recordSubmissionAttempt({
   draftId,
   userId,

@@ -56,6 +56,7 @@ import {
   listAuditForFirm,
   listAuditForUser,
   deleteDraft,
+  renameDraft,
 } from './lib/drafts.js';
 import { runDeadlineReminders, purgeAnonymousDrafts } from './lib/jobs.js';
 import {
@@ -141,6 +142,7 @@ app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'SAMEORIGIN');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('X-App-Version', '1.2.0');
   res.setHeader(
     'Content-Security-Policy',
     "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self'"
@@ -190,7 +192,7 @@ app.get('/health', (_req, res) => {
   res.status(ready ? 200 : 503).json({
     ok: ready,
     service: 'spreadsheet-tax',
-    version: '1.1.0',
+    version: '1.2.0',
     bridging: true,
     db: dbOk,
     oauthMock: oauthConfig().mock,
@@ -198,6 +200,16 @@ app.get('/health', (_req, res) => {
     volumeDataDir: process.env.DATA_DIR || null,
     portals: ['accountant', 'practice', 'client', 'workspace'],
   });
+});
+
+/** Kubernetes-style readiness (alias of health for probes) */
+app.get('/readyz', (_req, res) => {
+  try {
+    getDb().prepare('SELECT 1 AS x').get();
+    res.status(200).json({ ready: true, version: '1.2.0' });
+  } catch {
+    res.status(503).json({ ready: false });
+  }
 });
 
 app.get('/', (_req, res) => {
@@ -1240,6 +1252,26 @@ app.delete('/api/drafts/:draftId', (req, res) => {
     entityId: req.params.draftId,
   });
   res.json({ ok: true });
+});
+
+app.patch('/api/drafts/:draftId', (req, res) => {
+  const user = requireUser(req, res);
+  if (!user) return;
+  const result = renameDraft(
+    req.params.draftId,
+    user.id,
+    String(req.body?.filename || '')
+  );
+  if (result.error) {
+    return res.status(result.status || 400).json({ error: result.error });
+  }
+  writeAudit({
+    userId: user.id,
+    action: 'draft_renamed',
+    entityType: 'draft',
+    entityId: req.params.draftId,
+  });
+  res.json({ ok: true, draft: result.draft });
 });
 
 app.get('/api/me/preferences', (req, res) => {

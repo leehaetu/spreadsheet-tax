@@ -62,10 +62,30 @@
         tr.innerHTML = `<td>${esc(d.filename)}</td><td>${esc(d.state)}</td><td>${esc(d.createdAt)}</td>
           <td>
             <a class="btn btn-primary btn-sm" href="/app?draftId=${esc(d.id)}">Open</a>
+            <button type="button" class="btn btn-ghost btn-sm ren-draft" data-id="${esc(d.id)}" data-name="${esc(d.filename)}">Rename</button>
             <button type="button" class="btn btn-ghost btn-sm del-draft" data-id="${esc(d.id)}">Delete</button>
           </td>`;
         dbody.appendChild(tr);
       }
+      dbody.querySelectorAll('.ren-draft').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const id = btn.getAttribute('data-id');
+          const current = btn.getAttribute('data-name') || '';
+          const filename = window.prompt('Draft name', current);
+          if (!filename) return;
+          const res = await fetch(`/api/drafts/${encodeURIComponent(id)}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ filename }),
+          });
+          if (!res.ok) {
+            const data = await res.json();
+            alert(data.error || 'Rename failed');
+            return;
+          }
+          load();
+        });
+      });
       dbody.querySelectorAll('.del-draft').forEach((btn) => {
         btn.addEventListener('click', async () => {
           if (!confirm('Delete this draft?')) return;

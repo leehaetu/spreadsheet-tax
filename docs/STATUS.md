@@ -2,16 +2,18 @@
 
 **Last updated:** 2026-07-17  
 **Live:** https://spreadsheet-tax-production.up.railway.app  
+**Version:** 1.2.0
 
 ## This slice
 
 | Item | Status |
 |------|--------|
-| Notification preferences | `/account` |
-| Personal activity feed | `/account` |
-| Delete drafts | `/history` |
-| Workspace status filter | `/workspace` |
-| Tests | **79** unit · **19** e2e |
+| Client search in workspace | `/workspace` name filter |
+| Rename drafts | `/history` + `PATCH /api/drafts/:id` |
+| Help FAQ search | `/help` |
+| `X-App-Version` header | all responses |
+| `/readyz` readiness probe | 200 when DB up |
+| Tests | **81** unit |
 
 ## Demo
 

@@ -53,6 +53,8 @@ async function init() {
       .catch(() => {});
   }
   statusFilter?.addEventListener('change', () => loadClients());
+  const searchEl = document.getElementById('client-search');
+  searchEl?.addEventListener('input', () => loadClients());
 
   async function loadClients() {
     const firmId = firmSel.value;
@@ -61,9 +63,12 @@ async function init() {
     const tbody = document.getElementById('client-body');
     tbody.innerHTML = '';
     const filter = statusFilter?.value || '';
-    const list = (data.clients || []).filter(
-      (c) => !filter || c.status === filter
-    );
+    const q = (searchEl?.value || '').trim().toLowerCase();
+    const list = (data.clients || []).filter((c) => {
+      if (filter && c.status !== filter) return false;
+      if (q && !String(c.name || '').toLowerCase().includes(q)) return false;
+      return true;
+    });
     if (!list.length) {
       tbody.innerHTML =
         '<tr><td colspan="4"><div class="empty-state"><strong>No clients match</strong>Try another filter or add a client.</div></td></tr>';
