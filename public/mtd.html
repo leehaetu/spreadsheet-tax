@@ -42,8 +42,14 @@
       <div class="hero-actions" style="flex-wrap:wrap;gap:0.5rem;margin-top:0.75rem">
         <button type="button" class="btn btn-ghost" data-act="status">Refresh HMRC status</button>
         <button type="button" class="btn btn-ghost" data-act="caps">Show capabilities</button>
+        <button type="button" class="btn btn-ghost" data-act="create-uk-biz">Create UK property test business</button>
+        <button type="button" class="btn btn-ghost" data-act="create-fp-biz">Create foreign property test business</button>
         <a class="btn btn-primary" href="/connect-hmrc">Connect HMRC</a>
       </div>
+      <p class="muted" style="margin-top:0.5rem">
+        Sandbox only: create property businesses via SA Test Support so period submits have business IDs.
+        ITSA status / Accounts return honest 403 if not subscribed on Hub.
+      </p>
     </section>
 
     <section class="panel">
@@ -113,7 +119,18 @@
         },
       });
       const data = await res.json().catch(() => ({ error: 'non-json', status: res.status }));
-      show({ httpStatus: res.status, ...data });
+      const hmrcCode = data.body?.code || data.code;
+      const hmrcMsg = data.body?.message || data.message;
+      const honest =
+        hmrcCode === 'RESOURCE_FORBIDDEN'
+          ? {
+              operatorNote:
+                'HMRC says this API is not subscribed on the Hub application (or not authorised). Subscribe the API on Developer Hub — we do not fake success.',
+            }
+          : hmrcCode === 'MESSAGE_THROTTLED_OUT'
+            ? { operatorNote: 'HMRC sandbox throttle — wait and retry. Call still hit HMRC.' }
+            : {};
+      show({ httpStatus: res.status, hmrcCode, hmrcMsg, ...honest, ...data });
       return data;
     }
 
@@ -152,6 +169,16 @@
         try {
           if (a === 'status') return jfetch('/api/hmrc/status');
           if (a === 'caps') return jfetch('/api/hmrc/mtd/capabilities');
+          if (a === 'create-uk-biz')
+            return jfetch('/api/hmrc/mtd/test-business', {
+              method: 'POST',
+              body: JSON.stringify({ nino: b.nino, typeOfBusiness: 'uk-property' }),
+            });
+          if (a === 'create-fp-biz')
+            return jfetch('/api/hmrc/mtd/test-business', {
+              method: 'POST',
+              body: JSON.stringify({ nino: b.nino, typeOfBusiness: 'foreign-property' }),
+            });
           if (a === 'businesses') {
             const data = await jfetch('/api/hmrc/mtd/businesses?' + q(b.nino));
             const list = data.body?.listOfBusinesses || data.body?.businesses || [];
@@ -160,7 +187,7 @@
                 const id = row.businessId || row.id || '';
                 const t = String(row.typeOfBusiness || row.type || '').toLowerCase();
                 if (t.includes('self') && id) $('bidSe').value = id;
-                else if (t.includes('uk') && id) $('bidUk').value = id;
+                else if ((t.includes('uk') || t === 'uk-property') && id) $('bidUk').value = id;
                 else if (t.includes('foreign') && id) $('bidFp').value = id;
               }
             }

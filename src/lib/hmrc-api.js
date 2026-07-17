@@ -514,12 +514,94 @@ export function periodBodyFromDraft(draft, source) {
 
 export { taxYearFromPeriodStart };
 
+/**
+ * Create sandbox test business (SA Test Support MTD) — user-restricted.
+ * @param {{
+ *   accessToken: string,
+ *   nino: string,
+ *   typeOfBusiness: 'self-employment'|'uk-property'|'foreign-property',
+ *   body?: object,
+ *   req?: import('express').Request|null,
+ *   userId?: string|null,
+ * }} opts
+ */
+export async function createTestBusiness(opts) {
+  const nino = ninoClean(opts.nino);
+  const type = opts.typeOfBusiness;
+  const defaultBodies = {
+    'uk-property': {
+      typeOfBusiness: 'uk-property',
+      firstAccountingPeriodStartDate: '2024-04-06',
+      firstAccountingPeriodEndDate: '2025-04-05',
+      quarterlyTypeChoice: {
+        quarterlyPeriodType: 'standard',
+        taxYearOfChoice: '2024-25',
+      },
+      accountingType: 'CASH',
+      commencementDate: '2020-04-06',
+    },
+    'foreign-property': {
+      typeOfBusiness: 'foreign-property',
+      firstAccountingPeriodStartDate: '2024-04-06',
+      firstAccountingPeriodEndDate: '2025-04-05',
+      quarterlyTypeChoice: {
+        quarterlyPeriodType: 'standard',
+        taxYearOfChoice: '2024-25',
+      },
+      accountingType: 'CASH',
+      commencementDate: '2020-04-06',
+    },
+    'self-employment': {
+      typeOfBusiness: 'self-employment',
+      tradingName: 'Spreadsheet Tax Test Trade',
+      firstAccountingPeriodStartDate: '2024-04-06',
+      firstAccountingPeriodEndDate: '2025-04-05',
+      quarterlyTypeChoice: {
+        quarterlyPeriodType: 'standard',
+        taxYearOfChoice: '2024-25',
+      },
+      accountingType: 'CASH',
+      commencementDate: '2020-04-06',
+      businessAddressLineOne: '1 Test Street',
+      businessAddressPostcode: 'SW1A 1AA',
+      businessAddressCountryCode: 'GB',
+    },
+  };
+  const body = opts.body || defaultBodies[type];
+  if (!body) {
+    throw new Error(`Unsupported typeOfBusiness: ${type}`);
+  }
+  return hmrcFetch({
+    ...opts,
+    method: 'POST',
+    path: `/individuals/self-assessment-test-support/business/${nino}`,
+    accept: 'application/vnd.hmrc.1.0+json',
+    body,
+    label: 'test_support_create_business',
+  });
+}
+
+/** Minimal non-empty SE annual body for sandbox evidence */
+export function defaultSeAnnualBody() {
+  return {
+    allowances: {
+      annualInvestmentAllowance: 1.0,
+      otherCapitalAllowance: 0,
+    },
+    adjustments: {
+      includedNonTaxableProfits: 0,
+      basisAdjustment: 0,
+    },
+  };
+}
+
 /** Capability matrix for integrity / status */
 export function mtdCapabilityMatrix() {
   return {
     phase: 'P1-P2-P3',
     goal: 'HMRC Recognised',
     eops: false,
+    productionSwitch: 'env-only (HMRC_OAUTH_ENV + credentials + base URL)',
     inYear: {
       businessDetails: true,
       obligationsIe: true,
@@ -527,6 +609,8 @@ export function mtdCapabilityMatrix() {
       ukPropertyPeriod: true,
       foreignPropertyPeriod: true,
       calculationsTriggerListRetrieve: true,
+      createTestBusinessSandbox: true,
+      multiSourceDraftSubmit: true,
     },
     endOfYear: {
       crystallisationObligations: true,
@@ -542,6 +626,12 @@ export function mtdCapabilityMatrix() {
       itsaStatus: true,
       biss: true,
       accountsBalanceAndTransactions: true,
+      requiresHubSubscription: [
+        'Self Assessment Individual Details (MTD)',
+        'Self Assessment Accounts (MTD)',
+        'Business Income Source Summary (MTD)',
+      ],
+      note: 'If Hub not subscribed, HMRC returns 403 RESOURCE_FORBIDDEN — surfaced honestly, never faked',
     },
   };
 }

@@ -1,6 +1,7 @@
-# SDSTeam email — **DO NOT SEND YET**
+# SDSTeam email — **DO NOT SEND until SE + property + EOY probes are green**
 
-Production application is **not** created. Software is **not** fully operational for HMRC review.
+Production application is **not** created until HMRC grants access.  
+Re-run `npx playwright test tests/e2e/hmrc-mtd-full-journey.spec.js --config=playwright.prod.config.js` and check `docs/hmrc/sandbox-journey-run.json` first.
 
 When (and only when) the in-year product is operational and sandbox logs exist under  
 `e6751be5-fd22-4447-9e77-aa51729b1b46`:

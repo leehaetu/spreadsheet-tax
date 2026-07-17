@@ -123,6 +123,27 @@ test.describe('Full MTD sandbox journey (operator)', () => {
       drafts[sample] = imp.body?.draftId;
     }
 
+    // Ensure property businesses exist (SA Test Support)
+    for (const typeOfBusiness of ['uk-property', 'foreign-property']) {
+      const created = await page.evaluate(
+        async ({ n, typeOfBusiness }) => {
+          const r = await fetch('/api/hmrc/mtd/test-business', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nino: n, typeOfBusiness }),
+          });
+          return { status: r.status, body: await r.json() };
+        },
+        { n: NINO, typeOfBusiness }
+      );
+      logStep(`create_test_business_${typeOfBusiness}`, {
+        ok: created.status === 200 || created.status === 201 || created.body?.status === 201,
+        status: created.status,
+        body: created.body,
+        path: created.body?.path,
+      });
+    }
+
     // Businesses
     const businesses = await page.evaluate(async (n) => {
       const r = await fetch(`/api/hmrc/mtd/businesses?nino=${encodeURIComponent(n)}`);

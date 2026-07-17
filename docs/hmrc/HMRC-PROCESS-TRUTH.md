@@ -19,22 +19,25 @@ Store for operators: Railway env optional `HMRC_SANDBOX_APPLICATION_ID`.
 
 ## What HMRC want (official)
 
-From SDSTeam (Jacob Barker type emails) + e2e guide:
+From SDSTeam + e2e guide:
 
-1. Software meets minimum functionality for the **build type** (we claim **in-year** when ready)  
+1. Software meets minimum functionality for the **build type**  
 2. Compliant fraud prevention headers on MTD calls  
 3. Testing requirements met **via software**  
 4. **Production Approvals Checklist** completed and returned **in the form format shown**  
 5. They review testing (including FPH) against that checklist  
 
 They **check sandbox API activity in their logs** for your application ID.  
-A homemade “evidence pack” JSON is **optional internal notes** — **not** the official deliverable.
+We **never email log packs**. Internal JSON under `docs/hmrc/` is operator notes only.
+
+**Do not send SDSTeam until** automated journey shows SE period create/retrieve + property periods when businesses exist + EOY probes exercised.  
+**Production app:** create only after HMRC path is ready / they grant process.
 
 Official deliverables when ready:
 
 - Their checklist `.docx` filled  
 - Email with sandbox application ID  
-- Live software that produced the logs  
+- Live software that already produced traffic  
 
 ## Why double work (online + 12 days + checklist)
 

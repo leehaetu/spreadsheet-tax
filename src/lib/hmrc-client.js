@@ -12,6 +12,7 @@ import {
 /** @typedef {{ userId?: string|null }} FraudOpts */
 
 const DEFAULT_SANDBOX_BASE = 'https://test-api.service.hmrc.gov.uk';
+const DEFAULT_PRODUCTION_BASE = 'https://api.service.hmrc.gov.uk';
 
 /**
  * @typedef {object} HmrcConfig
@@ -63,7 +64,8 @@ export function buildSubmitRequest(req, config) {
     path = `/individuals/business/self-employment/${nino}/${businessId}/period`;
     if (periodId) {
       method = 'PUT';
-      path = `/individuals/business/self-employment/${nino}/${businessId}/period/${periodId}`;
+      // SE 5.0 amend requires taxYear in path
+      path = `/individuals/business/self-employment/${nino}/${businessId}/period/${taxYear}/${periodId}`;
     }
   } else if (source === 'uk_property') {
     path = `/individuals/business/property/uk/${nino}/${businessId}/period/${taxYear}`;
@@ -220,16 +222,24 @@ export function createHmrcClient(overrides = {}) {
  */
 export function resolveConfig(overrides = {}) {
   const envMode = process.env.HMRC_MODE;
+  const oauthEnv =
+    process.env.HMRC_OAUTH_ENV === 'production' ? 'production' : 'sandbox';
   const clientId =
     'clientId' in overrides ? overrides.clientId : process.env.HMRC_CLIENT_ID;
   let mode = overrides.mode;
   if (!mode) {
     if (envMode === 'sandbox' || envMode === 'double') mode = envMode;
+    // Access token present (user OAuth) → external host (sandbox or production by env)
+    else if (overrides.accessToken || process.env.HMRC_ACCESS_TOKEN)
+      mode = 'sandbox'; // label; host chosen below via oauth env
     else mode = clientId ? 'sandbox' : 'double';
   }
+  const defaultBase =
+    oauthEnv === 'production' ? DEFAULT_PRODUCTION_BASE : DEFAULT_SANDBOX_BASE;
   return {
     mode,
-    baseUrl: overrides.baseUrl ?? process.env.HMRC_BASE_URL ?? DEFAULT_SANDBOX_BASE,
+    baseUrl: overrides.baseUrl ?? process.env.HMRC_BASE_URL ?? defaultBase,
+    oauthEnv,
     clientId,
     clientSecret:
       'clientSecret' in overrides
@@ -243,6 +253,17 @@ export function resolveConfig(overrides = {}) {
     req: overrides.req ?? null,
     userId: overrides.userId ?? null,
   };
+}
+
+/**
+ * Pure helper: which HMRC API host for the current env (production switch).
+ * @param {{ HMRC_OAUTH_ENV?: string, HMRC_BASE_URL?: string }} [env]
+ */
+export function resolveHmrcBaseUrl(env = process.env) {
+  if (env.HMRC_BASE_URL) return String(env.HMRC_BASE_URL).replace(/\/$/, '');
+  return env.HMRC_OAUTH_ENV === 'production'
+    ? DEFAULT_PRODUCTION_BASE
+    : DEFAULT_SANDBOX_BASE;
 }
 
 /**

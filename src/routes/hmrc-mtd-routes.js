@@ -35,6 +35,8 @@ import {
   retrieveItsaStatus,
   retrieveBiss,
   retrieveBalanceAndTransactions,
+  createTestBusiness,
+  defaultSeAnnualBody,
   periodBodyFromDraft,
   taxYearFromPeriodStart,
   mtdCapabilityMatrix,
@@ -148,6 +150,17 @@ export function registerHmrcMtdRoutes(app, deps) {
   // ——— P1 ———
   app.get('/api/hmrc/mtd/businesses', (req, res) =>
     run(req, res, 'businesses', (o) => listBusinesses(o))
+  );
+
+  /** Sandbox only: create UK/foreign/SE test business via SA Test Support */
+  app.post('/api/hmrc/mtd/test-business', (req, res) =>
+    run(req, res, 'create_test_business', (o) =>
+      createTestBusiness({
+        ...o,
+        typeOfBusiness: req.body?.typeOfBusiness || 'uk-property',
+        body: req.body?.body,
+      })
+    )
   );
   app.get('/api/hmrc/mtd/businesses/:businessId', (req, res) =>
     run(req, res, 'business_retrieve', (o) =>
@@ -339,18 +352,7 @@ export function registerHmrcMtdRoutes(app, deps) {
         ...o,
         businessId: req.body.businessId,
         taxYear: req.body.taxYear,
-        body:
-          req.body.body ||
-          req.body.payload || {
-            // Minimal non-empty annual shape for sandbox evidence
-            allowances: {
-              annualInvestmentAllowance: 0,
-              otherCapitalAllowance: 0,
-            },
-            adjustments: {
-              includedNonTaxableProfits: 0,
-            },
-          },
+        body: req.body.body || req.body.payload || defaultSeAnnualBody(),
       })
     )
   );
