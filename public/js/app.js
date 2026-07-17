@@ -81,9 +81,12 @@ function setImportBusy(busy, label) {
   if (!btn) return;
   btn.disabled = busy;
   btn.textContent = label || (busy ? 'Reading your file…' : 'Review my figures');
+  btn.setAttribute('aria-busy', busy ? 'true' : 'false');
   document.querySelectorAll('.sample-btn').forEach((b) => {
     b.disabled = busy;
   });
+  const drop = document.getElementById('dropzone');
+  if (drop) drop.classList.toggle('loading', Boolean(busy));
 }
 
 async function importFromFormData(fd) {

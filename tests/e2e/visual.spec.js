@@ -75,6 +75,16 @@ test.describe('Auth workspace journey', () => {
     await shot(page, 'history-signed-out');
   });
 
+  test('admin metrics page after demo login', async ({ page }) => {
+    await page.goto('/signin?next=/admin');
+    await page.fill('#email', 'demo@spreadsheet-tax.example');
+    await page.fill('#password', 'DemoPass123!');
+    await page.click('button[type=submit]');
+    await page.waitForURL(/admin/);
+    await expect(page.locator('#stats')).toBeVisible({ timeout: 10_000 });
+    await shot(page, 'admin-metrics');
+  });
+
   test('account page after demo login', async ({ page }) => {
     await page.goto('/signin?next=/account');
     await page.fill('#email', 'demo@spreadsheet-tax.example');

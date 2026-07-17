@@ -183,6 +183,16 @@ function migrate(database) {
       expires_at TEXT NOT NULL,
       used_at TEXT
     );
+
+    CREATE TABLE IF NOT EXISTS firm_invites (
+      token TEXT PRIMARY KEY,
+      firm_id TEXT NOT NULL,
+      email TEXT NOT NULL,
+      role TEXT NOT NULL,
+      invited_by TEXT,
+      created_at TEXT NOT NULL,
+      accepted_at TEXT
+    );
   `);
   // Lightweight column add for portal token on clients (ignore if exists)
   try {

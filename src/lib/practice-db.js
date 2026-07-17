@@ -159,6 +159,81 @@ export function updateClientDetails({ clientId, userId, dueDate, displayName }) 
  * CSV export of firm clients for practice reporting.
  * @param {string} firmId
  */
+/**
+ * Invite an email to join a firm with a role.
+ * @param {{ firmId: string, email: string, role: string, invitedBy: string }} opts
+ */
+export function createFirmInvite({ firmId, email, role, invitedBy }) {
+  if (!userCanAccessFirm(invitedBy, firmId)) {
+    return { error: 'Not allowed for this firm.', status: 403 };
+  }
+  const allowedRoles = ['bookkeeper', 'accountant', 'practice_admin'];
+  if (!allowedRoles.includes(role)) {
+    return { error: 'Invalid role.', status: 400 };
+  }
+  const normalized = String(email).trim().toLowerCase();
+  if (!normalized.includes('@')) {
+    return { error: 'Valid email required.', status: 400 };
+  }
+  const token = newId().replace(/-/g, '');
+  getDb()
+    .prepare(
+      `INSERT INTO firm_invites (token, firm_id, email, role, invited_by, created_at, accepted_at)
+       VALUES (?, ?, ?, ?, ?, ?, NULL)`
+    )
+    .run(
+      token,
+      firmId,
+      normalized,
+      role,
+      invitedBy,
+      new Date().toISOString()
+    );
+  return {
+    ok: true,
+    token,
+    email: normalized,
+    role,
+    path: `/accept-invite?token=${token}`,
+  };
+}
+
+/**
+ * @param {string} token
+ * @param {string} userId
+ * @param {string} userEmail
+ */
+export function acceptFirmInvite(token, userId, userEmail) {
+  const row = getDb()
+    .prepare(`SELECT * FROM firm_invites WHERE token = ?`)
+    .get(token);
+  if (!row || row.accepted_at) {
+    return { error: 'Invalid or already used invite.', status: 400 };
+  }
+  if (row.email !== String(userEmail).trim().toLowerCase()) {
+    return {
+      error: 'Sign in with the invited email address to accept.',
+      status: 403,
+    };
+  }
+  const existing = getDb()
+    .prepare(
+      `SELECT 1 FROM firm_memberships WHERE firm_id = ? AND user_id = ?`
+    )
+    .get(row.firm_id, userId);
+  if (!existing) {
+    getDb()
+      .prepare(
+        `INSERT INTO firm_memberships (id, firm_id, user_id, role) VALUES (?, ?, ?, ?)`
+      )
+      .run(newId(), row.firm_id, userId, row.role);
+  }
+  getDb()
+    .prepare(`UPDATE firm_invites SET accepted_at = ? WHERE token = ?`)
+    .run(new Date().toISOString(), token);
+  return { ok: true, firmId: row.firm_id, role: row.role };
+}
+
 export function exportClientsCsv(firmId) {
   const clients = listClients(firmId);
   const header = 'client_id,name,status,status_label,due_date,portal_access\n';

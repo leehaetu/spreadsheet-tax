@@ -797,6 +797,10 @@ nav a.btn-ghost { color: var(--text); }
   border-color: var(--primary);
   background: var(--primary-soft);
 }
+.dropzone.loading {
+  opacity: 0.7;
+  pointer-events: none;
+}
 .dropzone input[type="file"] {
   position: absolute;
   inset: 0;

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Admin metrics — Spreadsheet Tax</title>
+  <link rel="stylesheet" href="/css/site.css" />
+</head>
+<body class="app-body">
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a class="logo" href="/"><span class="logo-mark">ST</span> Spreadsheet Tax</a>
+      <nav>
+        <a href="/workspace">Workspace</a>
+        <a href="/account">Account</a>
+      </nav>
+    </div>
+  </header>
+  <main class="wrap app-main">
+    <h1>Ops metrics</h1>
+    <p class="muted">Aggregate counts only — no tax identifiers. Requires sign-in for context; metrics endpoint is aggregate.</p>
+    <p id="gate" class="error" hidden></p>
+    <div class="stat-cards" id="stats" hidden>
+      <div class="stat-card"><div class="n" id="m-users">—</div><div class="l">Users</div></div>
+      <div class="stat-card"><div class="n" id="m-drafts">—</div><div class="l">Drafts</div></div>
+      <div class="stat-card"><div class="n" id="m-subs">—</div><div class="l">Submissions</div></div>
+      <div class="stat-card"><div class="n" id="m-cta">—</div><div class="l">CTA events</div></div>
+    </div>
+    <section class="panel" id="invite-panel" hidden>
+      <h2>Invite team member</h2>
+      <p class="muted">Sends a stub email with an accept link. Invitee must register/sign in with the same email.</p>
+      <div class="form-row">
+        <label>Firm
+          <select id="firm-select"></select>
+        </label>
+        <label>Email
+          <input type="email" id="invite-email" required />
+        </label>
+        <label>Role
+          <select id="invite-role">
+            <option value="accountant">accountant</option>
+            <option value="bookkeeper">bookkeeper</option>
+            <option value="practice_admin">practice_admin</option>
+          </select>
+        </label>
+        <div style="display:flex;align-items:flex-end">
+          <button type="button" class="btn btn-primary" id="invite-btn">Create invite</button>
+        </div>
+      </div>
+      <p id="invite-msg" class="success-box" hidden></p>
+      <p id="invite-err" class="error" hidden></p>
+    </section>
+  </main>
+  <script>
+    async function load() {
+      const me = await fetch('/api/auth/me').then((r) => r.json());
+      if (!me.user) {
+        document.getElementById('gate').hidden = false;
+        document.getElementById('gate').innerHTML = '<a href="/signin?next=/admin">Sign in</a> required.';
+        return;
+      }
+      document.getElementById('stats').hidden = false;
+      document.getElementById('invite-panel').hidden = false;
+      const m = await fetch('/api/metrics/summary').then((r) => r.json());
+      document.getElementById('m-users').textContent = m.users ?? '—';
+      document.getElementById('m-drafts').textContent = m.drafts ?? '—';
+      document.getElementById('m-subs').textContent = m.submissionAttempts ?? '—';
+      document.getElementById('m-cta').textContent = m.ctaEvents ?? '—';
+      const sel = document.getElementById('firm-select');
+      sel.innerHTML = '';
+      for (const x of me.memberships || []) {
+        const o = document.createElement('option');
+        o.value = x.firmId;
+        o.textContent = x.firmName;
+        sel.appendChild(o);
+      }
+      if (!sel.options.length) {
+        document.getElementById('invite-panel').hidden = true;
+      }
+    }
+    document.getElementById('invite-btn')?.addEventListener('click', async () => {
+      const msg = document.getElementById('invite-msg');
+      const err = document.getElementById('invite-err');
+      msg.hidden = true;
+      err.hidden = true;
+      const firmId = document.getElementById('firm-select').value;
+      const res = await fetch(`/api/me/firms/${encodeURIComponent(firmId)}/invites`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: document.getElementById('invite-email').value,
+          role: document.getElementById('invite-role').value,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        err.textContent = data.error || 'Invite failed';
+        err.hidden = false;
+        return;
+      }
+      msg.textContent = `Invite created. Link: ${data.url}`;
+      msg.hidden = false;
+    });
+    load();
+  </script>
+</body>
+</html>

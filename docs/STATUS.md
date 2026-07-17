@@ -7,11 +7,11 @@
 
 | Item | Status |
 |------|--------|
-| Change password (signed-in) | `/account` |
-| Forgot / reset password | `/forgot-password`, `/reset-password` (email stub logs link) |
-| Workspace deadline reminders | Button → stub emails |
-| How-it-works app preview section | Updated |
-| Tests | 72 unit · 18 e2e |
+| Firm team invites | `/admin` + `/accept-invite` |
+| Ops metrics page | `/admin` |
+| History empty states | `/history` |
+| Import busy/loading UI | App dropzone |
+| Tests | **73** unit · **19** e2e |
 
 ## Demo
 
@@ -19,8 +19,8 @@
 
 ## Railway
 
-Volume `/app/data` · env secrets set · `PUBLIC_BASE_URL` recommended for reset links.
+Volume + env vars in place. See [RAILWAY.md](./RAILWAY.md).
 
 ## External remaining
 
-Real HMRC credentials, card billing, pen-test, legal pack, interviews.
+HMRC production credentials, card billing, pen-test, legal pack, interviews.

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Accept firm invite — Spreadsheet Tax</title>
+  <link rel="stylesheet" href="/css/site.css" />
+</head>
+<body class="app-body">
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a class="logo" href="/"><span class="logo-mark">ST</span> Spreadsheet Tax</a>
+      <nav><a href="/signin">Sign in</a></nav>
+    </div>
+  </header>
+  <main class="wrap app-main" style="max-width:520px">
+    <h1>Accept practice invite</h1>
+    <p class="muted">Sign in with the email that received the invite, then accept.</p>
+    <p id="status" class="muted">Checking…</p>
+    <p id="err" class="error" hidden></p>
+    <div class="hero-actions">
+      <button type="button" class="btn btn-primary" id="accept-btn" hidden>Accept invite</button>
+      <a class="btn btn-ghost" href="/signin" id="signin-link" hidden>Sign in first</a>
+    </div>
+  </main>
+  <script>
+    const token = new URLSearchParams(location.search).get('token') || '';
+    async function init() {
+      const status = document.getElementById('status');
+      if (!token) {
+        status.textContent = 'Missing invite token.';
+        return;
+      }
+      const me = await fetch('/api/auth/me').then((r) => r.json());
+      if (!me.user) {
+        status.textContent = 'You must sign in with the invited email.';
+        document.getElementById('signin-link').hidden = false;
+        document.getElementById('signin-link').href =
+          '/signin?next=' + encodeURIComponent('/accept-invite?token=' + token);
+        return;
+      }
+      status.textContent = `Signed in as ${me.user.email}. Click accept to join the firm.`;
+      document.getElementById('accept-btn').hidden = false;
+    }
+    document.getElementById('accept-btn').onclick = async () => {
+      const err = document.getElementById('err');
+      err.hidden = true;
+      const res = await fetch('/api/me/firm-invites/accept', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        err.textContent = data.error || 'Could not accept';
+        err.hidden = false;
+        return;
+      }
+      location.href = '/workspace';
+    };
+    init();
+  </script>
+</body>
+</html>

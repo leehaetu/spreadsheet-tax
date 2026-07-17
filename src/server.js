@@ -64,6 +64,8 @@ import {
   getClientByPortalToken,
   updateClientDetails,
   exportClientsCsv,
+  createFirmInvite,
+  acceptFirmInvite,
 } from './lib/practice-db.js';
 import { getDb } from './lib/db.js';
 import {
@@ -288,6 +290,14 @@ app.get('/forgot-password', (_req, res) => {
 
 app.get('/reset-password', (_req, res) => {
   res.sendFile(path.join(publicDir, 'reset-password.html'));
+});
+
+app.get('/accept-invite', (_req, res) => {
+  res.sendFile(path.join(publicDir, 'accept-invite.html'));
+});
+
+app.get('/admin', (_req, res) => {
+  res.sendFile(path.join(publicDir, 'admin.html'));
 });
 
 /**
@@ -1014,6 +1024,53 @@ app.post('/api/me/jobs/deadline-reminders', (req, res) => {
     meta: { count: result.count },
   });
   res.json(result);
+});
+
+app.post('/api/me/firms/:firmId/invites', (req, res) => {
+  const user = requireUser(req, res);
+  if (!user) return;
+  const result = createFirmInvite({
+    firmId: req.params.firmId,
+    email: String(req.body?.email || ''),
+    role: String(req.body?.role || 'accountant'),
+    invitedBy: user.id,
+  });
+  if (result.error) {
+    return res.status(result.status || 400).json({ error: result.error });
+  }
+  const base =
+    process.env.PUBLIC_BASE_URL || `${req.protocol}://${req.get('host')}`;
+  const url = `${base}${result.path}`;
+  sendEmail({
+    kind: 'firm_invite',
+    to: result.email,
+    subject: 'You are invited to a Spreadsheet Tax practice',
+    body: `You have been invited as ${result.role}. Accept here:\n${url}`,
+  });
+  writeAudit({
+    firmId: req.params.firmId,
+    userId: user.id,
+    action: 'firm_invite_created',
+    meta: { email: result.email, role: result.role },
+  });
+  res.status(201).json({ ok: true, ...result, url });
+});
+
+app.post('/api/me/firm-invites/accept', (req, res) => {
+  const user = requireUser(req, res);
+  if (!user) return;
+  const token = String(req.body?.token || '');
+  const result = acceptFirmInvite(token, user.id, user.email);
+  if (result.error) {
+    return res.status(result.status || 400).json({ error: result.error });
+  }
+  writeAudit({
+    firmId: result.firmId,
+    userId: user.id,
+    action: 'firm_invite_accepted',
+    meta: { role: result.role },
+  });
+  res.json({ ok: true, ...result });
 });
 
 /** Attach import to client (practice) */
