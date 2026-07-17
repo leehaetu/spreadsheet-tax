@@ -3,11 +3,11 @@
  * Single place — do not invent a second wording on random pages without this.
  */
 (function () {
-  const SHORT = 'Not HMRC-recognised software';
+  const SHORT = 'Goal: HMRC Recognised · Not yet recognised';
   const BANNER =
-    'Not HMRC-recognised software — sandbox / pilot only until recognition is granted. Not for live recognised MTD filing.';
+    'Goal: HMRC Recognised · Status: not yet recognised — sandbox / pilot only. Not for live recognised MTD filing until recognition is granted.';
   const FOOTER =
-    'Not HMRC-recognised software. Not affiliated with or endorsed by HMRC. Live recognised filing is not claimed until recognition is granted.';
+    'Goal: HMRC Recognised. Status: not yet on HMRC’s recognised list. Sandbox/pilot only. Not affiliated with or endorsed by HMRC.';
 
   function ensureBanner() {
     if (document.getElementById('hmrc-recognition-banner')) return;

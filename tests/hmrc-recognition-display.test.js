@@ -56,16 +56,18 @@ after(async () => {
 });
 
 describe('HMRC recognition display', () => {
-  it('source of truth is not recognised until flipped', () => {
+  it('source of truth is not recognised until flipped; goal is HMRC Recognised', () => {
     assert.equal(HMRC_RECOGNISED_SOFTWARE, false);
-    assert.match(HMRC_RECOGNITION_SHORT, /Not HMRC-recognised/i);
+    assert.match(HMRC_RECOGNITION_SHORT, /HMRC Recognised/i);
+    assert.match(HMRC_RECOGNITION_SHORT, /not yet recognised/i);
   });
 
-  it('health and integrity expose hmrcRecognisedSoftware false', async () => {
+  it('health and integrity expose hmrcRecognisedSoftware false + goal', async () => {
     const health = JSON.parse((await request('/health')).body);
     assert.equal(health.hmrcRecognisedSoftware, false);
     assert.ok(health.appVersion);
-    assert.match(health.hmrcRecognisedLabel || '', /Not HMRC-recognised/i);
+    assert.match(health.hmrcRecognisedLabel || '', /HMRC Recognised/i);
+    assert.equal(health.hmrcRecognisedGoal, 'HMRC Recognised');
 
     const integrity = JSON.parse((await request('/api/integrity')).body);
     assert.equal(integrity.hmrcRecognisedSoftware, false);
@@ -82,9 +84,10 @@ describe('HMRC recognition display', () => {
     }
   });
 
-  it('static site-chrome.js contains recognition wording', async () => {
+  it('static site-chrome.js contains goal + not yet wording', async () => {
     const res = await request('/js/site-chrome.js');
     assert.equal(res.status, 200);
-    assert.match(res.body, /Not HMRC-recognised software/);
+    assert.match(res.body, /HMRC Recognised/);
+    assert.match(res.body, /not yet recognised/i);
   });
 });

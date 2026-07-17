@@ -2,17 +2,20 @@
 
 **Last updated:** 2026-07-17  
 **Live:** https://spreadsheet-tax-production.up.railway.app  
-**Product only:** Spreadsheet Tax (ignore any other product names for planning)
+**Goal:** **HMRC Recognised** (full bridging software)  
+**Full plan:** [PLAN-HMRC-RECOGNISED.md](./PLAN-HMRC-RECOGNISED.md)  
+**Postman:** [postman/README.md](./postman/README.md)
 
 ## Honest stage
 
 | # | Stage | Status |
 |---|--------|--------|
-| 1 | Build product | **Done enough to pilot** |
-| 2 | Sandbox HMRC integration | **In progress — make fully operational for in-year SE/property** |
-| 3 | Sandbox testing complete + Production Approvals Checklist | **Not ready to send** until software is operational + logs exist |
-| 4 | Create Production Hub app + HMRC review | **Do not start** until stage 3 is real |
-| 5 | HMRC-recognised / live taxpayer filing | **Later** |
+| 1 | Build product foundation | **Done enough** |
+| 2 | **P1 In-year complete** (sandbox, full operational) | **Current** |
+| 3 | **P2 EOY + BSAS** (sandbox, full operational) | Next after P1 |
+| 4 | Checklist + SDSTeam (logs + form) | After P1+P2 |
+| 5 | Production APIs + env switch | After HMRC approve |
+| 6 | **HMRC Recognised** listing | After Production path |
 
 **Sandbox application ID (Hub):** `e6751be5-fd22-4447-9e77-aa51729b1b46`  
 **Production application:** **not applied for** — correct. Nowhere near ready.

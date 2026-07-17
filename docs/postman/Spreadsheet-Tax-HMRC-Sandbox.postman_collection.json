@@ -1,0 +1,309 @@
+{
+  "info": {
+    "name": "Spreadsheet Tax — HMRC Sandbox",
+    "description": "Monitor HMRC sandbox APIs and fraud-prevention headers for Spreadsheet Tax.\n\n1) Select environment \"Spreadsheet Tax — HMRC Sandbox\"\n2) Set hmrc_client_id + hmrc_client_secret\n3) Run requests in numeric order\n4) Use Postman Console to inspect headers (FPH)\n\nSandbox application ID: e6751be5-fd22-4447-9e77-aa51729b1b46\n\nOfficial Production gate is HMRC checklist + their logs from your software; Postman is for learning and debug.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Attach honest FPH-style headers when values exist (omit blanks)",
+          "const h = (k, v) => { if (v) pm.request.headers.upsert({ key: k, value: String(v) }); };",
+          "h('Gov-Client-Connection-Method', pm.environment.get('fph_connection_method'));",
+          "h('Gov-Vendor-Product-Name', encodeURIComponent(pm.environment.get('fph_vendor_product') || 'SpreadsheetTax'));",
+          "h('Gov-Vendor-Version', pm.environment.get('fph_vendor_version'));",
+          "h('Gov-Vendor-Public-IP', pm.environment.get('fph_vendor_public_ip'));",
+          "h('Gov-Client-User-IDs', pm.environment.get('fph_user_ids'));",
+          "h('Gov-Client-Timezone', pm.environment.get('fph_timezone'));",
+          "h('Gov-Client-Browser-JS-User-Agent', pm.environment.get('fph_browser_js_user_agent'));",
+          "h('Gov-Client-Device-ID', pm.environment.get('fph_device_id'));",
+          "h('Gov-Client-Public-IP', pm.environment.get('fph_client_public_ip'));",
+          "if (pm.environment.get('fph_screens')) h('Gov-Client-Screens', pm.environment.get('fph_screens'));",
+          "if (pm.environment.get('fph_window_size')) h('Gov-Client-Window-Size', pm.environment.get('fph_window_size'));",
+          "// Do NOT invent Gov-Client-Public-Port"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "0. Setup",
+      "item": [
+        {
+          "name": "1. Get Application Access Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const j = pm.response.json();",
+                  "if (j.access_token) pm.environment.set('application_access_token', j.access_token);",
+                  "pm.test('token', () => pm.expect(j.access_token).to.be.ok);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/x-www-form-urlencoded" }],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                { "key": "client_id", "value": "{{hmrc_client_id}}" },
+                { "key": "client_secret", "value": "{{hmrc_client_secret}}" },
+                { "key": "grant_type", "value": "client_credentials" }
+              ]
+            },
+            "url": "{{hmrc_base_url}}/oauth/token"
+          }
+        },
+        {
+          "name": "2. Create MTD Test User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const j = pm.response.json();",
+                  "if (j.userId) pm.environment.set('taxpayer_user_id', j.userId);",
+                  "if (j.password) pm.environment.set('taxpayer_password', j.password);",
+                  "if (j.nino) pm.environment.set('nino', j.nino);",
+                  "if (j.mtdItId) pm.environment.set('mtd_it_id', j.mtdItId);",
+                  "console.log('Test user', j.userId, j.nino);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{application_access_token}}" },
+              { "key": "Accept", "value": "application/vnd.hmrc.1.0+json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"serviceNames\": [\"mtd-income-tax\", \"self-assessment\", \"national-insurance\"]\n}"
+            },
+            "url": "{{hmrc_base_url}}/create-test-user/individuals"
+          }
+        },
+        {
+          "name": "3. Validate Fraud Prevention Headers",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{application_access_token}}" },
+              { "key": "Accept", "value": "application/vnd.hmrc.1.0+json" }
+            ],
+            "url": "{{hmrc_base_url}}/test/fraud-prevention-headers/validate",
+            "description": "Inspect response code (VALID_HEADERS / POTENTIALLY_INVALID / errors). Open Console for request headers."
+          }
+        },
+        {
+          "name": "4. Hello Application",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{application_access_token}}" },
+              { "key": "Accept", "value": "application/vnd.hmrc.1.0+json" }
+            ],
+            "url": "{{hmrc_base_url}}/hello/application"
+          }
+        }
+      ]
+    },
+    {
+      "name": "1. User OAuth",
+      "item": [
+        {
+          "name": "5. Build User OAuth URL (open in browser)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const id = pm.environment.get('hmrc_client_id');",
+                  "const redir = encodeURIComponent(pm.environment.get('hmrc_redirect_uri'));",
+                  "const scope = encodeURIComponent(pm.environment.get('hmrc_scope'));",
+                  "const state = pm.environment.get('oauth_state') || 'st';",
+                  "const url = `https://test-api.service.hmrc.gov.uk/oauth/authorize?response_type=code&client_id=${id}&scope=${scope}&state=${state}&redirect_uri=${redir}`;",
+                  "console.log('OPEN THIS URL:', url);",
+                  "pm.environment.set('oauth_authorize_url', url);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{hmrc_base_url}}/hello/world",
+            "description": "After run, open Postman Console, copy OPEN THIS URL, complete HMRC login with taxpayer_user_id/password, then paste code into authorization_code."
+          }
+        },
+        {
+          "name": "6. Exchange Authorization Code",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const j = pm.response.json();",
+                  "if (j.access_token) pm.environment.set('user_access_token', j.access_token);",
+                  "pm.test('user token', () => pm.expect(j.access_token).to.be.ok);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/x-www-form-urlencoded" }],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                { "key": "client_id", "value": "{{hmrc_client_id}}" },
+                { "key": "client_secret", "value": "{{hmrc_client_secret}}" },
+                { "key": "grant_type", "value": "authorization_code" },
+                { "key": "code", "value": "{{authorization_code}}" },
+                { "key": "redirect_uri", "value": "{{hmrc_redirect_uri}}" }
+              ]
+            },
+            "url": "{{hmrc_base_url}}/oauth/token"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. In-year APIs",
+      "item": [
+        {
+          "name": "7. List Businesses (Business Details 2.0)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const j = pm.response.json();",
+                  "const list = j.listOfBusinesses || j.businesses || [];",
+                  "if (Array.isArray(list) && list[0]) {",
+                  "  const b = list[0];",
+                  "  const id = b.businessId || b.id;",
+                  "  const t = String(b.typeOfBusiness || b.type || '').toLowerCase();",
+                  "  if (t.includes('self')) pm.environment.set('business_id_se', id);",
+                  "  else if (t.includes('uk')) pm.environment.set('business_id_uk', id);",
+                  "  else if (t.includes('foreign')) pm.environment.set('business_id_foreign', id);",
+                  "  else pm.environment.set('business_id_se', id);",
+                  "  console.log('businesses', JSON.stringify(list));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{user_access_token}}" },
+              { "key": "Accept", "value": "application/vnd.hmrc.2.0+json" }
+            ],
+            "url": "{{hmrc_base_url}}/individuals/business/details/{{nino}}/list"
+          }
+        },
+        {
+          "name": "8. Income & Expenditure Obligations (3.0)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{user_access_token}}" },
+              { "key": "Accept", "value": "application/vnd.hmrc.3.0+json" }
+            ],
+            "url": {
+              "raw": "{{hmrc_base_url}}/obligations/details/{{nino}}/income-and-expenditure",
+              "host": ["{{hmrc_base_url}}"],
+              "path": ["obligations", "details", "{{nino}}", "income-and-expenditure"]
+            }
+          }
+        },
+        {
+          "name": "9. Create SE Period Summary (5.0)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const t = pm.response.text();",
+                  "console.log(t);",
+                  "try { const j = JSON.parse(t); if (j.periodId) pm.environment.set('period_id', j.periodId); } catch (e) {}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{user_access_token}}" },
+              { "key": "Accept", "value": "application/vnd.hmrc.5.0+json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"periodDates\": {\n    \"periodStartDate\": \"2024-04-06\",\n    \"periodEndDate\": \"2024-07-05\"\n  },\n  \"periodIncome\": {\n    \"turnover\": 1000.00,\n    \"other\": 0\n  },\n  \"periodExpenses\": {\n    \"costOfGoods\": 100.00,\n    \"otherExpenses\": 50.00\n  }\n}"
+            },
+            "url": "{{hmrc_base_url}}/individuals/business/self-employment/{{nino}}/{{business_id_se}}/period"
+          }
+        },
+        {
+          "name": "10. Create UK Property Period (6.0)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{user_access_token}}" },
+              { "key": "Accept", "value": "application/vnd.hmrc.6.0+json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fromDate\": \"2024-04-06\",\n  \"toDate\": \"2024-07-05\",\n  \"ukOtherProperty\": {\n    \"income\": { \"periodAmount\": 2000.00 },\n    \"expenses\": { \"premisesRunningCosts\": 200.00 }\n  }\n}"
+            },
+            "url": "{{hmrc_base_url}}/individuals/business/property/uk/{{nino}}/{{business_id_uk}}/period/{{tax_year}}"
+          }
+        },
+        {
+          "name": "11. Create Foreign Property Period (6.0)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{user_access_token}}" },
+              { "key": "Accept", "value": "application/vnd.hmrc.6.0+json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fromDate\": \"2024-04-06\",\n  \"toDate\": \"2024-07-05\",\n  \"foreignProperty\": [\n    {\n      \"countryCode\": \"ESP\",\n      \"income\": { \"rentIncome\": { \"rentAmount\": 1500.00 } },\n      \"expenses\": { \"premisesRunningCosts\": 100.00 }\n    }\n  ]\n}"
+            },
+            "url": "{{hmrc_base_url}}/individuals/business/property/foreign/{{nino}}/{{business_id_foreign}}/period/{{tax_year}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Later (EOY / BSAS) — stubs for when building",
+      "item": [
+        {
+          "name": "12. BSAS List (placeholder path — confirm OAS when implementing)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{user_access_token}}" },
+              { "key": "Accept", "value": "application/vnd.hmrc.7.0+json" }
+            ],
+            "url": "{{hmrc_base_url}}/individuals/self-assessment/adjustable-summary/{{nino}}",
+            "description": "Enable when P2 EOY/BSAS build starts. Confirm exact Accept version in Hub OAS."
+          }
+        }
+      ]
+    }
+  ]
+}
