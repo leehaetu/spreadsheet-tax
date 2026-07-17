@@ -125,9 +125,26 @@ async function init() {
           <button type="button" class="btn btn-ghost btn-sm invite" data-id="${esc(c.id)}">Portal link</button>
           <button type="button" class="btn btn-ghost btn-sm due" data-id="${esc(c.id)}" data-due="${esc(c.dueDate || '')}">Due date</button>
           <button type="button" class="btn btn-ghost btn-sm advance" data-id="${esc(c.id)}" data-status="${esc(c.status)}">Advance</button>
+          <button type="button" class="btn btn-ghost btn-sm del-client" data-id="${esc(c.id)}" data-name="${esc(c.name)}">Delete</button>
         </td>`;
       tbody.appendChild(tr);
     }
+    tbody.querySelectorAll('.del-client').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const id = btn.getAttribute('data-id');
+        const name = btn.getAttribute('data-name') || 'client';
+        if (!confirm(`Delete ${name}? This cannot be undone.`)) return;
+        const res = await fetch(`/api/me/clients/${encodeURIComponent(id)}`, {
+          method: 'DELETE',
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          alert(data.error || 'Could not delete client');
+          return;
+        }
+        loadClients();
+      });
+    });
     tbody.querySelectorAll('.due').forEach((btn) => {
       btn.addEventListener('click', async () => {
         const id = btn.getAttribute('data-id');
@@ -233,6 +250,31 @@ async function init() {
     const firmId = firmSel.value;
     if (!firmId) return;
     window.location.href = `/api/me/clients/export?firmId=${encodeURIComponent(firmId)}`;
+  });
+
+  document.getElementById('rename-firm-btn')?.addEventListener('click', async () => {
+    const firmId = firmSel.value;
+    if (!firmId) return;
+    const current = firmSel.options[firmSel.selectedIndex]?.textContent || '';
+    const name = window.prompt('Firm name', current.replace(/\s*\([^)]*\)\s*$/, ''));
+    if (!name) return;
+    const res = await fetch(`/api/me/firms/${encodeURIComponent(firmId)}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      alert(data.error || 'Could not rename firm');
+      return;
+    }
+    const opt = firmSel.options[firmSel.selectedIndex];
+    if (opt && data.firm) {
+      const roleMatch = current.match(/\(([^)]+)\)\s*$/);
+      opt.textContent = roleMatch
+        ? `${data.firm.name} (${roleMatch[1]})`
+        : data.firm.name;
+    }
   });
 
   document.getElementById('reminders-btn')?.addEventListener('click', async () => {

@@ -74,6 +74,8 @@ import {
   createFirmInvite,
   acceptFirmInvite,
   getPracticeDashboard,
+  deleteClient,
+  renameFirm,
 } from './lib/practice-db.js';
 import { getDb } from './lib/db.js';
 import {
@@ -144,7 +146,7 @@ app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'SAMEORIGIN');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  res.setHeader('X-App-Version', '1.3.1');
+  res.setHeader('X-App-Version', '1.4.0');
   res.setHeader(
     'Content-Security-Policy',
     "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self'"
@@ -194,7 +196,7 @@ app.get('/health', (_req, res) => {
   res.status(ready ? 200 : 503).json({
     ok: ready,
     service: 'spreadsheet-tax',
-    version: '1.3.1',
+    version: '1.4.0',
     bridging: true,
     db: dbOk,
     oauthMock: oauthConfig().mock,
@@ -208,7 +210,7 @@ app.get('/health', (_req, res) => {
 app.get('/readyz', (_req, res) => {
   try {
     getDb().prepare('SELECT 1 AS x').get();
-    res.status(200).json({ ready: true, version: '1.3.1' });
+    res.status(200).json({ ready: true, version: '1.4.0' });
   } catch {
     res.status(503).json({ ready: false });
   }
@@ -1327,6 +1329,48 @@ app.get('/api/me/firms', (req, res) => {
   const user = requireUser(req, res);
   if (!user) return;
   res.json({ ok: true, firms: listFirmsForUser(user.id) });
+});
+
+app.patch('/api/me/firms/:firmId', (req, res) => {
+  const user = requireUser(req, res);
+  if (!user) return;
+  const result = renameFirm({
+    firmId: req.params.firmId,
+    userId: user.id,
+    name: String(req.body?.name || ''),
+  });
+  if (result.error) {
+    return res.status(result.status || 400).json({ error: result.error });
+  }
+  writeAudit({
+    firmId: req.params.firmId,
+    userId: user.id,
+    action: 'firm_renamed',
+    entityType: 'firm',
+    entityId: req.params.firmId,
+    meta: { name: result.firm?.name },
+  });
+  res.json({ ok: true, firm: result.firm });
+});
+
+app.delete('/api/me/clients/:clientId', (req, res) => {
+  const user = requireUser(req, res);
+  if (!user) return;
+  const result = deleteClient({
+    clientId: req.params.clientId,
+    userId: user.id,
+  });
+  if (result.error) {
+    return res.status(result.status || 400).json({ error: result.error });
+  }
+  writeAudit({
+    firmId: result.client.firmId,
+    userId: user.id,
+    action: 'client_deleted',
+    entityType: 'client',
+    entityId: req.params.clientId,
+  });
+  res.json({ ok: true });
 });
 
 app.get('/api/me/clients', (req, res) => {

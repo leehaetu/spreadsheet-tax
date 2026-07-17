@@ -121,4 +121,34 @@ describe('practice dashboard and submissions export', () => {
     );
     assert.equal(res.status, 400);
   });
+
+  it('creates and deletes a client; renames firm', async () => {
+    cookie = '';
+    await request(
+      'POST',
+      '/api/auth/login',
+      JSON.stringify({
+        email: 'demo@spreadsheet-tax.example',
+        password: 'DemoPass123!',
+      })
+    );
+    const firms = JSON.parse((await request('GET', '/api/me/firms')).body);
+    const firmId = firms.firms[0].id;
+    const created = await request(
+      'POST',
+      '/api/me/clients',
+      JSON.stringify({ firmId, name: 'Delete Me Ltd' })
+    );
+    assert.equal(created.status, 201);
+    const clientId = JSON.parse(created.body).client.id;
+    const del = await request('DELETE', `/api/me/clients/${clientId}`);
+    assert.equal(del.status, 200);
+    const ren = await request(
+      'PATCH',
+      `/api/me/firms/${firmId}`,
+      JSON.stringify({ name: firms.firms[0].name })
+    );
+    assert.equal(ren.status, 200);
+    assert.ok(JSON.parse(ren.body).firm?.name);
+  });
 });

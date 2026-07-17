@@ -2,17 +2,19 @@
 
 **Last updated:** 2026-07-17  
 **Live:** https://spreadsheet-tax-production.up.railway.app  
-**Version:** 1.3.1
+**Version:** 1.4.0
 
 ## This slice
 
 | Item | Status |
 |------|--------|
-| Saved HMRC identifiers | `/account` prefs + app prefill |
-| Receipt download attachment | `?download=1` on `/api/receipts/:id` |
-| Forgot-password rate limit | 8/min per IP |
-| Practice dashboard (1.3.0) | needs-action / overdue stats |
-| Submissions CSV export | `/api/me/submissions/export` |
+| Delete client | workspace + `DELETE /api/me/clients/:id` |
+| Rename firm | workspace + `PATCH /api/me/firms/:id` |
+| Saved HMRC identifiers | `/account` + app prefill |
+| Practice needs-action dashboard | `/workspace` |
+| Submissions / receipts export | history + download |
+| Auth rate limits | login / register / forgot-password |
+| Tests | **85** unit |
 
 ## Demo
 

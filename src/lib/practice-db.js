@@ -319,6 +319,42 @@ function addDays(isoDate, days) {
   return d.toISOString().slice(0, 10);
 }
 
+/**
+ * Soft operational delete: remove client if firm member. Does not cascade drafts.
+ * @param {{ clientId: string, userId: string }} opts
+ */
+export function deleteClient({ clientId, userId }) {
+  const client = getClientRow(clientId);
+  if (!client) return { error: 'Client not found', status: 404 };
+  if (!userCanAccessFirm(userId, client.firmId)) {
+    return { error: 'Not allowed for this firm.', status: 403 };
+  }
+  getDb().prepare(`DELETE FROM portal_invites WHERE client_id = ?`).run(clientId);
+  getDb().prepare(`DELETE FROM workflow_events WHERE client_id = ?`).run(clientId);
+  getDb().prepare(`DELETE FROM clients WHERE id = ?`).run(clientId);
+  return { ok: true, client };
+}
+
+/**
+ * Rename a firm the user belongs to.
+ * @param {{ firmId: string, userId: string, name: string }} opts
+ */
+export function renameFirm({ firmId, userId, name }) {
+  if (!userCanAccessFirm(userId, firmId)) {
+    return { error: 'Not allowed for this firm.', status: 403 };
+  }
+  const n = String(name || '').trim().slice(0, 120);
+  if (!n) return { error: 'Firm name required.', status: 400 };
+  getDb().prepare(`UPDATE firms SET name = ? WHERE id = ?`).run(n, firmId);
+  const row = getDb().prepare(`SELECT * FROM firms WHERE id = ?`).get(firmId);
+  return {
+    ok: true,
+    firm: row
+      ? { id: row.id, name: row.name, type: row.type, createdAt: row.created_at }
+      : null,
+  };
+}
+
 export function updateClientStatus({
   clientId,
   userId,
