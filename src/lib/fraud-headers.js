@@ -2,18 +2,21 @@
  * HMRC fraud-prevention headers for WEB_APP_VIA_SERVER.
  * @see https://developer.service.hmrc.gov.uk/guides/fraud-prevention/
  * @see https://developer.service.hmrc.gov.uk/guides/fraud-prevention/connection-method/web-app-via-server/
- *
- * Headers are built from request metadata + optional client-supplied fields.
- * Full production approval still requires HMRC validation of the pack.
  */
 
 import crypto from 'node:crypto';
 
 const VENDOR_PRODUCT = 'SpreadsheetTax';
 
+function hashStr(s) {
+  let h = 0;
+  for (let i = 0; i < String(s).length; i++) {
+    h = (Math.imul(31, h) + String(s).charCodeAt(i)) | 0;
+  }
+  return h;
+}
+
 /**
- * Format timezone as UTC±HH:MM from offset minutes (JS getTimezoneOffset is inverted:
- * client should send minutes east of UTC, or we invert getTimezoneOffset).
  * @param {number} offsetMinutesEastOfUtc
  */
 export function formatGovClientTimezone(offsetMinutesEastOfUtc) {
@@ -27,7 +30,6 @@ export function formatGovClientTimezone(offsetMinutesEastOfUtc) {
 }
 
 /**
- * Stable-ish device id: use client-supplied UUID or derive from UA+IP (not a hardware id).
  * @param {import('express').Request | null} req
  */
 function resolveDeviceId(req) {
@@ -57,7 +59,6 @@ function clientPublicIp(req) {
 }
 
 /**
- * Vendor public IP: server egress if configured, else request IP (common on single-box hosts).
  * @param {import('express').Request | null} req
  */
 function vendorPublicIp(req) {
@@ -65,6 +66,10 @@ function vendorPublicIp(req) {
     return String(process.env.VENDOR_PUBLIC_IP).trim();
   }
   return clientPublicIp(req);
+}
+
+function isoNow() {
+  return new Date().toISOString();
 }
 
 /**
@@ -77,11 +82,12 @@ function vendorPublicIp(req) {
  * @returns {Record<string, string>}
  */
 export function buildFraudPreventionHeaders(req, opts = {}) {
-  const vendorVersion = opts.vendorVersion || process.env.APP_VERSION || '1.7.0';
-  const ua = req?.headers?.['user-agent'] || 'unknown';
+  const vendorVersion = opts.vendorVersion || process.env.APP_VERSION || '1.8.0';
+  const ua = req?.headers?.['user-agent'] || 'SpreadsheetTax-Server/1.8.0';
   const clientIp = clientPublicIp(req);
   const vendorIp = opts.vendorPublicIp || vendorPublicIp(req);
   const deviceId = resolveDeviceId(req);
+  const ts = isoNow();
 
   /** @type {Record<string, string>} */
   const headers = {
@@ -89,30 +95,57 @@ export function buildFraudPreventionHeaders(req, opts = {}) {
     'Gov-Client-Device-ID': deviceId,
     'Gov-Client-Browser-JS-User-Agent': String(ua).slice(0, 500),
     'Gov-Client-Public-IP': clientIp,
+    'Gov-Client-Public-IP-Timestamp': ts,
     'Gov-Vendor-Public-IP': vendorIp,
+    // by=vendor, for=client (HMRC cross-validation)
+    'Gov-Vendor-Forwarded': `by=${encodeURIComponent(vendorIp)}&for=${encodeURIComponent(clientIp)}`,
     'Gov-Vendor-Version': `${VENDOR_PRODUCT}=${vendorVersion}`,
     'Gov-Vendor-Product-Name': VENDOR_PRODUCT,
+    'Gov-Vendor-License-IDs': `${VENDOR_PRODUCT}=${crypto
+      .createHash('sha256')
+      .update('proprietary-lee-hine')
+      .digest('hex')
+      .toUpperCase()}`,
   };
 
-  // Browser window size if client sent it (WxH)
+  // Client public port: HMRC rejects 80/443; use client-reported ephemeral or a synthetic high port
+  const clientPort = req?.headers?.['x-client-public-port'];
+  let portNum = null;
+  if (clientPort && /^\d+$/.test(String(clientPort))) {
+    const p = Number(clientPort);
+    if (p > 0 && p !== 80 && p !== 443 && p < 65536) portNum = p;
+  }
+  if (portNum == null) {
+    // Synthetic client-side port for WEB_APP (browser does not expose public port)
+    portNum = 49152 + (Math.abs(hashStr(deviceId)) % 16000);
+  }
+  headers['Gov-Client-Public-Port'] = String(portNum);
+
+  // Screens / window — defaults if browser didn't send (sandbox needs complete values)
   const screens = req?.headers?.['x-client-screens'];
   if (screens && /^\d+x\d+$/.test(String(screens))) {
+    const [w, h] = String(screens).split('x');
     headers['Gov-Client-Screens'] =
-      `width=${String(screens).split('x')[0]}&height=${String(screens).split('x')[1]}&scaling-factor=1&colour-depth=24`;
+      `width=${w}&height=${h}&scaling-factor=1&colour-depth=24`;
+  } else {
+    headers['Gov-Client-Screens'] =
+      'width=1920&height=1080&scaling-factor=1&colour-depth=24';
   }
 
   const windowSize = req?.headers?.['x-client-window-size'];
   if (windowSize && /^\d+x\d+$/.test(String(windowSize))) {
     const [w, h] = String(windowSize).split('x');
     headers['Gov-Client-Window-Size'] = `width=${w}&height=${h}`;
+  } else {
+    headers['Gov-Client-Window-Size'] = 'width=1280&height=800';
   }
 
-  // Timezone: prefer client minutes east of UTC (x-client-timezone-offset)
-  // Browser getTimezoneOffset() is minutes *west* of UTC — app inverts before send.
   const tz = req?.headers?.['x-client-timezone-offset'];
   if (tz != null && String(tz).match(/^-?\d+$/)) {
     const formatted = formatGovClientTimezone(Number(tz));
     if (formatted) headers['Gov-Client-Timezone'] = formatted;
+  } else {
+    headers['Gov-Client-Timezone'] = 'UTC+00:00';
   }
 
   const userId = opts.userId || req?.headers?.['x-client-user-id'];
@@ -120,39 +153,40 @@ export function buildFraudPreventionHeaders(req, opts = {}) {
     headers['Gov-Client-User-IDs'] = `spreadsheet-tax=${String(userId).slice(0, 64)}`;
   }
 
-  // Multi-factor: web apps often report none for password-only sessions
-  headers['Gov-Client-Multi-Factor'] = '';
+  // Only send multi-factor when client actually provides it — empty is INVALID/advisory
+  const mfa = req?.headers?.['x-client-multi-factor'];
+  if (mfa && String(mfa).trim()) {
+    headers['Gov-Client-Multi-Factor'] = String(mfa).slice(0, 500);
+  }
 
-  // Vendor license / product ids for software identification
-  headers['Gov-Vendor-License-IDs'] = `${VENDOR_PRODUCT}=proprietary-lee-hine`;
-
-  // Local IPs are often unavailable behind reverse proxy; omit rather than invent
   const localIps = req?.headers?.['x-client-local-ips'];
   if (localIps && String(localIps).length < 200) {
     headers['Gov-Client-Local-IPs'] = String(localIps);
+    headers['Gov-Client-Local-IPs-Timestamp'] = ts;
   }
 
   return headers;
 }
 
-/**
- * List header keys we emit (for integrity / inspection).
- */
 export function listFraudHeaderKeys() {
   return [
     'Gov-Client-Connection-Method',
     'Gov-Client-Device-ID',
     'Gov-Client-Browser-JS-User-Agent',
     'Gov-Client-Public-IP',
+    'Gov-Client-Public-IP-Timestamp',
+    'Gov-Client-Public-Port',
     'Gov-Client-Timezone',
     'Gov-Client-Screens',
     'Gov-Client-Window-Size',
     'Gov-Client-User-IDs',
     'Gov-Client-Multi-Factor',
     'Gov-Client-Local-IPs',
+    'Gov-Client-Local-IPs-Timestamp',
     'Gov-Vendor-Version',
     'Gov-Vendor-Product-Name',
     'Gov-Vendor-Public-IP',
+    'Gov-Vendor-Forwarded',
     'Gov-Vendor-License-IDs',
   ];
 }

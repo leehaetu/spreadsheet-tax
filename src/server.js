@@ -94,6 +94,8 @@ import {
   createSandboxIndividual,
   validateFraudPreventionHeaders,
   sandboxReadiness,
+  listBusinessDetails,
+  submitSelfEmploymentPeriodSandbox,
 } from './lib/hmrc-sandbox.js';
 import {
   ensureFreePlan,
@@ -1204,11 +1206,121 @@ app.post('/api/hmrc/validate-fraud-headers', async (req, res) => {
     const result = await validateFraudPreventionHeaders(req, {
       userId: user.id,
     });
-    res.status(result.ok ? 200 : 502).json(result);
+    res.status(result.ok ? 200 : 422).json(result);
   } catch (e) {
     res.status(500).json({
       ok: false,
       error: e instanceof Error ? e.message : 'validate-fraud-headers failed',
+    });
+  }
+});
+
+/** List HMRC businesses for the connected user (sandbox/live token). */
+app.get('/api/hmrc/businesses', async (req, res) => {
+  const user = requireUser(req, res);
+  if (!user) return;
+  const conn = getActiveConnection(user.id);
+  if (!conn || conn.expired || conn.mock || !conn.accessToken) {
+    return res.status(400).json({
+      ok: false,
+      error: 'Connect real HMRC sandbox OAuth first (non-mock token required).',
+    });
+  }
+  const nino =
+    typeof req.query.nino === 'string'
+      ? req.query.nino
+      : process.env.HMRC_SANDBOX_TEST_NINO || '';
+  if (!nino) {
+    return res.status(400).json({ ok: false, error: 'nino query required' });
+  }
+  try {
+    const result = await listBusinessDetails({
+      accessToken: conn.accessToken,
+      nino,
+      req,
+      userId: user.id,
+    });
+    res.status(result.ok ? 200 : 502).json(result);
+  } catch (e) {
+    res.status(500).json({
+      ok: false,
+      error: e instanceof Error ? e.message : 'businesses failed',
+    });
+  }
+});
+
+/**
+ * Controlled sandbox SE period submit using stored user OAuth token.
+ * Requires HMRC_ALLOW_LIVE_SUBMIT=1 (still sandbox host when HMRC_OAUTH_ENV=sandbox).
+ */
+app.post('/api/hmrc/sandbox-submit-se', async (req, res) => {
+  const user = requireUser(req, res);
+  if (!user) return;
+  if (process.env.HMRC_ALLOW_LIVE_SUBMIT !== '1') {
+    return res.status(403).json({
+      ok: false,
+      error: 'Set HMRC_ALLOW_LIVE_SUBMIT=1 to allow sandbox HMRC HTTP submits.',
+    });
+  }
+  const conn = getActiveConnection(user.id);
+  if (!conn || conn.expired || conn.mock || !conn.accessToken) {
+    return res.status(400).json({
+      ok: false,
+      error: 'Real HMRC OAuth connection required.',
+    });
+  }
+  const nino = String(
+    req.body?.nino || process.env.HMRC_SANDBOX_TEST_NINO || ''
+  )
+    .replace(/\s+/g, '')
+    .toUpperCase();
+  const businessId = String(req.body?.businessId || '');
+  if (!nino || !businessId) {
+    return res.status(400).json({
+      ok: false,
+      error: 'nino and businessId required',
+    });
+  }
+  // Prefer server draft payloads
+  let periodBody = req.body?.periodBody || null;
+  if (req.body?.draftId) {
+    const draft = getDraft(String(req.body.draftId));
+    if (!draft?.payloads?.selfEmployment) {
+      return res.status(404).json({
+        ok: false,
+        error: 'Draft not found or has no self-employment payload',
+      });
+    }
+    periodBody = draft.payloads.selfEmployment;
+  }
+  if (!periodBody) {
+    return res.status(400).json({ ok: false, error: 'periodBody or draftId required' });
+  }
+  try {
+    const result = await submitSelfEmploymentPeriodSandbox({
+      accessToken: conn.accessToken,
+      nino,
+      businessId,
+      body: periodBody,
+      req,
+      userId: user.id,
+    });
+    writeAudit({
+      userId: user.id,
+      action: 'hmrc_sandbox_se_submit',
+      entityType: 'hmrc_submit',
+      meta: {
+        ok: result.ok,
+        status: result.status,
+        nino: nino.slice(0, 2) + '****',
+        businessId,
+      },
+    });
+    res.status(result.ok ? 200 : 502).json(result);
+  } catch (e) {
+    res.status(500).json({
+      ok: false,
+      error: e instanceof Error ? e.message : 'sandbox submit failed',
     });
   }
 });

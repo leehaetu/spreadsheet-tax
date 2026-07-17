@@ -61,6 +61,11 @@ export async function createSandboxIndividual(opts = {}) {
  * @param {import('express').Request | null} req
  * @param {{ userId?: string|null }} [opts]
  */
+/**
+ * Validate headers via official GET /test/fraud-prevention-headers/validate
+ * @param {import('express').Request | null} req
+ * @param {{ userId?: string|null }} [opts]
+ */
 export async function validateFraudPreventionHeaders(req, opts = {}) {
   const tok = await getApplicationAccessToken();
   if (!tok.ok) {
@@ -69,60 +74,142 @@ export async function validateFraudPreventionHeaders(req, opts = {}) {
   const headers = buildFraudPreventionHeaders(req, {
     userId: opts.userId || null,
   });
-  // Primary path used by HMRC TXM validator (GET feedback after request, or validate)
-  const paths = [
-    {
-      method: 'GET',
-      url: `${SANDBOX}/test/fraud-prevention-headers/validation-feedback`,
-    },
-    {
-      method: 'GET',
-      url: `${SANDBOX}/test/fraud-prevention-headers/vat/validation-feedback`,
-    },
-  ];
-  // First send a request with headers attached so validator has a request to inspect
-  await fetch(`${SANDBOX}/hello/application`, {
-    headers: {
-      Accept: 'application/vnd.hmrc.1.0+json',
-      Authorization: `Bearer ${tok.accessToken}`,
-      ...headers,
-    },
-  }).catch(() => null);
 
-  const attempts = [];
-  for (const p of paths) {
-    const res = await fetch(p.url, {
-      method: p.method,
+  const res = await fetch(
+    `${SANDBOX}/test/fraud-prevention-headers/validate`,
+    {
+      method: 'GET',
       headers: {
         Accept: 'application/vnd.hmrc.1.0+json',
         Authorization: `Bearer ${tok.accessToken}`,
         ...headers,
       },
-    });
-    const text = await res.text();
-    let body;
-    try {
-      body = JSON.parse(text);
-    } catch {
-      body = { raw: text.slice(0, 800) };
     }
-    attempts.push({ url: p.url, status: res.status, ok: res.ok, body });
-    if (res.ok) {
-      return {
-        ok: true,
-        headersSent: Object.keys(headers),
-        headers,
-        feedback: body,
-        attempts,
-      };
+  );
+  const text = await res.text();
+  let body;
+  try {
+    body = JSON.parse(text);
+  } catch {
+    body = { raw: text.slice(0, 1200) };
+  }
+
+  // Optional per-API feedback after MTD calls
+  const feedbackRes = await fetch(
+    `${SANDBOX}/test/fraud-prevention-headers/self-employment-business-mtd/validation-feedback?connectionMethod=WEB_APP_VIA_SERVER`,
+    {
+      headers: {
+        Accept: 'application/vnd.hmrc.1.0+json',
+        Authorization: `Bearer ${tok.accessToken}`,
+      },
     }
+  );
+  const feedbackText = await feedbackRes.text();
+  let feedbackBody;
+  try {
+    feedbackBody = JSON.parse(feedbackText);
+  } catch {
+    feedbackBody = { raw: feedbackText.slice(0, 800) };
+  }
+
+  const code = body?.code;
+  const valid = res.ok && code === 'VALID_HEADERS';
+  return {
+    ok: valid,
+    httpStatus: res.status,
+    validationCode: code || null,
+    message: body?.message || null,
+    specVersion: body?.specVersion || null,
+    errors: body?.errors || [],
+    warnings: body?.warnings || [],
+    headersSent: headers,
+    headerNames: Object.keys(headers),
+    perApiFeedback: feedbackBody,
+    note:
+      code === 'VALID_HEADERS'
+        ? 'HMRC Test Fraud Prevention Headers API returned VALID_HEADERS for WEB_APP_VIA_SERVER pack.'
+        : 'See errors/warnings from HMRC validate endpoint. Fix before production approval.',
+  };
+}
+
+/**
+ * List businesses for an individual (user-restricted).
+ * @param {{ accessToken: string, nino: string, req?: import('express').Request|null, userId?: string|null }} opts
+ */
+export async function listBusinessDetails(opts) {
+  const nino = String(opts.nino || '').replace(/\s+/g, '').toUpperCase();
+  const fph = buildFraudPreventionHeaders(opts.req || null, {
+    userId: opts.userId || null,
+  });
+  const res = await fetch(
+    `${SANDBOX}/individuals/business/details/${nino}/list`,
+    {
+      headers: {
+        Accept: 'application/vnd.hmrc.2.0+json',
+        Authorization: `Bearer ${opts.accessToken}`,
+        ...fph,
+      },
+    }
+  );
+  const text = await res.text();
+  let body;
+  try {
+    body = JSON.parse(text);
+  } catch {
+    body = { raw: text.slice(0, 1500) };
   }
   return {
-    ok: false,
-    headersSent: Object.keys(headers),
-    headers,
-    attempts,
-    note: 'Validator feedback endpoints returned non-OK; headers above are still attached to all outbound HMRC builds. Re-check after sending a user-restricted MTD call.',
+    ok: res.ok,
+    status: res.status,
+    body,
+    headersSent: Object.keys(fph),
+  };
+}
+
+/**
+ * Submit SE period summary to sandbox (user-restricted).
+ * @param {{
+ *   accessToken: string,
+ *   nino: string,
+ *   businessId: string,
+ *   body: object,
+ *   req?: import('express').Request|null,
+ *   userId?: string|null,
+ * }} opts
+ */
+export async function submitSelfEmploymentPeriodSandbox(opts) {
+  const nino = String(opts.nino || '').replace(/\s+/g, '').toUpperCase();
+  const businessId = opts.businessId;
+  const fph = buildFraudPreventionHeaders(opts.req || null, {
+    userId: opts.userId || null,
+  });
+  const url = `${SANDBOX}/individuals/business/self-employment/${nino}/${businessId}/period`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/vnd.hmrc.5.0+json',
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${opts.accessToken}`,
+      ...fph,
+    },
+    body: JSON.stringify(opts.body),
+  });
+  const text = await res.text();
+  let body;
+  try {
+    body = JSON.parse(text);
+  } catch {
+    body = { raw: text.slice(0, 2000) };
+  }
+  return {
+    ok: res.ok,
+    status: res.status,
+    url,
+    requestBody: opts.body,
+    response: body,
+    fraudHeadersSent: fph,
+    externalCallMade: true,
+    mode: 'sandbox',
   };
 }
 
