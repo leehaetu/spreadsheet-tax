@@ -4,7 +4,10 @@
  */
 
 import { oauthConfig, getApplicationAccessToken } from './hmrc-oauth.js';
-import { buildFraudPreventionHeaders } from './fraud-headers.js';
+import {
+  buildFraudPreventionHeaders,
+  buildFraudPreventionHeadersDetailed,
+} from './fraud-headers.js';
 
 const SANDBOX = 'https://test-api.service.hmrc.gov.uk';
 
@@ -71,9 +74,10 @@ export async function validateFraudPreventionHeaders(req, opts = {}) {
   if (!tok.ok) {
     return { ok: false, error: tok.error };
   }
-  const headers = buildFraudPreventionHeaders(req, {
+  const detailed = buildFraudPreventionHeadersDetailed(req, {
     userId: opts.userId || null,
   });
+  const headers = detailed.headers;
 
   const res = await fetch(
     `${SANDBOX}/test/fraud-prevention-headers/validate`,
@@ -124,11 +128,12 @@ export async function validateFraudPreventionHeaders(req, opts = {}) {
     warnings: body?.warnings || [],
     headersSent: headers,
     headerNames: Object.keys(headers),
+    omittedHonestly: detailed.omitted,
     perApiFeedback: feedbackBody,
     note:
       code === 'VALID_HEADERS'
-        ? 'HMRC Test Fraud Prevention Headers API returned VALID_HEADERS for WEB_APP_VIA_SERVER pack.'
-        : 'See errors/warnings from HMRC validate endpoint. Fix before production approval.',
+        ? 'HMRC Test Fraud Prevention Headers API returned VALID_HEADERS.'
+        : 'Headers are only values with real sources. Missing fields are omitted (not invented). See omittedHonestly and HMRC missing-header guidance.',
   };
 }
 

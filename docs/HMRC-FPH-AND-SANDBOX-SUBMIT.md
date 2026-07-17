@@ -1,101 +1,52 @@
-# HMRC fraud headers + sandbox period submit (evidence)
+# HMRC fraud headers + sandbox period submit
 
-**Date:** 2026-07-17  
-**Environment:** HMRC **Sandbox** (`test-api.service.hmrc.gov.uk`)  
-**App:** Spreadsheet Tax production Railway · `HMRC_OAUTH_MOCK=0` · `HMRC_ALLOW_LIVE_SUBMIT=1` (sandbox host only)
+**Honesty correction (2026-07-17):** An earlier revision **invented** `Gov-Client-Public-Port` (hash of device id → high port) and defaulted screens/timezone when missing. That was wrong. It has been **removed**. We only send FPH values with a real source, or we omit them.
 
-## Fraud prevention headers (FPH)
+## Rule
 
-### How validated
+> Never invent FPH fields. Prefer incomplete-but-true over complete-but-false.
 
-Official HMRC API:
+HMRC: [missing header data](https://developer.service.hmrc.gov.uk/guides/fraud-prevention/getting-it-right/#missing-header-data).
 
-`GET https://test-api.service.hmrc.gov.uk/test/fraud-prevention-headers/validate`  
-(Application-restricted token)
+## Gov-Client-Public-Port
 
-Connection method: **`WEB_APP_VIA_SERVER`**
-
-### Headers we send
-
-| Header | Status |
+| Source | Used? |
 |--------|--------|
-| `Gov-Client-Connection-Method` | Sent · `WEB_APP_VIA_SERVER` |
-| `Gov-Client-Device-ID` | Sent · UUID |
-| `Gov-Client-Browser-JS-User-Agent` | Sent |
-| `Gov-Client-Public-IP` | Sent |
-| `Gov-Client-Public-IP-Timestamp` | Sent · ISO-8601 |
-| `Gov-Client-Public-Port` | Sent · ephemeral (not 80/443) |
-| `Gov-Client-Timezone` | Sent · `UTC±hh:mm` |
-| `Gov-Client-Screens` | Sent · width/height/scaling/colour-depth |
-| `Gov-Client-Window-Size` | Sent |
-| `Gov-Client-User-IDs` | Sent · `spreadsheet-tax=<userId>` |
-| `Gov-Vendor-Public-IP` | Sent |
-| `Gov-Vendor-Forwarded` | Sent · `by=` vendor · `for=` client |
-| `Gov-Vendor-Version` | Sent · `SpreadsheetTax=…` |
-| `Gov-Vendor-Product-Name` | Sent · `SpreadsheetTax` |
-| `Gov-Vendor-License-IDs` | Sent · SHA-256 of license key |
-| `Gov-Client-Multi-Factor` | **Not sent** (password-only login) |
+| Invented / synthetic | **No (removed)** |
+| Browser JS | **Cannot** observe public TCP port |
+| `X-Client-Public-Port` / `X-Forwarded-Port` | Only if present and not 80/443 |
+| Otherwise | **Omitted** |
 
-### HMRC validate result
+## What we can source honestly
 
-```json
-{
-  "specVersion": "3.3",
-  "code": "POTENTIALLY_INVALID_HEADERS",
-  "message": "At least 1 header is potentially invalid",
-  "warnings": [
-    {
-      "code": "MISSING_HEADER",
-      "headers": ["gov-client-multi-factor"],
-      "message": "…may be correct for single factor authentication, for example username and password. If this is the case, you must contact us explaining why you cannot submit this header."
-    }
-  ]
-}
-```
+| Header | Source |
+|--------|--------|
+| Connection-Method | Constant `WEB_APP_VIA_SERVER` |
+| Browser-JS-User-Agent | Request `User-Agent` |
+| Device-ID | Client `localStorage` UUID via `X-Client-Device-Id` only |
+| Public-IP + timestamp | `X-Forwarded-For` / `X-Real-IP` / socket |
+| Public-Port | Only real proxy/client-reported port |
+| Timezone / screens / window | Client JS only |
+| User-IDs | Signed-in user id |
+| Multi-Factor | Only if MFA actually used (password-only → omit) |
+| Vendor-Public-IP | Env `VENDOR_PUBLIC_IP` only (not client IP copy) |
+| Vendor-Forwarded | Only when both client + vendor IPs known |
+| Vendor-Version / Product-Name / License-IDs | Product identity |
 
-- **Errors:** none  
-- **Warnings only:** multi-factor (expected for username/password web login)  
-- **Not** `VALID_HEADERS` solely because MFA header is absent — HMRC’s own message says this can be correct for single-factor auth; production approval needs a short note to SDSTeam@hmrc.gov.uk if MFA is not used.
-
-Earlier fixes that cleared **errors**:
-
-- Do not send public port `443` / `80`  
-- Always send screens with scaling-factor + colour-depth  
-- Always send timezone  
-- Send vendor-forwarded + public-ip timestamps  
-
-## Real sandbox period submit (SE)
+## Sandbox period submit (real HMRC sandbox HTTP)
 
 | Field | Value |
-|-------|--------|
-| Host | `https://test-api.service.hmrc.gov.uk` |
-| Method | `POST` |
-| Path | `/individuals/business/self-employment/TB116925D/XBIS12345678901/period` |
-| Accept | `application/vnd.hmrc.5.0+json` |
-| Auth | User OAuth Bearer (non-mock) |
-| HTTP | **200** |
-| HMRC body | `{"periodId":"2024-04-06_2024-07-05"}` |
-| `externalCallMade` | **true** |
-| `mode` | **sandbox** |
+|--------|--------|
+| Period | **2024-04-06 → 2024-07-05** (tax year 2024-25 first quarter dates) |
+| Spreadsheet | **Fixture** `test-spreadsheets/01-self-employment-plumber.csv` via `POST /api/import/sample` `{sample:"self_employment"}` — not a customer file |
+| NINO | Sandbox test user `TB116925D` |
+| Business ID | From Business Details API `XBIS12345678901` |
+| Result | HTTP **200**, `periodId: 2024-04-06_2024-07-05` |
 
-Business ID came from real **Business Details (MTD)** list call:
+## Production approval note
 
-```json
-{"typeOfBusiness":"self-employment","businessId":"XBIS12345678901","tradingName":"Company X"}
-```
+Document to HMRC SDSTeam:
 
-Draft figures came from real import pipeline (`/api/import/sample` self_employment), not a hand-built fake HMRC body.
-
-## What this is / is not
-
-| Claim | True? |
-|-------|--------|
-| Real HMRC **sandbox** HTTP | **Yes** |
-| Real OAuth user token | **Yes** |
-| Real FPH validate API | **Yes** |
-| Production (live taxpayer) HMRC | **No** — sandbox host only |
-| Full `VALID_HEADERS` with MFA | **No** — password-only → MFA warning only |
-
-## Operator note for HMRC production approval
-
-Email SDSTeam / use Hub support to confirm single-factor web login (no MFA header) for Spreadsheet Tax, referencing the validate warning text.
+1. Web app cannot collect client public TCP port in pure browser TLS  
+2. Password-only auth → no Multi-Factor header  
+3. Vendor public IP configured via `VENDOR_PUBLIC_IP` when known  

@@ -5,30 +5,41 @@ let lastSummary = null;
 let lastDraftId = null;
 let lastValidation = null;
 
-/** Client metadata for HMRC fraud-prevention headers (WEB_APP_VIA_SERVER). */
+/**
+ * Honest client metadata for FPH — only real browser-reported values.
+ * Never invent public port (browser cannot observe client public TCP port).
+ */
 function fraudClientHeaders() {
   /** @type {Record<string, string>} */
   const h = {};
   try {
     // JS getTimezoneOffset is minutes west of UTC; HMRC wants east-of-UTC offset
     h['X-Client-Timezone-Offset'] = String(-new Date().getTimezoneOffset());
-    h['X-Client-Window-Size'] = `${window.innerWidth || 0}x${window.innerHeight || 0}`;
-    h['X-Client-Screens'] = `${window.screen?.width || 0}x${window.screen?.height || 0}`;
+    if (window.innerWidth > 0 && window.innerHeight > 0) {
+      h['X-Client-Window-Size'] = `${window.innerWidth}x${window.innerHeight}`;
+    }
+    if (window.screen?.width > 0 && window.screen?.height > 0) {
+      h['X-Client-Screens'] = `${window.screen.width}x${window.screen.height}`;
+      if (window.devicePixelRatio) {
+        h['X-Client-Screen-Scale'] = String(window.devicePixelRatio);
+      }
+      if (window.screen.colorDepth) {
+        h['X-Client-Screen-Depth'] = String(window.screen.colorDepth);
+      }
+    }
+    // Persistent device UUID on the originating device (HMRC requirement)
     let deviceId = localStorage.getItem('st_device_id');
-    if (!deviceId || !/^[0-9a-f-]{36}$/i.test(deviceId)) {
+    if (!deviceId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(deviceId)) {
       deviceId =
         typeof crypto !== 'undefined' && crypto.randomUUID
           ? crypto.randomUUID()
-          : `xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx`.replace(/[xy]/g, (c) => {
-              const r = (Math.random() * 16) | 0;
-              const v = c === 'x' ? r : (r & 0x3) | 0x8;
-              return v.toString(16);
-            });
-      localStorage.setItem('st_device_id', deviceId);
+          : null;
+      if (deviceId) localStorage.setItem('st_device_id', deviceId);
     }
-    h['X-Client-Device-Id'] = deviceId;
+    if (deviceId) h['X-Client-Device-Id'] = deviceId;
+    // Do NOT send X-Client-Public-Port — browser cannot know the public TCP port.
   } catch {
-    /* private mode / SSR */
+    /* private mode */
   }
   return h;
 }

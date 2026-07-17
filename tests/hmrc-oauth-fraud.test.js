@@ -65,27 +65,40 @@ after(async () => {
 });
 
 describe('fraud prevention headers', () => {
-  it('includes WEB_APP_VIA_SERVER pack fields', () => {
-    const h = buildFraudPreventionHeaders(
+  it('sends only honest WEB_APP fields — never invents public port', async () => {
+    const { buildFraudPreventionHeadersDetailed } = await import(
+      '../src/lib/fraud-headers.js'
+    );
+    const { headers: h, omitted } = buildFraudPreventionHeadersDetailed(
       {
         headers: {
           'user-agent': 'TestBrowser/1.0',
           'x-client-timezone-offset': '60',
           'x-client-window-size': '1280x800',
           'x-client-screens': '1920x1080',
-          'x-client-device-id': '11111111-2222-3333-4444-555555555555',
+          'x-client-screen-scale': '2',
+          'x-client-screen-depth': '24',
+          'x-client-device-id': '11111111-2222-4333-a444-555555555555',
         },
         socket: { remoteAddress: '203.0.113.10' },
       },
       { userId: 'user-abc' }
     );
     assert.equal(h['Gov-Client-Connection-Method'], 'WEB_APP_VIA_SERVER');
-    assert.match(h['Gov-Vendor-Product-Name'], /SpreadsheetTax/);
     assert.equal(h['Gov-Client-Public-IP'], '203.0.113.10');
-    assert.equal(h['Gov-Client-Device-ID'], '11111111-2222-3333-4444-555555555555');
+    assert.equal(h['Gov-Client-Device-ID'], '11111111-2222-4333-a444-555555555555');
     assert.equal(h['Gov-Client-Timezone'], 'UTC+01:00');
     assert.match(h['Gov-Client-Window-Size'], /width=1280/);
     assert.match(h['Gov-Client-User-IDs'], /user-abc/);
+    // Must NOT invent public port
+    assert.equal(h['Gov-Client-Public-Port'], undefined);
+    assert.ok(
+      omitted.some((o) => o.header === 'Gov-Client-Public-Port'),
+      'public port omitted with reason'
+    );
+    // Must NOT invent vendor IP when env not set
+    assert.equal(h['Gov-Vendor-Public-IP'], undefined);
+
     const req = buildSubmitRequest(
       {
         source: 'self_employment',
@@ -94,10 +107,20 @@ describe('fraud prevention headers', () => {
         taxYear: '2024-25',
         body: {},
       },
-      { mode: 'double', req: { headers: { 'user-agent': 'X' }, socket: {} } }
+      {
+        mode: 'double',
+        req: {
+          headers: {
+            'user-agent': 'X',
+            'x-client-device-id': '11111111-2222-4333-a444-555555555555',
+          },
+          socket: { remoteAddress: '203.0.113.10' },
+        },
+      }
     );
     assert.ok(req.headers['Gov-Client-Connection-Method']);
     assert.ok(req.headers['Gov-Client-Device-ID']);
+    assert.equal(req.headers['Gov-Client-Public-Port'], undefined);
   });
 });
 
