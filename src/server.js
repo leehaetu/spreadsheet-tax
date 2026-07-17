@@ -44,7 +44,8 @@ import {
   getUserPreferences,
   setUserPreferences,
 } from './lib/auth.js';
-import { sendEmail } from './lib/email.js';
+import { sendEmail, emailDeliveryMode } from './lib/email.js';
+import { listFraudHeaderKeys } from './lib/fraud-headers.js';
 import {
   createDraft,
   getDraft,
@@ -149,7 +150,7 @@ app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'SAMEORIGIN');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  res.setHeader('X-App-Version', '1.6.0');
+  res.setHeader('X-App-Version', '1.7.0');
   res.setHeader(
     'Content-Security-Policy',
     "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self'"
@@ -207,16 +208,18 @@ app.get('/health', (_req, res) => {
   res.status(ready ? 200 : 503).json({
     ok: ready,
     service: 'spreadsheet-tax',
-    version: '1.6.0',
+    version: '1.7.0',
     bridging: true,
     db: dbOk,
     oauthMock: oauthConfig().mock,
     liveSubmitEnabled: process.env.HMRC_ALLOW_LIVE_SUBMIT === '1',
     previewOnlyDefault: process.env.HMRC_ALLOW_LIVE_SUBMIT !== '1',
+    emailDelivery: emailDeliveryMode(),
     volumeDataDir: dataDir,
     volumeConfigured: Boolean(process.env.DATA_DIR),
     clientRows: clientCount,
     integrity: '/api/integrity',
+    fraudHeaderKeys: listFraudHeaderKeys().length,
     scale: {
       clientListPagination: true,
       sqlIndexes: true,
@@ -232,7 +235,7 @@ app.get('/health', (_req, res) => {
 app.get('/readyz', (_req, res) => {
   try {
     getDb().prepare('SELECT 1 AS x').get();
-    res.status(200).json({ ready: true, version: '1.6.0' });
+    res.status(200).json({ ready: true, version: '1.7.0' });
   } catch {
     res.status(503).json({ ready: false });
   }
@@ -576,6 +579,7 @@ function createSubmitClient(opts = {}) {
       clientId: undefined,
       clientSecret: undefined,
       req: opts.req || null,
+      userId: opts.userId || null,
     });
   }
   if (opts.accessToken) {
@@ -583,9 +587,13 @@ function createSubmitClient(opts = {}) {
       mode: opts.mode === 'production' ? 'sandbox' : opts.mode || 'sandbox',
       accessToken: opts.accessToken,
       req: opts.req || null,
+      userId: opts.userId || null,
     });
   }
-  return createHmrcClient({ req: opts.req || null });
+  return createHmrcClient({
+    req: opts.req || null,
+    userId: opts.userId || null,
+  });
 }
 
 /** Simple in-process rate limit (per key). */
@@ -723,6 +731,7 @@ app.post('/api/submit', async (req, res) => {
       accessToken,
       mode: tokenMode,
       req,
+      userId: user?.id || null,
     });
     if (client.mode !== 'double' && process.env.HMRC_ALLOW_LIVE_SUBMIT !== '1') {
       console.warn(
@@ -908,7 +917,7 @@ app.post('/api/auth/change-password', (req, res) => {
   res.json({ ok: true });
 });
 
-app.post('/api/auth/forgot-password', (req, res) => {
+app.post('/api/auth/forgot-password', async (req, res) => {
   if (!rateLimit(`forgot:${clientIp(req)}`, 8, 60_000)) {
     return res
       .status(429)
@@ -917,28 +926,34 @@ app.post('/api/auth/forgot-password', (req, res) => {
   const email = String(req.body?.email || '').trim();
   // Always same response to avoid account enumeration
   const created = email ? createPasswordResetToken(email) : null;
+  let delivered = false;
   if (created) {
     const base =
       process.env.PUBLIC_BASE_URL ||
       `${req.protocol}://${req.get('host')}`;
     const link = `${base}/reset-password?token=${created.token}`;
-    sendEmail({
+    const mail = await sendEmail({
       kind: 'password_reset',
       to: created.email,
       subject: 'Reset your Spreadsheet Tax password',
       body: `Use this link within one hour to reset your password:\n${link}\n\nIf you did not request this, ignore this message.`,
     });
+    delivered = Boolean(mail.delivered);
     writeAudit({
       userId: created.userId,
       action: 'password_reset_requested',
       entityType: 'user',
       entityId: created.userId,
+      meta: { delivered, provider: mail.provider },
     });
   }
   res.json({
     ok: true,
-    message:
-      'If an account exists for that email, a reset link has been sent (check server logs in demo).',
+    // Do not reveal whether the account exists; do reveal that email is stubbed when not delivered
+    message: delivered
+      ? 'If an account exists for that email, a reset link has been sent.'
+      : 'If an account exists for that email, a reset token was created. Email delivery is not configured on this server (check server logs in demo).',
+    emailDelivered: delivered,
   });
 });
 
@@ -1165,7 +1180,7 @@ app.post('/api/analytics/cta', (req, res) => {
 });
 
 /** Ops jobs (protected by simple shared secret for pilot) */
-app.post('/api/jobs/run', (req, res) => {
+app.post('/api/jobs/run', async (req, res) => {
   const secret =
     process.env.JOBS_SECRET ||
     (process.env.NODE_ENV === 'production' ? null : 'dev-jobs-secret');
@@ -1179,7 +1194,9 @@ app.post('/api/jobs/run', (req, res) => {
   }
   const job = String(req.body?.job || '');
   if (job === 'deadline_reminders') {
-    return res.json(runDeadlineReminders(Number(req.body?.withinDays) || 14));
+    return res.json(
+      await runDeadlineReminders(Number(req.body?.withinDays) || 14)
+    );
   }
   if (job === 'purge_anonymous_drafts') {
     return res.json(purgeAnonymousDrafts(Number(req.body?.maxAgeHours) || 48));
@@ -1190,24 +1207,26 @@ app.post('/api/jobs/run', (req, res) => {
   });
 });
 
-/** Signed-in practice can trigger deadline reminders for their firm book (stub email) */
-app.post('/api/me/jobs/deadline-reminders', (req, res) => {
+/** Signed-in practice can trigger deadline reminders for their firm book */
+app.post('/api/me/jobs/deadline-reminders', async (req, res) => {
   const user = requireUser(req, res);
   if (!user) return;
   const memberships = listMemberships(user.id);
   if (!memberships.length) {
     return res.status(403).json({ error: 'No firm membership.' });
   }
-  const result = runDeadlineReminders(Number(req.body?.withinDays) || 14);
+  const result = await runDeadlineReminders(
+    Number(req.body?.withinDays) || 14
+  );
   writeAudit({
     userId: user.id,
     action: 'deadline_reminders_run',
-    meta: { count: result.count },
+    meta: { count: result.count, deliveredCount: result.deliveredCount },
   });
   res.json(result);
 });
 
-app.post('/api/me/firms/:firmId/invites', (req, res) => {
+app.post('/api/me/firms/:firmId/invites', async (req, res) => {
   const user = requireUser(req, res);
   if (!user) return;
   const result = createFirmInvite({
@@ -1222,7 +1241,7 @@ app.post('/api/me/firms/:firmId/invites', (req, res) => {
   const base =
     process.env.PUBLIC_BASE_URL || `${req.protocol}://${req.get('host')}`;
   const url = `${base}${result.path}`;
-  sendEmail({
+  const mail = await sendEmail({
     kind: 'firm_invite',
     to: result.email,
     subject: 'You are invited to a Spreadsheet Tax practice',
@@ -1232,9 +1251,23 @@ app.post('/api/me/firms/:firmId/invites', (req, res) => {
     firmId: req.params.firmId,
     userId: user.id,
     action: 'firm_invite_created',
-    meta: { email: result.email, role: result.role },
+    meta: {
+      email: result.email,
+      role: result.role,
+      delivered: mail.delivered,
+      provider: mail.provider,
+    },
   });
-  res.status(201).json({ ok: true, ...result, url });
+  res.status(201).json({
+    ok: true,
+    ...result,
+    url,
+    emailDelivered: mail.delivered,
+    emailProvider: mail.provider,
+    emailNote: mail.delivered
+      ? 'Invite email sent.'
+      : 'Invite link created. Email was not delivered (stub mode) — copy the URL to share.',
+  });
 });
 
 app.post('/api/me/firm-invites/accept', (req, res) => {
@@ -1778,7 +1811,7 @@ app.get('/api/integrity', (_req, res) => {
     ok: true,
     product: 'Spreadsheet Tax',
     intellectualProperty: 'Lee Hine',
-    version: '1.6.0',
+    version: '1.7.0',
     layers: {
       spreadsheetImportMapping: {
         real: true,
@@ -1803,8 +1836,11 @@ app.get('/api/integrity', (_req, res) => {
       },
       fraudPreventionHeaders: {
         preparedOnOutbound: true,
+        connectionMethod: 'WEB_APP_VIA_SERVER',
+        keysEmitted: listFraudHeaderKeys(),
         fullHmrcPackValidated: false,
-        notes: 'Subset for WEB_APP_VIA_SERVER; expand before production approval',
+        notes:
+          'Expanded WEB_APP_VIA_SERVER pack from request + browser metadata; still requires HMRC validation before production approval',
       },
       authenticatedPracticeWorkspace: {
         real: true,
@@ -1815,10 +1851,15 @@ app.get('/api/integrity', (_req, res) => {
         real: false,
         fictional: true,
         paths: ['/accountant', '/practice', '/api/firms', '/api/clients'],
-        notes: 'In-memory demonstration data only',
+        notes:
+          'In-memory demonstration only; primary CTAs point to authenticated /workspace',
       },
       billing: { cardPayments: false, planSelectionStored: true },
-      email: { delivered: false, provider: 'stub-log' },
+      email: {
+        delivered: emailDeliveryMode() !== 'stub',
+        provider: emailDeliveryMode(),
+        note: 'Set EMAIL_WEBHOOK_URL to deliver; default is stub log only',
+      },
     },
   });
 });

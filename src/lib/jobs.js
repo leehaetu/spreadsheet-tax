@@ -7,10 +7,11 @@ import { sendDeadlineReminder } from './email.js';
 import { newId } from './auth.js';
 
 /**
- * Send stub reminders for clients with due dates within N days.
+ * Queue deadline reminders for clients with due dates within N days.
+ * Email may be stubbed (delivered:false) unless EMAIL_WEBHOOK_URL is set.
  * @param {number} [withinDays]
  */
-export function runDeadlineReminders(withinDays = 14) {
+export async function runDeadlineReminders(withinDays = 14) {
   const database = getDb();
   const today = new Date();
   const limit = new Date(today.getTime() + withinDays * 864e5)
@@ -27,26 +28,41 @@ export function runDeadlineReminders(withinDays = 14) {
   const sent = [];
   for (const c of clients) {
     if (!c.owner_email) continue;
-    const result = sendDeadlineReminder({
+    const result = await sendDeadlineReminder({
       email: c.owner_email,
       clientName: c.display_name,
       dueDate: c.due_date,
     });
-    sent.push({ clientId: c.id, to: c.owner_email, ok: result.ok });
+    sent.push({
+      clientId: c.id,
+      to: c.owner_email,
+      ok: result.ok,
+      delivered: result.delivered,
+      provider: result.provider,
+    });
     database
       .prepare(
         `INSERT INTO audit_events (id, firm_id, user_id, action, entity_type, entity_id, meta_json, created_at)
-         VALUES (?, ?, NULL, 'deadline_reminder_sent', 'client', ?, ?, ?)`
+         VALUES (?, ?, NULL, 'deadline_reminder_queued', 'client', ?, ?, ?)`
       )
       .run(
         newId(),
         c.firm_id,
         c.id,
-        JSON.stringify({ dueDate: c.due_date }),
+        JSON.stringify({
+          dueDate: c.due_date,
+          delivered: result.delivered,
+          provider: result.provider,
+        }),
         new Date().toISOString()
       );
   }
-  return { ok: true, count: sent.length, sent };
+  return {
+    ok: true,
+    count: sent.length,
+    deliveredCount: sent.filter((s) => s.delivered).length,
+    sent,
+  };
 }
 
 /**
@@ -58,8 +74,8 @@ export function purgeAnonymousDrafts(maxAgeHours = 48) {
   const cutoff = new Date(Date.now() - maxAgeHours * 3600e3).toISOString();
   const result = database
     .prepare(
-      `DELETE FROM drafts WHERE user_id IS NULL AND created_at < ? AND state != 'submitted'`
+      `DELETE FROM drafts WHERE user_id IS NULL AND created_at < ?`
     )
     .run(cutoff);
-  return { ok: true, deleted: result.changes ?? 0 };
+  return { ok: true, deleted: result.changes || 0 };
 }

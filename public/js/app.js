@@ -5,6 +5,42 @@ let lastSummary = null;
 let lastDraftId = null;
 let lastValidation = null;
 
+/** Client metadata for HMRC fraud-prevention headers (WEB_APP_VIA_SERVER). */
+function fraudClientHeaders() {
+  /** @type {Record<string, string>} */
+  const h = {};
+  try {
+    // JS getTimezoneOffset is minutes west of UTC; HMRC wants east-of-UTC offset
+    h['X-Client-Timezone-Offset'] = String(-new Date().getTimezoneOffset());
+    h['X-Client-Window-Size'] = `${window.innerWidth || 0}x${window.innerHeight || 0}`;
+    h['X-Client-Screens'] = `${window.screen?.width || 0}x${window.screen?.height || 0}`;
+    let deviceId = localStorage.getItem('st_device_id');
+    if (!deviceId || !/^[0-9a-f-]{36}$/i.test(deviceId)) {
+      deviceId =
+        typeof crypto !== 'undefined' && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx`.replace(/[xy]/g, (c) => {
+              const r = (Math.random() * 16) | 0;
+              const v = c === 'x' ? r : (r & 0x3) | 0x8;
+              return v.toString(16);
+            });
+      localStorage.setItem('st_device_id', deviceId);
+    }
+    h['X-Client-Device-Id'] = deviceId;
+  } catch {
+    /* private mode / SSR */
+  }
+  return h;
+}
+
+async function apiFetch(url, options = {}) {
+  const headers = {
+    ...fraudClientHeaders(),
+    ...(options.headers || {}),
+  };
+  return fetch(url, { ...options, headers });
+}
+
 /** Honest connection label — never imply HMRC filing when preview-only. */
 function connectionLabel(data) {
   if (data?.previewOnly || data?.hmrcMode === 'double') {
@@ -31,7 +67,7 @@ function setWizardStep(step) {
 
 async function loadStatus() {
   try {
-    const res = await fetch('/api/status');
+    const res = await apiFetch('/api/status');
     const data = await res.json();
     const el = document.getElementById('connection-status');
     if (el) {
@@ -50,7 +86,7 @@ async function loadStatus() {
 /** Prefill NI / business IDs from saved account preferences when empty. */
 async function loadSavedIdentifiers() {
   try {
-    const res = await fetch('/api/me/preferences');
+    const res = await apiFetch('/api/me/preferences');
     if (!res.ok) return;
     const data = await res.json();
     const id = data.preferences?.identifiers;
@@ -123,14 +159,14 @@ function setImportBusy(busy, label) {
 }
 
 async function importFromFormData(fd) {
-  const res = await fetch('/api/import', { method: 'POST', body: fd });
+  const res = await apiFetch('/api/import', { method: 'POST', body: fd });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || 'We could not read that file.');
   return data;
 }
 
 async function importSample(sampleId) {
-  const res = await fetch('/api/import/sample', {
+  const res = await apiFetch('/api/import/sample', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ sample: sampleId }),
@@ -526,7 +562,7 @@ document.getElementById('submit-btn')?.addEventListener('click', async () => {
   }
 
   try {
-    const res = await fetch('/api/submit', {
+    const res = await apiFetch('/api/submit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

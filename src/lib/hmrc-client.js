@@ -5,6 +5,8 @@
 
 import { buildFraudPreventionHeaders } from './fraud-headers.js';
 
+/** @typedef {{ userId?: string|null }} FraudOpts */
+
 const DEFAULT_SANDBOX_BASE = 'https://test-api.service.hmrc.gov.uk';
 
 /**
@@ -16,6 +18,7 @@ const DEFAULT_SANDBOX_BASE = 'https://test-api.service.hmrc.gov.uk';
  * @property {string} [accessToken]
  * @property {string} [nino]
  * @property {import('express').Request | null} [req]
+ * @property {string|null} [userId]
  */
 
 /**
@@ -78,7 +81,9 @@ export function buildSubmitRequest(req, config) {
   const headers = {
     Accept: 'application/vnd.hmrc.1.0+json',
     'Content-Type': 'application/json',
-    ...buildFraudPreventionHeaders(config.req || null),
+    ...buildFraudPreventionHeaders(config.req || null, {
+      userId: config.userId || null,
+    }),
   };
   if (config.accessToken) {
     headers.Authorization = `Bearer ${config.accessToken}`;
@@ -213,6 +218,7 @@ export function resolveConfig(overrides = {}) {
         : process.env.HMRC_ACCESS_TOKEN,
     nino: overrides.nino ?? process.env.HMRC_NINO,
     req: overrides.req ?? null,
+    userId: overrides.userId ?? null,
   };
 }
 

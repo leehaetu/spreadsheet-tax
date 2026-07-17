@@ -2,27 +2,29 @@
 
 **Last updated:** 2026-07-17  
 **Live:** https://spreadsheet-tax-production.up.railway.app  
-**Version:** 1.6.0
+**Version:** 1.7.0
 
-## Honesty (HMRC-inspectable)
+## This slice (move on)
 
-| Layer | Reality |
-|-------|---------|
-| Spreadsheet → map → validate → draft | **Real** |
-| Public submit | **Preview only** (not HMRC) until live flag + real OAuth |
-| Mock OAuth | Labelled mock; `connected: false` |
-| Demo `/accountant` `/practice` | **Fictional** in-memory data |
-| Authenticated `/workspace` | **Real** SQLite firm book |
-| Integrity | `/integrity` · `/api/integrity` · `docs/HONESTY-FOR-HMRC.md` |
+| Item | Status |
+|------|--------|
+| Expanded fraud-prevention headers (WEB_APP_VIA_SERVER) | Device ID, timezone, screens, window, user ids |
+| Browser sends client metadata on API calls | `public/js/app.js` |
+| Sales/pro CTAs → real `/workspace` | Demo portfolio demoted |
+| Email honesty | `delivered` flag; webhook optional |
+| Integrity API updated | fraud keys + email mode |
 
-## Tests
+## Honesty
 
-**91** unit tests passing (includes honesty gates).
+Preview submit default · mock OAuth labelled · demo portfolio fictional · integrity at `/integrity`
 
-## Demo login (labelled demo)
+## External blockers (need Lee)
+
+1. HMRC Developer Hub Client ID / Secret  
+2. `HMRC_OAUTH_MOCK=0` + redirect URI  
+3. Sandbox submit test with real token  
+4. Optional: `EMAIL_WEBHOOK_URL`, `VENDOR_PUBLIC_IP`
+
+## Demo
 
 `demo@spreadsheet-tax.example` / `DemoPass123!`
-
-## External remaining (not claimed complete)
-
-HMRC Developer Hub credentials, real OAuth, fraud-header pack validation, production approval, card billing, real email, pen-test, legal pack.

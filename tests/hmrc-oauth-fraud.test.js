@@ -65,13 +65,27 @@ after(async () => {
 });
 
 describe('fraud prevention headers', () => {
-  it('includes Gov-Client connection method', () => {
-    const h = buildFraudPreventionHeaders({
-      headers: { 'user-agent': 'TestBrowser/1.0' },
-      socket: { remoteAddress: '203.0.113.10' },
-    });
+  it('includes WEB_APP_VIA_SERVER pack fields', () => {
+    const h = buildFraudPreventionHeaders(
+      {
+        headers: {
+          'user-agent': 'TestBrowser/1.0',
+          'x-client-timezone-offset': '60',
+          'x-client-window-size': '1280x800',
+          'x-client-screens': '1920x1080',
+          'x-client-device-id': '11111111-2222-3333-4444-555555555555',
+        },
+        socket: { remoteAddress: '203.0.113.10' },
+      },
+      { userId: 'user-abc' }
+    );
     assert.equal(h['Gov-Client-Connection-Method'], 'WEB_APP_VIA_SERVER');
     assert.match(h['Gov-Vendor-Product-Name'], /SpreadsheetTax/);
+    assert.equal(h['Gov-Client-Public-IP'], '203.0.113.10');
+    assert.equal(h['Gov-Client-Device-ID'], '11111111-2222-3333-4444-555555555555');
+    assert.equal(h['Gov-Client-Timezone'], 'UTC+01:00');
+    assert.match(h['Gov-Client-Window-Size'], /width=1280/);
+    assert.match(h['Gov-Client-User-IDs'], /user-abc/);
     const req = buildSubmitRequest(
       {
         source: 'self_employment',
@@ -83,6 +97,7 @@ describe('fraud prevention headers', () => {
       { mode: 'double', req: { headers: { 'user-agent': 'X' }, socket: {} } }
     );
     assert.ok(req.headers['Gov-Client-Connection-Method']);
+    assert.ok(req.headers['Gov-Client-Device-ID']);
   });
 });
 
