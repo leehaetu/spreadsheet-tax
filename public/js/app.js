@@ -36,6 +36,28 @@ async function loadStatus() {
   }
 }
 
+/** Prefill NI / business IDs from saved account preferences when empty. */
+async function loadSavedIdentifiers() {
+  try {
+    const res = await fetch('/api/me/preferences');
+    if (!res.ok) return;
+    const data = await res.json();
+    const id = data.preferences?.identifiers;
+    if (!id) return;
+    const fill = (elId, value) => {
+      const el = document.getElementById(elId);
+      if (el && !el.value && value) el.value = value;
+    };
+    fill('nino', id.nino);
+    fill('tax-year', id.taxYear);
+    fill('bid-se', id.businessIdSe);
+    fill('bid-uk', id.businessIdUk);
+    fill('bid-fp', id.businessIdForeign);
+  } catch {
+    /* signed out or offline */
+  }
+}
+
 const fileInput = document.getElementById('file-input');
 const fileLabel = document.getElementById('file-label');
 const fileChosen = document.getElementById('file-chosen');
@@ -553,6 +575,7 @@ document.getElementById('submit-btn')?.addEventListener('click', async () => {
 
 setWizardStep(1);
 loadStatus();
+loadSavedIdentifiers();
 
 // Audience mode from sales CTAs (?mode=self-employed|property|landlord)
 (function applyAudienceMode() {

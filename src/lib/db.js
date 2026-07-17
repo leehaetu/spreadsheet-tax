@@ -209,6 +209,13 @@ function migrate(database) {
   } catch {
     /* already exists */
   }
+  try {
+    database.exec(
+      `ALTER TABLE user_preferences ADD COLUMN identifiers_json TEXT`
+    );
+  } catch {
+    /* already exists */
+  }
 }
 
 export function closeDb() {

@@ -60,6 +60,39 @@ export function findUserById(id) {
 }
 
 /**
+ * @param {unknown} raw
+ */
+function parseIdentifiers(raw) {
+  if (!raw) {
+    return {
+      nino: '',
+      taxYear: '',
+      businessIdSe: '',
+      businessIdUk: '',
+      businessIdForeign: '',
+    };
+  }
+  try {
+    const o = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    return {
+      nino: String(o?.nino || '').slice(0, 20),
+      taxYear: String(o?.taxYear || '').slice(0, 12),
+      businessIdSe: String(o?.businessIdSe || '').slice(0, 40),
+      businessIdUk: String(o?.businessIdUk || '').slice(0, 40),
+      businessIdForeign: String(o?.businessIdForeign || '').slice(0, 40),
+    };
+  } catch {
+    return {
+      nino: '',
+      taxYear: '',
+      businessIdSe: '',
+      businessIdUk: '',
+      businessIdForeign: '',
+    };
+  }
+}
+
+/**
  * @param {string} userId
  */
 export function getUserPreferences(userId) {
@@ -71,19 +104,31 @@ export function getUserPreferences(userId) {
       userId,
       emailReminders: true,
       emailProduct: false,
+      identifiers: parseIdentifiers(null),
     };
   }
   return {
     userId,
     emailReminders: Boolean(row.email_reminders),
     emailProduct: Boolean(row.email_product),
+    identifiers: parseIdentifiers(row.identifiers_json),
     updatedAt: row.updated_at,
   };
 }
 
 /**
  * @param {string} userId
- * @param {{ emailReminders?: boolean, emailProduct?: boolean }} prefs
+ * @param {{
+ *   emailReminders?: boolean,
+ *   emailProduct?: boolean,
+ *   identifiers?: {
+ *     nino?: string,
+ *     taxYear?: string,
+ *     businessIdSe?: string,
+ *     businessIdUk?: string,
+ *     businessIdForeign?: string,
+ *   }
+ * }} prefs
  */
 export function setUserPreferences(userId, prefs) {
   const current = getUserPreferences(userId);
@@ -95,17 +140,28 @@ export function setUserPreferences(userId, prefs) {
     prefs.emailProduct !== undefined
       ? Boolean(prefs.emailProduct)
       : current.emailProduct;
+  const identifiers =
+    prefs.identifiers !== undefined
+      ? parseIdentifiers({ ...current.identifiers, ...prefs.identifiers })
+      : current.identifiers;
   const now = new Date().toISOString();
   getDb()
     .prepare(
-      `INSERT INTO user_preferences (user_id, email_reminders, email_product, updated_at)
-       VALUES (?, ?, ?, ?)
+      `INSERT INTO user_preferences (user_id, email_reminders, email_product, identifiers_json, updated_at)
+       VALUES (?, ?, ?, ?, ?)
        ON CONFLICT(user_id) DO UPDATE SET
          email_reminders = excluded.email_reminders,
          email_product = excluded.email_product,
+         identifiers_json = excluded.identifiers_json,
          updated_at = excluded.updated_at`
     )
-    .run(userId, emailReminders ? 1 : 0, emailProduct ? 1 : 0, now);
+    .run(
+      userId,
+      emailReminders ? 1 : 0,
+      emailProduct ? 1 : 0,
+      JSON.stringify(identifiers),
+      now
+    );
   return getUserPreferences(userId);
 }
 

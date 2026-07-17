@@ -144,7 +144,7 @@ app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'SAMEORIGIN');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  res.setHeader('X-App-Version', '1.3.0');
+  res.setHeader('X-App-Version', '1.3.1');
   res.setHeader(
     'Content-Security-Policy',
     "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self'"
@@ -194,7 +194,7 @@ app.get('/health', (_req, res) => {
   res.status(ready ? 200 : 503).json({
     ok: ready,
     service: 'spreadsheet-tax',
-    version: '1.3.0',
+    version: '1.3.1',
     bridging: true,
     db: dbOk,
     oauthMock: oauthConfig().mock,
@@ -208,7 +208,7 @@ app.get('/health', (_req, res) => {
 app.get('/readyz', (_req, res) => {
   try {
     getDb().prepare('SELECT 1 AS x').get();
-    res.status(200).json({ ready: true, version: '1.3.0' });
+    res.status(200).json({ ready: true, version: '1.3.1' });
   } catch {
     res.status(503).json({ ready: false });
   }
@@ -857,6 +857,11 @@ app.post('/api/auth/change-password', (req, res) => {
 });
 
 app.post('/api/auth/forgot-password', (req, res) => {
+  if (!rateLimit(`forgot:${clientIp(req)}`, 8, 60_000)) {
+    return res
+      .status(429)
+      .json({ error: 'Too many reset requests. Try again shortly.' });
+  }
   const email = String(req.body?.email || '').trim();
   // Always same response to avoid account enumeration
   const created = email ? createPasswordResetToken(email) : null;
@@ -1306,6 +1311,7 @@ app.put('/api/me/preferences', (req, res) => {
   const preferences = setUserPreferences(user.id, {
     emailReminders: req.body?.emailReminders,
     emailProduct: req.body?.emailProduct,
+    identifiers: req.body?.identifiers,
   });
   writeAudit({
     userId: user.id,
@@ -1413,17 +1419,24 @@ app.get('/api/receipts/:attemptId', (req, res) => {
   if (row.user_id && row.user_id !== user.id) {
     return res.status(403).json({ error: 'Not allowed' });
   }
-  res.json({
-    ok: true,
-    receipt: {
-      id: row.id,
-      draftId: row.draft_id,
-      mode: row.mode,
-      ok: Boolean(row.ok),
-      createdAt: row.created_at,
-      results: JSON.parse(row.results_json),
-    },
-  });
+  const receipt = {
+    id: row.id,
+    draftId: row.draft_id,
+    mode: row.mode,
+    ok: Boolean(row.ok),
+    createdAt: row.created_at,
+    results: JSON.parse(row.results_json),
+  };
+  if (req.query.download === '1' || req.query.download === 'true') {
+    const body = JSON.stringify({ ok: true, receipt }, null, 2);
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="receipt-${row.id.slice(0, 8)}.json"`
+    );
+    return res.status(200).send(body);
+  }
+  res.json({ ok: true, receipt });
 });
 
 app.get('/api/me/submissions', (req, res) => {

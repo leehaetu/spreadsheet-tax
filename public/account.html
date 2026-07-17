@@ -43,6 +43,27 @@
       <label class="muted" style="display:flex;gap:0.5rem;align-items:center;margin:0.5rem 0">
         <input type="checkbox" id="pref-product" /> Product updates (optional)
       </label>
+      <h3 style="margin-top:1.25rem">Saved HMRC identifiers</h3>
+      <p class="muted">Prefill the bridging app submit form. Stored on your account only — not submitted until you review and send.</p>
+      <div class="form-row">
+        <label>National Insurance number
+          <input type="text" id="pref-nino" autocomplete="off" placeholder="QQ123456C" />
+        </label>
+        <label>Tax year
+          <input type="text" id="pref-tax-year" autocomplete="off" placeholder="2025-26" />
+        </label>
+      </div>
+      <div class="form-row">
+        <label>Self-employment business ID
+          <input type="text" id="pref-bid-se" autocomplete="off" />
+        </label>
+        <label>UK property business ID
+          <input type="text" id="pref-bid-uk" autocomplete="off" />
+        </label>
+        <label>Foreign property business ID
+          <input type="text" id="pref-bid-fp" autocomplete="off" />
+        </label>
+      </div>
       <button type="button" class="btn btn-primary btn-sm" id="pref-save">Save preferences</button>
       <p id="pref-msg" class="success-box" hidden></p>
     </section>
@@ -107,6 +128,12 @@
       if (prefs.preferences) {
         document.getElementById('pref-reminders').checked = !!prefs.preferences.emailReminders;
         document.getElementById('pref-product').checked = !!prefs.preferences.emailProduct;
+        const id = prefs.preferences.identifiers || {};
+        document.getElementById('pref-nino').value = id.nino || '';
+        document.getElementById('pref-tax-year').value = id.taxYear || '';
+        document.getElementById('pref-bid-se').value = id.businessIdSe || '';
+        document.getElementById('pref-bid-uk').value = id.businessIdUk || '';
+        document.getElementById('pref-bid-fp').value = id.businessIdForeign || '';
       }
       const audit = await fetch('/api/me/audit').then((r) => r.json());
       const abody = document.getElementById('activity-body');
@@ -138,7 +165,10 @@
       for (const s of (subs.submissions || []).slice(0, 10)) {
         const tr = document.createElement('tr');
         tr.innerHTML = `<td>${esc(s.createdAt)}</td><td>${esc(s.mode)}</td><td>${s.ok ? 'Yes' : 'No'}</td>
-          <td><a class="btn btn-ghost btn-sm" href="/api/receipts/${esc(s.id)}">Receipt</a></td>`;
+          <td>
+            <a class="btn btn-ghost btn-sm" href="/api/receipts/${esc(s.id)}">Receipt</a>
+            <a class="btn btn-ghost btn-sm" href="/api/receipts/${esc(s.id)}?download=1">Download</a>
+          </td>`;
         tbody.appendChild(tr);
       }
     }
@@ -155,6 +185,13 @@
         body: JSON.stringify({
           emailReminders: document.getElementById('pref-reminders').checked,
           emailProduct: document.getElementById('pref-product').checked,
+          identifiers: {
+            nino: document.getElementById('pref-nino').value,
+            taxYear: document.getElementById('pref-tax-year').value,
+            businessIdSe: document.getElementById('pref-bid-se').value,
+            businessIdUk: document.getElementById('pref-bid-uk').value,
+            businessIdForeign: document.getElementById('pref-bid-fp').value,
+          },
         }),
       });
       const data = await res.json();

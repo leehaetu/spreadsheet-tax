@@ -2,20 +2,17 @@
 
 **Last updated:** 2026-07-17  
 **Live:** https://spreadsheet-tax-production.up.railway.app  
-**Version:** 1.3.0
+**Version:** 1.3.1
 
 ## This slice
 
 | Item | Status |
 |------|--------|
-| Practice needs-action dashboard | `/workspace` + `GET /api/me/practice-dashboard` |
-| Submissions CSV export | `/history` + `GET /api/me/submissions/export` |
-| Auth rate limits | login 20/min · register 10/min per IP |
-| Version / readyz | **1.3.0** |
-
-## Prior (1.2.0)
-
-Client search, draft rename, help FAQ search, `/readyz`, `X-App-Version`.
+| Saved HMRC identifiers | `/account` prefs + app prefill |
+| Receipt download attachment | `?download=1` on `/api/receipts/:id` |
+| Forgot-password rate limit | 8/min per IP |
+| Practice dashboard (1.3.0) | needs-action / overdue stats |
+| Submissions CSV export | `/api/me/submissions/export` |
 
 ## Demo
 

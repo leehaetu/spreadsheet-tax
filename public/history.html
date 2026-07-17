@@ -111,7 +111,10 @@
         const tr = document.createElement('tr');
         tr.innerHTML = `<td><code>${esc(s.id.slice(0, 8))}…</code></td><td>${esc(s.mode)}</td>
           <td>${s.ok ? 'Yes' : 'No'}</td><td>${esc(s.createdAt)}</td>
-          <td><a class="btn btn-ghost btn-sm" href="/api/receipts/${esc(s.id)}">Receipt JSON</a></td>`;
+          <td>
+            <a class="btn btn-ghost btn-sm" href="/api/receipts/${esc(s.id)}">View</a>
+            <a class="btn btn-ghost btn-sm" href="/api/receipts/${esc(s.id)}?download=1">Download</a>
+          </td>`;
         sbody.appendChild(tr);
       }
     }

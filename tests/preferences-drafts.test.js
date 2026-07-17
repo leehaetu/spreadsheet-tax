@@ -71,13 +71,24 @@ describe('preferences and draft delete', () => {
     const put = await request(
       'PUT',
       '/api/me/preferences',
-      JSON.stringify({ emailReminders: false, emailProduct: true })
+      JSON.stringify({
+        emailReminders: false,
+        emailProduct: true,
+        identifiers: {
+          nino: 'QQ123456C',
+          taxYear: '2025-26',
+          businessIdSe: 'XASE00000000001',
+        },
+      })
     );
     assert.equal(put.status, 200);
     const get = await request('GET', '/api/me/preferences');
     const gj = JSON.parse(get.body);
     assert.equal(gj.preferences.emailReminders, false);
     assert.equal(gj.preferences.emailProduct, true);
+    assert.equal(gj.preferences.identifiers.nino, 'QQ123456C');
+    assert.equal(gj.preferences.identifiers.taxYear, '2025-26');
+    assert.equal(gj.preferences.identifiers.businessIdSe, 'XASE00000000001');
   });
 
   it('deletes a draft owned by the user', async () => {
