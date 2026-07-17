@@ -1,36 +1,29 @@
 # Project status
 
-**Last updated:** 2026-07-17 (continued automated session — did not stop)  
-**Branch:** `main` (tracking origin)
+**Last updated:** 2026-07-17  
+**Live:** https://spreadsheet-tax-production.up.railway.app  
 
-## Proven in this session chain
+## This slice (continue plan)
 
-| Capability | Status |
-|------------|--------|
-| Gate 0 safe demo | **Done** |
-| Auth + SQLite + drafts + workspace | **Done** |
-| HMRC OAuth mock/real + fraud headers | **Done** |
-| Billing plan stub (no cards) | **Done** |
-| Idempotent submit + receipts + history UI | **Done** |
-| CTA analytics + deadline/purge jobs stubs | **Done** |
-| Client import-for-client API | **Done** |
-| Security response headers | **Done** |
-| Playwright smoke + visual | **Done** (16 e2e) |
-| Unit/integration tests | **68 pass** |
-| **Production ready / live HMRC public launch** | **Not done** (external + pen-test + legal) |
+| Item | Status |
+|------|--------|
+| Railway **volume** `/app/data` (5GB) | **Ready** — SQLite persists across redeploys |
+| `DATA_DIR=/app/data` | Set on production |
+| App env secrets (session, token key, mock OAuth) | Set |
+| Audience modes `?mode=self-employed` / `property` | Shipped |
+| Workspace **import file for client** | Shipped |
+| Professional CTAs → `/workspace` | Shipped |
+| GitHub push + Railway deploy | `b12ef16` |
+
+## Tests
+
+- Unit: 68 pass  
+- E2E: 17 pass  
 
 ## Demo login
 
 `demo@spreadsheet-tax.example` / `DemoPass123!`
 
-## Why earlier pauses happened
+## Still not production launch
 
-Each push ends a slice so git stays safe. Work continued in the next slice immediately when asked. External items (HMRC production approval, real payments, pen-test, interviews) cannot be finished only by coding.
-
-## Commands
-
-```bash
-npm test
-npm run test:e2e
-npm start
-```
+Real HMRC Hub credentials, card billing, pen-test, legal pack, interviews.
