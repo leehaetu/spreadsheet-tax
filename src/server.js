@@ -88,6 +88,7 @@ import {
   revokeConnection,
   oauthConfig,
   isMockAccessToken,
+  pingHmrcHelloApplication,
 } from './lib/hmrc-oauth.js';
 import {
   ensureFreePlan,
@@ -1109,6 +1110,41 @@ app.get('/api/hmrc/status', (req, res) => {
         : 'OAuth uses real HMRC authorize/token endpoints.',
     },
   });
+});
+
+/**
+ * Sandbox connectivity check (application credentials + Hello World).
+ * Does not require a signed-in user tax token. Does not submit tax data.
+ */
+app.get('/api/hmrc/sandbox-check', async (req, res) => {
+  try {
+    const result = await pingHmrcHelloApplication();
+    const ok =
+      result.openAccess?.ok &&
+      result.application?.ok === true &&
+      !result.mock;
+    res.status(ok ? 200 : 503).json({
+      ok,
+      ...result,
+      nextSteps: ok
+        ? [
+            'Create a sandbox individual test user (Create Test User API / Hub tooling)',
+            'Sign in to Spreadsheet Tax → Connect HMRC (user OAuth)',
+            'Validate fraud headers via Test Fraud Prevention Headers API',
+            'Only then enable HMRC_ALLOW_LIVE_SUBMIT=1 for a controlled sandbox period submit',
+          ]
+        : [
+            'Confirm HMRC_CLIENT_ID/SECRET and HMRC_OAUTH_MOCK=0 on Railway',
+            'Confirm Hello World is subscribed on the Sandbox application',
+            'Confirm redirect URI matches Hub exactly',
+          ],
+    });
+  } catch (e) {
+    res.status(500).json({
+      ok: false,
+      error: e instanceof Error ? e.message : 'sandbox-check failed',
+    });
+  }
 });
 
 /** Billing / plans (stub — no card processing) */

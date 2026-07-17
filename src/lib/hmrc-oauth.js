@@ -70,6 +70,110 @@ export function buildAuthorizeUrl(opts) {
 }
 
 /**
+ * Application-restricted token (client credentials) for Hello World /app tests.
+ * Not used for user tax data — only connectivity checks.
+ * @returns {Promise<{ ok: boolean, accessToken?: string, error?: string, mode?: string }>}
+ */
+export async function getApplicationAccessToken() {
+  const cfg = oauthConfig();
+  if (cfg.mock || !cfg.clientId || !cfg.clientSecret) {
+    return {
+      ok: false,
+      error:
+        'HMRC client credentials missing or OAuth mock enabled (set HMRC_CLIENT_ID/SECRET and HMRC_OAUTH_MOCK=0).',
+    };
+  }
+  const tokenUrl = cfg.mode === 'production' ? LIVE_TOKEN : SANDBOX_TOKEN;
+  const body = new URLSearchParams({
+    grant_type: 'client_credentials',
+    client_id: cfg.clientId,
+    client_secret: cfg.clientSecret,
+  });
+  const res = await fetch(tokenUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: body.toString(),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    return {
+      ok: false,
+      error:
+        json.error_description ||
+        json.error ||
+        `Token endpoint returned ${res.status}`,
+      mode: cfg.mode,
+    };
+  }
+  return {
+    ok: true,
+    accessToken: json.access_token,
+    mode: cfg.mode,
+    expiresIn: json.expires_in,
+  };
+}
+
+/**
+ * Call HMRC Hello World application endpoint to prove Hub credentials work.
+ * @returns {Promise<object>}
+ */
+export async function pingHmrcHelloApplication() {
+  const cfg = oauthConfig();
+  const base =
+    cfg.mode === 'production'
+      ? 'https://api.service.hmrc.gov.uk'
+      : 'https://test-api.service.hmrc.gov.uk';
+  const openRes = await fetch(`${base}/hello/world`, {
+    headers: { Accept: 'application/vnd.hmrc.1.0+json' },
+  });
+  const openBody = await openRes.text();
+  const appTok = await getApplicationAccessToken();
+  let application = { skipped: true };
+  if (appTok.ok) {
+    const appRes = await fetch(`${base}/hello/application`, {
+      headers: {
+        Accept: 'application/vnd.hmrc.1.0+json',
+        Authorization: `Bearer ${appTok.accessToken}`,
+      },
+    });
+    const appText = await appRes.text();
+    application = {
+      status: appRes.status,
+      ok: appRes.ok,
+      body: appText.slice(0, 500),
+    };
+  } else {
+    application = { ok: false, error: appTok.error };
+  }
+  return {
+    environment: cfg.mode,
+    mock: cfg.mock,
+    hasClientId: Boolean(cfg.clientId),
+    hasClientSecret: Boolean(cfg.clientSecret),
+    redirectUri: cfg.redirectUri,
+    openAccess: {
+      status: openRes.status,
+      ok: openRes.ok,
+      body: openBody.slice(0, 500),
+    },
+    application,
+    subscriptionsExpected: [
+      'Self Employment Business (MTD) 5.0',
+      'Property Business (MTD) 6.0',
+      'Business Details (MTD) 2.0',
+      'Obligations (MTD) 3.0',
+      'Test Fraud Prevention Headers 1.0',
+      'Self Assessment Test Support (MTD) 1.0',
+      'Create Test User 1.0',
+      'Hello World 1.0',
+      'Business Source Adjustable Summary (MTD) 7.0 — later',
+      'Business Income Source Summary (MTD) 3.0 — later',
+      'Individual Calculations (MTD) 8.0 — later',
+    ],
+  };
+}
+
+/**
  * @param {{ code: string, state: string }} opts
  */
 export async function exchangeCodeForTokens(opts) {

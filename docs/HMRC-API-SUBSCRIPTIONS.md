@@ -3,6 +3,25 @@
 Research date: 2026-07-17  
 Sources: HMRC Developer Hub Self Employment Business (MTD) 5.0, Property Business (MTD) 6.0, Income Tax MTD end-to-end service guide, Test Fraud Prevention Headers API.
 
+## Your Sandbox application (confirmed subscribed)
+
+| Name | Need for Spreadsheet Tax |
+|------|--------------------------|
+| **Self Employment Business (MTD) 5.0** | **Required** — period submit SE |
+| **Property Business (MTD) 6.0** | **Required** — UK + foreign period submit |
+| **Business Details (MTD) 2.0** | **Required soon** — list business IDs |
+| **Obligations (MTD) 3.0** | **Required soon** — due periods |
+| **Test Fraud Prevention Headers 1.0** | **Required** — header QA (legal requirement on MTD APIs) |
+| **Self Assessment Test Support (MTD) 1.0** | **Required** — sandbox data |
+| **Create Test User 1.0** | **Required** — sandbox individuals |
+| **Hello World 1.0** | **Useful** — prove Hub credentials (connectivity only) |
+| **Business Income Source Summary (MTD) 3.0** | Optional — read summaries later |
+| **Business Source Adjustable Summary (MTD) 7.0** | Optional — after quarters (BSAS journey) |
+| **Individual Calculations (MTD) 8.0** | Optional — tax calculation later |
+
+**Verdict: you have everything required for the bridging MVP + a sensible pilot set.**  
+Optional extras (BISS, BSAS, Calculations) are fine to keep; they are not needed for first period submit.
+
 ## Verdict: core product APIs
 
 | Subscribe? | API | Version on Hub | Why |
