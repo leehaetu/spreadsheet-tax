@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Billing — Spreadsheet Tax</title>
+  <link rel="stylesheet" href="/css/site.css" />
+</head>
+<body class="app-body">
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a class="logo" href="/"><span class="logo-mark">ST</span> Spreadsheet Tax</a>
+      <nav>
+        <a href="/account">Account</a>
+        <a href="/pricing">Pricing</a>
+      </nav>
+    </div>
+  </header>
+  <main class="wrap app-main">
+    <h1>Plan selection</h1>
+    <p class="lead">Experimental packaging only — <strong>no card charges</strong> in this build. Prices remain hypotheses until customer evidence.</p>
+    <p id="current" class="muted">Sign in to see your plan.</p>
+    <div class="pricing-grid" id="plans"></div>
+    <p id="msg" class="success-box" hidden></p>
+    <p id="err" class="error" hidden></p>
+  </main>
+  <script>
+    async function load() {
+      const me = await fetch('/api/auth/me').then((r) => r.json());
+      if (!me.user) {
+        document.getElementById('current').innerHTML =
+          '<a href="/signin?next=/billing">Sign in</a> to select a plan.';
+      } else {
+        document.getElementById('current').textContent =
+          `Signed in as ${me.user.email} · current plan: ${me.plan?.label || me.plan?.planId}`;
+      }
+      const data = await fetch('/api/plans').then((r) => r.json());
+      const root = document.getElementById('plans');
+      root.innerHTML = '';
+      for (const p of data.plans || []) {
+        const art = document.createElement('article');
+        art.className = 'price-card';
+        art.innerHTML = `<h3>${p.label}</h3>
+          <p class="price-desc">Live HMRC path: ${p.liveHmrc ? 'yes (when enabled)' : 'preview only'}. Workspace: ${p.workspace ? 'yes' : 'no'}.</p>
+          <button type="button" class="btn btn-primary btn-block" data-id="${p.id}">Select</button>`;
+        root.appendChild(art);
+      }
+      root.querySelectorAll('button[data-id]').forEach((btn) => {
+        btn.onclick = async () => {
+          const err = document.getElementById('err');
+          const msg = document.getElementById('msg');
+          err.hidden = true;
+          msg.hidden = true;
+          const res = await fetch('/api/billing/select-plan', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ planId: btn.getAttribute('data-id') }),
+          });
+          const body = await res.json();
+          if (!res.ok) {
+            err.textContent = body.error || 'Failed';
+            err.hidden = false;
+            return;
+          }
+          msg.textContent = body.note || 'Plan updated';
+          msg.hidden = false;
+          load();
+        };
+      });
+    }
+    load();
+  </script>
+</body>
+</html>

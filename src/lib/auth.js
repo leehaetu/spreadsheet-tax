@@ -159,13 +159,21 @@ export function userCanAccessFirm(userId, firmId) {
 
 export function ensureDemoAuthSeed() {
   const database = getDb();
-  const existing = findUserByEmail('demo@spreadsheet-tax.example');
-  if (existing) return existing;
-  const user = createUser({
-    email: 'demo@spreadsheet-tax.example',
-    password: 'DemoPass123!',
-    name: 'Demo User',
-  });
+  let existing = findUserByEmail('demo@spreadsheet-tax.example');
+  if (existing) {
+    // Ensure firm membership exists for demo
+    const m = database
+      .prepare(`SELECT 1 FROM firm_memberships WHERE user_id = ? LIMIT 1`)
+      .get(existing.id);
+    if (m) return existing;
+  }
+  const user =
+    existing ||
+    createUser({
+      email: 'demo@spreadsheet-tax.example',
+      password: 'DemoPass123!',
+      name: 'Demo User',
+    });
   const firmId = newId();
   const now = new Date().toISOString();
   database
@@ -178,7 +186,6 @@ export function ensureDemoAuthSeed() {
       `INSERT INTO firm_memberships (id, firm_id, user_id, role) VALUES (?, ?, ?, ?)`
     )
     .run(newId(), firmId, user.id, ROLE_PRACTICE_ADMIN);
-  // Seed a couple of clients for practice UI
   for (const [name, status] of [
     ['Jordan Mills Plumbing', 'ready_to_submit'],
     ['Aisha Khan Properties', 'awaiting_records'],
@@ -188,16 +195,7 @@ export function ensureDemoAuthSeed() {
         `INSERT INTO clients (id, firm_id, display_name, workflow_status, assignee_user_id, due_date, portal_enabled, created_at, updated_at)
          VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?)`
       )
-      .run(
-        newId(),
-        firmId,
-        name,
-        status,
-        user.id,
-        '2025-07-05',
-        now,
-        now
-      );
+      .run(newId(), firmId, name, status, user.id, '2025-07-05', now, now);
   }
   return user;
 }

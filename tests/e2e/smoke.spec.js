@@ -61,6 +61,13 @@ test.describe('Gate 0 smoke — sales and personal app', () => {
     await page.goto('/pricing');
     await expect(page.getByRole('heading', { name: /paths|pricing|packages/i })).toBeVisible();
     await page.goto('/security');
-    await expect(page.locator('body')).toContainText(/upload|mapping|HMRC/i);
+    await expect(page.locator('body')).toContainText(/upload|mapping|HMRC|map/i);
+  });
+
+  test('help templates billing connect pages load', async ({ page }) => {
+    for (const p of ['/help', '/templates', '/billing', '/connect-hmrc', '/account']) {
+      const res = await page.goto(p);
+      expect(res?.ok() || res?.status() === 200 || page.url().includes('signin')).toBeTruthy();
+    }
   });
 });

@@ -53,6 +53,21 @@ import {
   listWorkflowStatusCatalog,
 } from './lib/practice-db.js';
 import { getDb } from './lib/db.js';
+import {
+  buildAuthorizeUrl,
+  exchangeCodeForTokens,
+  getActiveConnection,
+  revokeConnection,
+  oauthConfig,
+} from './lib/hmrc-oauth.js';
+import {
+  ensureFreePlan,
+  getUserPlan,
+  setUserPlan,
+  listPublicPlans,
+  PLAN_PROFESSIONAL,
+} from './lib/entitlements.js';
+import { buildFraudPreventionHeaders } from './lib/fraud-headers.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, '..');
@@ -77,7 +92,15 @@ ensureDemoData();
 if (process.env.SKIP_DB_SEED !== '1') {
   try {
     getDb();
-    ensureDemoAuthSeed();
+    const demo = ensureDemoAuthSeed();
+    if (demo?.id) {
+      ensureFreePlan(demo.id);
+      try {
+        setUserPlan(demo.id, PLAN_PROFESSIONAL);
+      } catch {
+        /* plan table may already have row */
+      }
+    }
   } catch (e) {
     console.warn('DB init warning:', e instanceof Error ? e.message : e);
   }
@@ -126,11 +149,21 @@ app.get('/api/template', sendTemplateDownload);
 app.use('/templates', express.static(templatesDir));
 
 app.get('/health', (_req, res) => {
+  let dbOk = false;
+  try {
+    getDb().prepare('SELECT 1 AS x').get();
+    dbOk = true;
+  } catch {
+    dbOk = false;
+  }
   res.json({
     ok: true,
     service: 'spreadsheet-tax',
     bridging: true,
-    portals: ['accountant', 'practice', 'client'],
+    db: dbOk,
+    oauthMock: oauthConfig().mock,
+    liveSubmitEnabled: process.env.HMRC_ALLOW_LIVE_SUBMIT === '1',
+    portals: ['accountant', 'practice', 'client', 'workspace'],
   });
 });
 
@@ -208,6 +241,18 @@ app.get('/register', (_req, res) => {
 
 app.get('/workspace', (_req, res) => {
   res.sendFile(path.join(publicDir, 'workspace.html'));
+});
+
+app.get('/connect-hmrc', (_req, res) => {
+  res.sendFile(path.join(publicDir, 'connect-hmrc.html'));
+});
+
+app.get('/billing', (_req, res) => {
+  res.sendFile(path.join(publicDir, 'billing.html'));
+});
+
+app.get('/account', (_req, res) => {
+  res.sendFile(path.join(publicDir, 'account.html'));
 });
 
 /**
@@ -374,11 +419,11 @@ app.get('/api/samples', (_req, res) => {
 });
 
 /**
- * Gate 0: never attach env HMRC credentials on the public submit path unless
- * HMRC_ALLOW_LIVE_SUBMIT=1 is set intentionally (pilot/prod only).
- * Default is always the in-process preview (double) client.
+ * Gate 0+: default double/preview. Live/sandbox only when explicitly allowed
+ * and a user OAuth token (or env token) is present.
+ * @param {{ accessToken?: string, mode?: string, req?: import('express').Request }} [opts]
  */
-function createSubmitClient() {
+function createSubmitClient(opts = {}) {
   const allowLive = process.env.HMRC_ALLOW_LIVE_SUBMIT === '1';
   if (!allowLive) {
     return createHmrcClient({
@@ -386,9 +431,48 @@ function createSubmitClient() {
       accessToken: undefined,
       clientId: undefined,
       clientSecret: undefined,
+      req: opts.req || null,
     });
   }
-  return createHmrcClient();
+  if (opts.accessToken) {
+    return createHmrcClient({
+      mode: opts.mode === 'production' ? 'sandbox' : opts.mode || 'sandbox',
+      accessToken: opts.accessToken,
+      req: opts.req || null,
+    });
+  }
+  return createHmrcClient({ req: opts.req || null });
+}
+
+/** Simple in-process rate limit (per key). */
+function rateLimit(key, max, windowMs) {
+  const database = getDb();
+  const now = Date.now();
+  const row = database
+    .prepare(`SELECT * FROM rate_limits WHERE key = ?`)
+    .get(key);
+  if (!row) {
+    database
+      .prepare(
+        `INSERT INTO rate_limits (key, count, window_start) VALUES (?, 1, ?)`
+      )
+      .run(key, new Date(now).toISOString());
+    return true;
+  }
+  const start = new Date(row.window_start).getTime();
+  if (now - start > windowMs) {
+    database
+      .prepare(
+        `UPDATE rate_limits SET count = 1, window_start = ? WHERE key = ?`
+      )
+      .run(new Date(now).toISOString(), key);
+    return true;
+  }
+  if (row.count >= max) return false;
+  database
+    .prepare(`UPDATE rate_limits SET count = count + 1 WHERE key = ?`)
+    .run(key);
+  return true;
 }
 
 app.post('/api/submit', async (req, res) => {
@@ -403,20 +487,31 @@ app.post('/api/submit', async (req, res) => {
       taxYear,
     } = req.body || {};
 
+    const ip =
+      (typeof req.headers['x-forwarded-for'] === 'string'
+        ? req.headers['x-forwarded-for'].split(',')[0]
+        : req.socket.remoteAddress) || 'unknown';
+    if (!rateLimit(`submit:${ip}`, 30, 60_000)) {
+      return res.status(429).json({ error: 'Too many submit attempts. Try again shortly.' });
+    }
+
     let payloads = null;
     let draft = null;
     if (draftId) {
       draft = getDraft(String(draftId));
       if (!draft) {
-        return res.status(404).json({ error: 'Draft not found. Import the file again.' });
+        return res
+          .status(404)
+          .json({ error: 'Draft not found. Import the file again.' });
       }
       payloads = draft.payloads;
-    } else if (clientPayloads && process.env.ALLOW_CLIENT_PAYLOAD_SUBMIT === '1') {
-      // Legacy escape hatch for tests only — not default
+    } else if (
+      clientPayloads &&
+      process.env.ALLOW_CLIENT_PAYLOAD_SUBMIT === '1'
+    ) {
       payloads = clientPayloads;
     } else if (clientPayloads) {
-      // Accept client payloads only for anonymous free-check double mode
-      // when no draft was stored (DB failure). Prefer draftId.
+      // Free-check fallback when draft persist failed
       payloads = clientPayloads;
     }
 
@@ -440,7 +535,22 @@ app.post('/api/submit', async (req, res) => {
       });
     }
 
-    const client = createSubmitClient();
+    const user = getSessionUser(getSessionIdFromRequest(req));
+    let accessToken;
+    let tokenMode;
+    if (user && process.env.HMRC_ALLOW_LIVE_SUBMIT === '1') {
+      const conn = getActiveConnection(user.id);
+      if (conn && !conn.expired && conn.accessToken) {
+        accessToken = conn.accessToken;
+        tokenMode = conn.mode;
+      }
+    }
+
+    const client = createSubmitClient({
+      accessToken,
+      mode: tokenMode,
+      req,
+    });
     if (client.mode !== 'double' && process.env.HMRC_ALLOW_LIVE_SUBMIT !== '1') {
       console.warn(
         '[security] blocked non-double submit without HMRC_ALLOW_LIVE_SUBMIT'
@@ -459,7 +569,6 @@ app.post('/api/submit', async (req, res) => {
     });
 
     const ok = results.every((r) => r.ok);
-    const user = getSessionUser(getSessionIdFromRequest(req));
     if (draft) {
       if (ok) markDraftSubmitted(draft.id);
       recordSubmissionAttempt({
@@ -483,6 +592,7 @@ app.post('/api/submit', async (req, res) => {
       mode: client.mode,
       draftId: draft?.id || null,
       liveSubmitEnabled: process.env.HMRC_ALLOW_LIVE_SUBMIT === '1',
+      fraudHeadersAttached: true,
       results,
     });
   } catch (e) {
@@ -508,6 +618,7 @@ app.post('/api/auth/register', (req, res) => {
       return res.status(409).json({ error: 'An account with that email exists.' });
     }
     const user = createUser({ email, password, name });
+    ensureFreePlan(user.id);
     const session = createSession(user.id);
     res.setHeader(
       'Set-Cookie',
@@ -568,7 +679,10 @@ app.post('/api/auth/logout', (req, res) => {
 app.get('/api/auth/me', (req, res) => {
   const user = getSessionUser(getSessionIdFromRequest(req));
   if (!user) return res.json({ ok: true, user: null });
+  ensureFreePlan(user.id);
   const memberships = listMemberships(user.id);
+  const plan = getUserPlan(user.id);
+  const hmrc = getActiveConnection(user.id);
   res.json({
     ok: true,
     user: { id: user.id, email: user.email, name: user.name },
@@ -577,7 +691,137 @@ app.get('/api/auth/me', (req, res) => {
       role: m.role,
       firmName: m.firm_name,
     })),
+    plan: {
+      planId: plan.planId,
+      label: plan.label,
+      features: plan.features,
+    },
+    hmrc: hmrc
+      ? {
+          connected: !hmrc.expired,
+          expired: Boolean(hmrc.expired),
+          mode: hmrc.mode,
+          expiresAt: hmrc.expiresAt,
+        }
+      : { connected: false },
   });
+});
+
+/** HMRC OAuth */
+app.get('/api/hmrc/connect', (req, res) => {
+  const user = requireUser(req, res);
+  if (!user) return;
+  try {
+    const result = buildAuthorizeUrl({ userId: user.id });
+    res.json({ ok: true, ...result, config: { mock: oauthConfig().mock } });
+  } catch (e) {
+    res.status(500).json({
+      error: e instanceof Error ? e.message : 'Could not start HMRC connect',
+    });
+  }
+});
+
+app.get('/api/hmrc/callback', async (req, res) => {
+  try {
+    const code = String(req.query.code || '');
+    const state = String(req.query.state || '');
+    if (!code || !state) {
+      return res.status(400).send('Missing code or state');
+    }
+    const conn = await exchangeCodeForTokens({ code, state });
+    writeAudit({
+      action: 'hmrc_connected',
+      entityType: 'hmrc_connection',
+      entityId: conn.id,
+      meta: { mode: conn.mode, mock: conn.mock },
+    });
+    res.redirect('/connect-hmrc?connected=1');
+  } catch (e) {
+    console.error(e);
+    res.redirect(
+      `/connect-hmrc?error=${encodeURIComponent(e instanceof Error ? e.message : 'connect failed')}`
+    );
+  }
+});
+
+app.post('/api/hmrc/disconnect', (req, res) => {
+  const user = requireUser(req, res);
+  if (!user) return;
+  revokeConnection(user.id);
+  writeAudit({
+    userId: user.id,
+    action: 'hmrc_disconnected',
+    entityType: 'user',
+    entityId: user.id,
+  });
+  res.json({ ok: true });
+});
+
+app.get('/api/hmrc/status', (req, res) => {
+  const user = requireUser(req, res);
+  if (!user) return;
+  const hmrc = getActiveConnection(user.id);
+  res.json({
+    ok: true,
+    oauth: oauthConfig(),
+    connection: hmrc
+      ? {
+          connected: !hmrc.expired,
+          expired: Boolean(hmrc.expired),
+          mode: hmrc.mode,
+          expiresAt: hmrc.expiresAt,
+        }
+      : null,
+  });
+});
+
+/** Billing / plans (stub — no card processing) */
+app.get('/api/plans', (_req, res) => {
+  res.json({ ok: true, plans: listPublicPlans() });
+});
+
+app.post('/api/billing/select-plan', (req, res) => {
+  const user = requireUser(req, res);
+  if (!user) return;
+  try {
+    const planId = String(req.body?.planId || 'free');
+    const plan = setUserPlan(user.id, planId);
+    writeAudit({
+      userId: user.id,
+      action: 'plan_selected',
+      entityType: 'subscription',
+      meta: { planId },
+    });
+    res.json({
+      ok: true,
+      plan,
+      note: 'Experimental packaging only — no card charge in this build.',
+    });
+  } catch (e) {
+    res.status(400).json({
+      error: e instanceof Error ? e.message : 'Could not select plan',
+    });
+  }
+});
+
+app.get('/api/metrics/summary', (req, res) => {
+  // Aggregate only — no tax identifiers
+  try {
+    const database = getDb();
+    const users = database.prepare(`SELECT COUNT(*) AS c FROM users`).get().c;
+    const drafts = database.prepare(`SELECT COUNT(*) AS c FROM drafts`).get().c;
+    const submits = database
+      .prepare(`SELECT COUNT(*) AS c FROM submission_attempts`)
+      .get().c;
+    res.json({
+      ok: true,
+      users: Number(users),
+      drafts: Number(drafts),
+      submissionAttempts: Number(submits),
+    });
+  } catch {
+    res.json({ ok: true, users: 0, drafts: 0, submissionAttempts: 0 });
+  }
 });
 
 app.get('/api/drafts', (req, res) => {

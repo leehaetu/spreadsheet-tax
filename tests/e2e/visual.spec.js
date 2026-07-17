@@ -48,6 +48,13 @@ test.describe('Visual regression snapshots (smoke)', () => {
     await expect(page.locator('h1')).toBeVisible();
     await shot(page, 'pricing');
   });
+
+  test('billing and help visual', async ({ page }) => {
+    await page.goto('/billing');
+    await shot(page, 'billing');
+    await page.goto('/help');
+    await shot(page, 'help');
+  });
 });
 
 test.describe('Auth workspace journey', () => {
@@ -60,5 +67,19 @@ test.describe('Auth workspace journey', () => {
     await expect(page.locator('#ws-panel')).toBeVisible({ timeout: 10_000 });
     await expect(page.locator('#client-body tr').first()).toBeVisible();
     await shot(page, 'workspace-signed-in');
+  });
+
+  test('mock HMRC connect journey', async ({ page }) => {
+    await page.goto('/signin?next=/connect-hmrc');
+    await page.fill('#email', 'demo@spreadsheet-tax.example');
+    await page.fill('#password', 'DemoPass123!');
+    await page.click('button[type=submit]');
+    await page.waitForURL(/connect-hmrc/);
+    await page.click('#connect-btn');
+    await page.waitForURL(/connect-hmrc/);
+    await expect(page.locator('#status')).toContainText(/sandbox|mock|connected|mode/i, {
+      timeout: 10_000,
+    });
+    await shot(page, 'connect-hmrc');
   });
 });

@@ -3,6 +3,8 @@
  * Both share the same request construction so unit tests drive real shapes.
  */
 
+import { buildFraudPreventionHeaders } from './fraud-headers.js';
+
 const DEFAULT_SANDBOX_BASE = 'https://test-api.service.hmrc.gov.uk';
 
 /**
@@ -13,6 +15,7 @@ const DEFAULT_SANDBOX_BASE = 'https://test-api.service.hmrc.gov.uk';
  * @property {string} [clientSecret]
  * @property {string} [accessToken]
  * @property {string} [nino]
+ * @property {import('express').Request | null} [req]
  */
 
 /**
@@ -66,6 +69,7 @@ export function buildSubmitRequest(req, config) {
   const headers = {
     Accept: 'application/vnd.hmrc.1.0+json',
     'Content-Type': 'application/json',
+    ...buildFraudPreventionHeaders(config.req || null),
   };
   if (config.accessToken) {
     headers.Authorization = `Bearer ${config.accessToken}`;
@@ -162,7 +166,8 @@ export function createHmrcClient(overrides = {}) {
  */
 export function resolveConfig(overrides = {}) {
   const envMode = process.env.HMRC_MODE;
-  const clientId = overrides.clientId ?? process.env.HMRC_CLIENT_ID;
+  const clientId =
+    'clientId' in overrides ? overrides.clientId : process.env.HMRC_CLIENT_ID;
   let mode = overrides.mode;
   if (!mode) {
     if (envMode === 'sandbox' || envMode === 'double') mode = envMode;
@@ -172,9 +177,16 @@ export function resolveConfig(overrides = {}) {
     mode,
     baseUrl: overrides.baseUrl ?? process.env.HMRC_BASE_URL ?? DEFAULT_SANDBOX_BASE,
     clientId,
-    clientSecret: overrides.clientSecret ?? process.env.HMRC_CLIENT_SECRET,
-    accessToken: overrides.accessToken ?? process.env.HMRC_ACCESS_TOKEN,
+    clientSecret:
+      'clientSecret' in overrides
+        ? overrides.clientSecret
+        : process.env.HMRC_CLIENT_SECRET,
+    accessToken:
+      'accessToken' in overrides
+        ? overrides.accessToken
+        : process.env.HMRC_ACCESS_TOKEN,
     nino: overrides.nino ?? process.env.HMRC_NINO,
+    req: overrides.req ?? null,
   };
 }
 

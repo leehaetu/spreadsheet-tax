@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Account — Spreadsheet Tax</title>
+  <link rel="stylesheet" href="/css/site.css" />
+</head>
+<body class="app-body">
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a class="logo" href="/"><span class="logo-mark">ST</span> Spreadsheet Tax</a>
+      <nav>
+        <a href="/app">App</a>
+        <a href="/workspace">Workspace</a>
+        <a href="/connect-hmrc">HMRC</a>
+        <a href="/billing">Billing</a>
+        <button type="button" class="btn btn-ghost btn-sm" id="out">Sign out</button>
+      </nav>
+    </div>
+  </header>
+  <main class="wrap app-main" style="max-width:720px">
+    <h1>Your account</h1>
+    <pre id="outbox" class="code-block">Loading…</pre>
+    <div class="hero-actions">
+      <a class="btn btn-primary" href="/app">Open bridging app</a>
+      <a class="btn btn-ghost" href="/api/drafts" id="drafts-link">Drafts API</a>
+    </div>
+  </main>
+  <script>
+    async function load() {
+      const me = await fetch('/api/auth/me').then((r) => r.json());
+      if (!me.user) {
+        location.href = '/signin?next=/account';
+        return;
+      }
+      const drafts = await fetch('/api/drafts').then((r) => r.json());
+      document.getElementById('outbox').textContent = JSON.stringify(
+        { user: me.user, plan: me.plan, hmrc: me.hmrc, memberships: me.memberships, draftCount: (drafts.drafts || []).length },
+        null,
+        2
+      );
+    }
+    document.getElementById('out').onclick = async () => {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      location.href = '/';
+    };
+    load();
+  </script>
+</body>
+</html>

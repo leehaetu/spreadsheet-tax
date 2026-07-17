@@ -117,6 +117,41 @@ function migrate(database) {
       note TEXT,
       created_at TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS oauth_states (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS hmrc_connections (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      firm_id TEXT,
+      mode TEXT NOT NULL,
+      authority_type TEXT NOT NULL,
+      access_token_enc TEXT NOT NULL,
+      refresh_token_enc TEXT,
+      scopes TEXT,
+      expires_at TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      revoked_at TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS subscriptions (
+      id TEXT PRIMARY KEY,
+      user_id TEXT,
+      firm_id TEXT,
+      plan_id TEXT NOT NULL,
+      status TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS rate_limits (
+      key TEXT PRIMARY KEY,
+      count INTEGER NOT NULL,
+      window_start TEXT NOT NULL
+    );
   `);
 }
 
