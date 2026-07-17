@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Bridging app — Spreadsheet Tax (local file → HMRC MTD ITSA)</title>
+  <link rel="stylesheet" href="/css/site.css" />
+</head>
+<body class="app-body">
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a class="logo" href="/">Spreadsheet Tax</a>
+      <nav>
+        <a href="/">Sales site</a>
+        <a href="/templates/period-summary-template.csv">Download template</a>
+        <span id="hmrc-mode" class="badge">HMRC: …</span>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap app-main">
+    <h1>MTD ITSA bridging app</h1>
+    <p class="lead">
+      Upload your <strong>local spreadsheet or CSV</strong> for self-employment, UK property, and/or
+      foreign property. Figures are mapped to HMRC quarterly update payloads — no re-keying of line totals.
+    </p>
+
+    <section class="panel" id="upload-panel">
+      <h2>1. Import local file</h2>
+      <p class="muted">Accepted: <code>.csv</code>, <code>.xlsx</code>. Use the
+        <a href="/templates/period-summary-template.csv">period summary template</a>
+        or matching column layout (<code>section</code>, <code>field</code>, <code>value</code>).</p>
+      <form id="upload-form" class="upload-form">
+        <label class="file-drop" for="file-input">
+          <input type="file" id="file-input" name="file" accept=".csv,.xlsx,.xls" required />
+          <span id="file-label">Choose spreadsheet file…</span>
+        </label>
+        <button type="submit" class="btn btn-primary" id="import-btn">Map file to quarterly figures</button>
+      </form>
+      <p id="upload-error" class="error" hidden></p>
+    </section>
+
+    <section class="panel" id="preview-panel" hidden>
+      <h2>2. Preview mapped figures &amp; payloads</h2>
+      <div id="sources-summary" class="sources-summary"></div>
+      <div class="grid-2">
+        <div>
+          <h3>Figures from your file</h3>
+          <pre id="figures-out" class="code-block"></pre>
+        </div>
+        <div>
+          <h3>HMRC quarterly payloads</h3>
+          <pre id="payloads-out" class="code-block"></pre>
+        </div>
+      </div>
+      <h3>Digital link (file field → payload path)</h3>
+      <div class="table-wrap">
+        <table id="links-table">
+          <thead>
+            <tr><th>Source</th><th>File field</th><th>Payload path</th><th>Value</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel" id="submit-panel" hidden>
+      <h2>3. Submit to HMRC</h2>
+      <p class="muted">Uses the sandbox client when credentials exist; otherwise the in-process test double with the same request shape.</p>
+      <div class="form-row">
+        <label>NINO <input type="text" id="nino" placeholder="AA123456A" /></label>
+        <label>Tax year <input type="text" id="tax-year" placeholder="2024-25" /></label>
+      </div>
+      <div class="form-row">
+        <label>SE business id <input type="text" id="bid-se" placeholder="XAIS…" /></label>
+        <label>UK property id <input type="text" id="bid-uk" placeholder="XPIS…" /></label>
+        <label>Foreign property id <input type="text" id="bid-fp" placeholder="XFIS…" /></label>
+      </div>
+      <button type="button" class="btn btn-primary" id="submit-btn">Submit quarterly update(s)</button>
+      <p id="submit-error" class="error" hidden></p>
+      <pre id="submit-out" class="code-block" hidden></pre>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <p class="muted">Bridging only — your records stay in the local file you uploaded. Not a full bookkeeping product.</p>
+    </div>
+  </footer>
+  <script src="/js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+section,field,value
+meta,tax_year,2024-25
+meta,period_start,2024-04-06
+meta,period_end,2024-07-05
+uk_property,period_amount,3600
+uk_property,premiums_of_lease_grant,100
+uk_property,premises_running_costs,400
+uk_property,repairs_and_maintenance,250
+uk_property,financial_costs,120
+uk_property,professional_fees,80
+uk_property,other,30

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Spreadsheet Tax — HMRC MTD ITSA Bridging for Self-Employed &amp; Landlords</title>
+  <meta name="description" content="Bridging-only HMRC Making Tax Digital (ITSA) software. Keep records in your local spreadsheet; we map and submit quarterly updates for self-employment, UK property and foreign property." />
+  <link rel="stylesheet" href="/css/site.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a class="logo" href="/">Spreadsheet Tax</a>
+      <nav>
+        <a href="#how">How it works</a>
+        <a href="#who">Who it's for</a>
+        <a href="#bridging">Bridging only</a>
+        <a class="btn btn-primary" href="/app">Open bridging app</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <p class="eyebrow">HMRC MTD · Income Tax Self Assessment</p>
+          <h1>Quarterly updates from your local spreadsheet — no re-keying</h1>
+          <p class="lead">
+            Spreadsheet Tax is a <strong>bridging-only</strong> product for self-employed individuals
+            (trades and businesses) and landlords with <strong>UK property</strong> and/or
+            <strong>foreign property</strong>. Your books stay in your file. We extract the figures,
+            map them to HMRC MTD ITSA quarterly payloads, and submit.
+          </p>
+          <div class="hero-actions">
+            <a class="btn btn-primary btn-lg" href="/app">Start with a local file</a>
+            <a class="btn btn-ghost btn-lg" href="/templates/period-summary-template.csv">Download CSV template</a>
+          </div>
+          <ul class="trust-list">
+            <li>Records remain in your local spreadsheet / file</li>
+            <li>Self-employment · UK property · Foreign property</li>
+            <li>Clear digital link from file fields → HMRC payload fields</li>
+          </ul>
+        </div>
+        <div class="hero-card" aria-hidden="true">
+          <div class="card-title">Bridging flow</div>
+          <ol class="flow">
+            <li>Keep records in Excel / CSV</li>
+            <li>Upload the period summary file</li>
+            <li>Preview mapped quarterly figures</li>
+            <li>Submit to HMRC MTD (sandbox or live when configured)</li>
+          </ol>
+          <p class="card-note">Not a full bookkeeping ledger — bridging only.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="who" class="section">
+      <div class="wrap">
+        <h2>Who it's for</h2>
+        <div class="cards">
+          <article class="card">
+            <h3>Self-employed trades &amp; businesses</h3>
+            <p>
+              Sole traders running their own business — hairdressers, plumbers, consultants,
+              and other trades — who already track income and expenses in a spreadsheet and need
+              MTD ITSA quarterly updates without retyping totals.
+            </p>
+          </article>
+          <article class="card">
+            <h3>UK property landlords</h3>
+            <p>
+              Individuals with UK rental property who maintain period income and expenses locally
+              and must send property business quarterly updates under Making Tax Digital for Income Tax.
+            </p>
+          </article>
+          <article class="card">
+            <h3>Foreign property landlords</h3>
+            <p>
+              Landlords with overseas property income who need foreign property period summaries
+              submitted alongside or instead of UK property — still driven from the same local file.
+            </p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="bridging" class="section section-alt">
+      <div class="wrap narrow">
+        <h2>What “bridging only” means</h2>
+        <p>
+          Under HMRC Making Tax Digital, <em>bridging software</em> takes figures from your existing
+          digital records (here: a local spreadsheet or structured file) and sends them to HMRC.
+          Spreadsheet Tax does <strong>not</strong> replace your accounts package or force you into
+          a cloud ledger. You stay in control of the file on your machine; we map and bridge the
+          quarterly submission path.
+        </p>
+        <ul class="checklist">
+          <li>Local file upload (CSV / Excel template)</li>
+          <li>Automatic map of income &amp; expense lines for SE and property</li>
+          <li>Preview of HMRC quarterly update payloads before send</li>
+          <li>Digital audit link: spreadsheet field → payload field</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="how" class="section">
+      <div class="wrap">
+        <h2>How it works</h2>
+        <div class="steps">
+          <div class="step"><span>1</span><p>Download the period-summary template or use your matching layout.</p></div>
+          <div class="step"><span>2</span><p>Fill self-employment and/or UK / foreign property sections for the quarter.</p></div>
+          <div class="step"><span>3</span><p>Open the bridging app, upload the file, and review the mapped figures.</p></div>
+          <div class="step"><span>4</span><p>Submit quarterly updates via the HMRC API client (sandbox or configured credentials).</p></div>
+        </div>
+        <p class="cta-row">
+          <a class="btn btn-primary btn-lg" href="/app">Open the bridging app</a>
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-inner">
+      <p><strong>Spreadsheet Tax</strong> — HMRC MTD ITSA bridging-only software for self-employed individuals and landlords (UK and foreign property).</p>
+      <p class="muted">Records stay in your local file. Not affiliated with HMRC. Sandbox-first integration; production use requires your own HMRC Developer Hub credentials and fraud-prevention compliance.</p>
+      <p><a href="/app">App</a> · <a href="/templates/period-summary-template.csv">Template</a> · <a href="/health">Health</a></p>
+    </div>
+  </footer>
+</body>
+</html>

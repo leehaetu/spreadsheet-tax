@@ -1,0 +1,31 @@
+{
+  "name": "spreadsheet-tax",
+  "version": "1.0.0",
+  "description": "HMRC MTD ITSA bridging-only app — local spreadsheet file to quarterly updates for self-employment and property landlords",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "node --test tests/**/*.test.js",
+    "test:unit": "node --test tests/**/*.test.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "hmrc",
+    "mtd",
+    "itsa",
+    "bridging",
+    "self-employment",
+    "property",
+    "uk-tax"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.21.2",
+    "multer": "^1.4.5-lts.1",
+    "xlsx": "^0.18.5"
+  }
+}
