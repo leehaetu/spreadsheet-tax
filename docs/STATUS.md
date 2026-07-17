@@ -2,8 +2,10 @@
 
 **Last updated:** 2026-07-17  
 **Live:** https://spreadsheet-tax-production.up.railway.app  
+**Stage map:** [STAGE-MAP.md](./STAGE-MAP.md) · **Checklist pack:** [hmrc/](./hmrc/)  
 **Live app version:** confirm via `/health` → `version` / `appVersion` (semantic software release — **not** HMRC recognition ID)  
-**HMRC recognised:** **No** — site-wide banner + footer via `site-chrome.js`; flip only in `src/lib/hmrc-recognition.js` when granted  
+**HMRC recognised:** **No** — site-wide banner + footer; flip only in `src/lib/hmrc-recognition.js` when granted  
+**Stages 2–3:** core sandbox + checklist pack ready; email SDSTeam after pasting Hub IDs  
 **Truth inventory:** [DONE-VS-NOT.md](./DONE-VS-NOT.md) ← read this before “next steps”  
 **Truth audit:** [TRUTH-AUDIT.md](./TRUTH-AUDIT.md)  
 **Production APIs pack:** [HMRC-PRODUCTION-ACCESS.md](./HMRC-PRODUCTION-ACCESS.md) (only when sandbox evidence is enough)

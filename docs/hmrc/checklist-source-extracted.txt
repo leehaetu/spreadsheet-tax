@@ -1,0 +1,156 @@
+
+MTD ITSA Software Production Checklist
+Company name:
+  
+Application name:
+Sandbox ID (used for testing)
+Production Application ID (for subscriptions)
+If you don’t already have a Production application, you’ll need to create one
+Company website URL:
+Completed by (name):
+Date of completion: 
+IMPORTANT – Our review and subsequent approval is based on the information you have provided below. Misleading or incorrect information may result in production access being revoked.
+General – Complete in all cases
+Question (Please delete Yes/No as appropriate)
+Answer 
+Comments
+Confirm you have read the Process for being granted Production access section in the MTD IT end to end service guide
+Confirm testing meets the requirements set out in the service guide.
+Yes/No
+Yes/No
+Confirm software supports the transmission of fraud prevention header data in all API calls.
+Yes/No
+Confirm that when testing, the APIs have been called via software and not just created within a submission tool. 
+Yes/No
+Confirm software allows the customer to own and have access to all their records created, and to be able to export these records if necessary.
+Yes/No
+Confirm the customer base your software is aimed at:
+Individuals
+Yes/No
+Agents
+Yes/No
+Confirm product build type:
+In-Year product only
+End of Year product only
+Full End to End product.
+Yes/No
+Yes/No
+Yes/No
+Confirm whether you are building iteratively
+If building iteratively, please state which stage of the build you require production access for
+Yes/No
+You are only required to complete the section(s) below relating to the stage of build you want access for currently
+Confirm which business income types your software supports:
+Self-Employment
+Yes/No
+UK Property
+Yes/No
+Foreign Property
+Yes/No
+Confirm which quarterly period type your software supports: 
+Standard quarterly
+Calendar quarterly 
+Yes/No
+Yes/No
+Confirm if software supports the following accounting types:
+Cash
+Accruals
+Yes/No Yes/No
+Confirm where non-mandated income sources are not supported within the software that this is clearly stated and that you link your customers to: https://www.gov.uk/guidance/find-software-thats-compatible-with-making-tax-digital-for-income-tax
+Yes/No
+Confirm where software doesn’t support end of year functionality (including Final Declaration), that this is clearly stated in software, together with a link to  https://www.gov.uk/guidance/find-software-thats-compatible-with-making-tax-digital-for-income-tax
+Yes/No
+Applies to all in-year only products
+ 
+Confirm if your software allows a customer to request and view a tax calculation at any time using the Individual Calculations (MTD) API 
+If ‘Yes’ - Confirm the calculation is presented with a disclaimer as to its accuracy
+Or
+If ‘No’ - Signpost customer to their HMRC Personal / Business Tax Account to view their calculation.
+Yes/No
+Yes/No
+Yes/No
+Example wording - ‘This calculation is only based on information HMRC have received about your income and expenses to 20XX-XX-XX. This may change as we receive further information about you during the tax year’
+Confirm your software returns and displays the appropriate error messages for all relevant calls at each stage (below)
+Yes/No
+In-Year – Complete if appropriate
+Question (Please delete Yes/No as appropriate)
+Answer
+Comments
+Confirm your software lists and retrieves Business Details (this can be automated) – Business Details (MTD) API
+Yes/No
+Testing required.
+If software supports calendar quarterly submissions, confirm software allows users to Create and Amend quarterly Period Type for a Business
+Yes/No
+If supported - Testing required 
+As Retrieve, Create or Update Periods of Account – Business Details (MTD) API can be done in-year
+confirm if you are including these endpoints in your in-year build stage (instead of the End of Year stage) – Not applicable if building in-year only product.
+Yes/No
+Please note – Only required for self-employment income (not required for property income only products) 
+Confirm your software can Retrieve Income & Expenses (I&E) Obligations (this can be automated) - Obligations (MTD) API
+Yes/No
+Testing required
+Confirm whether the Final Declaration Obligation is retrieved at the same time as I&E Obligations? – Not required for In-Year only products. 
+Yes/No
+If supported – testing required.
+Confirm the quarterly submission data is populated from the customer’s digital record and no manual keying is permitted in the submission itself (any changes must be made in the digital record) 
+Yes/No
+Confirm your software can submit and retrieve in year summaries for each relevant business source (property and/or self-assessment) – Self Employment Business (MTD) and Property Business (MTD) APIs
+Yes/No
+For each relevant business source – 
+Test all cumulative period summary endpoints
+If software supports foreign property confirm users can Retrieve, Create and Update Foreign Property Details – Property Business API
+Yes/No
+Testing required – Foreign property only
+As allowances and adjustments can be submitted for each relevant business source in-year using the Annual Submission endpoints, confirm if you are including these relevant endpoints in your in-year build stage (instead of the End of Year stage) – Not applicable if building in-year only product. 
+Yes/No
+If supported - Testing of all Annual Submission endpoints required for each relevant business source
+Where software allows a customer to request and view a tax calculation at any time confirm that it can:
+Trigger, List and Retrieve the calculation using the Individual Calculations (MTD) API
+ 
+Yes/No
+Testing required.
+End of Year – Complete if appropriate
+Question (Please delete Yes/No as appropriate)
+Answer
+Comments
+Confirm your software can Retrieve, Create or Update Periods of Account – Business Details (MTD) API (For end-of year only products or full end to end products where this wasn’t included as part of the in-year build)
+Confirm your software can Retrieve, Disapply and Withdraw Late Accounting Date Rule – Business Details (MTD) API
+If software supports both cash and accruals, confirm your software allows customers to Retrieve and Update Accounting Type endpoints prior to final declaration – Business Details (MTD) API
+Yes/No
+Yes/No
+Yes/No
+Testing required 
+Please note – Only required for self-employment income (not required for property income only products)
+Testing required
+Please note – Only required for self-employment income (not required for property income only products)
+Testing required
+Please note – This applies to both self-employment and property income
+Confirm your software retrieves Final Declaration Obligations (this can be automated) - Obligations (MTD) API (For end of year products and iterative builds – where this was included as part of your in-year build)
+Yes/No
+Testing required (if not already incorporated when retrieving I&E Obligations)
+Confirm your software can submit allowances and adjustments for each relevant business source (For end-to-end only products where this wasn’t included as part of the in-year build) 
+Yes/No
+If not already incorporate in your in-year build - Testing of all Annual Submission endpoints required for each relevant business source
+Confirm your software can submit accounting adjustments via Business Source Adjustable Summary (MTD) API for each business source
+Yes/No
+Testing required - All endpoints for each business source supported, plus List and Trigger.
+Confirm your software can create and submit losses via Individual Losses (MTD) API
+Yes/No
+Testing of all endpoints required.
+Confirm software supports all endpoints within the Individuals Tax Liability Adjustments (MTD) API
+Yes/No
+All endpoints required
+Confirm your software can Trigger a tax calculation with ‘calculationType’ ‘intent-to-finalise’ and ‘intent-to-amend' - Individual Calculations MTD API
+Yes/No
+Testing required
+Confirm if your software supports Individuals, it displays the Individual Final Declaration Statement – this must match the statements shown in the ITSA End to End Service Guide.
+Yes/No
+If “Yes” please provide a screenshot of the Individual Final Declaration Statement.
+Confirm if your software supports Agents, it displays the Agent Final Declaration Statement – this must match the statements shown in the ITSA End to End Service Guide.
+Yes/No
+If “Yes” please provide a screenshot of the Agent Final declaration Statement 
+Confirm the end user must confirm they have read and agreed the declaration statement before the option to submit the Final Declaration is made available.
+Yes/No
+Confirm your software can Submit a final declaration with ‘calculationType’ ‘final-declaration’ and ‘confirm-amendment
+Yes/No
+Testing required

@@ -1,0 +1,98 @@
+{
+  "generatedAt": "2026-07-17T21:15:00+01:00",
+  "product": "Spreadsheet Tax",
+  "intellectualProperty": "Lee Hine",
+  "liveUrl": "https://spreadsheet-tax-production.up.railway.app",
+  "appVersionSource": "GET /health → version / appVersion (semantic software release)",
+  "hmrcRecognisedSoftware": false,
+  "productBuildType": "in-year only",
+  "iterativeStage": "in-year",
+  "environment": "sandbox",
+  "oauthEnv": "sandbox",
+  "connectionMethod": "WEB_APP_VIA_SERVER",
+  "notTheSameAs": {
+    "productName": "QuarterLink",
+    "note": "June 2026 evidence pack on Desktop (hmrc-sandbox-evidence-pack.json), NINO TZ222092B, correlations, and EPI962 were for QuarterLink. Do not present those as Spreadsheet Tax logs without re-stating product name.",
+    "quarterLinkEvidenceFile": "/Users/leehine/Desktop/hmrc-sandbox-evidence-pack.json"
+  },
+  "hubSubscriptionsOnSandboxApp": [
+    "Business Details (MTD) 2.0",
+    "Obligations (MTD) 3.0",
+    "Self Employment Business (MTD) 5.0",
+    "Property Business (MTD) 6.0",
+    "Test Fraud Prevention Headers 1.0",
+    "Create Test User 1.0",
+    "Self Assessment Test Support (MTD) 1.0",
+    "Hello World 1.0",
+    "Individual Calculations (MTD) 8.0 — subscribed; product signposts to HMRC account (not in-app calc)",
+    "Business Income Source Summary (MTD) 3.0 — subscribed; not product journey this stage",
+    "Business Source Adjustable Summary (MTD) 7.0 — subscribed; end-of-year later"
+  ],
+  "urls": {
+    "privacy": "https://spreadsheet-tax-production.up.railway.app/privacy",
+    "terms": "https://spreadsheet-tax-production.up.railway.app/terms",
+    "integrity": "https://spreadsheet-tax-production.up.railway.app/integrity",
+    "apiIntegrity": "https://spreadsheet-tax-production.up.railway.app/api/integrity",
+    "redirectUri": "https://spreadsheet-tax-production.up.railway.app/api/hmrc/callback",
+    "compatibleSoftwareList": "https://www.gov.uk/guidance/find-software-thats-compatible-with-making-tax-digital-for-income-tax"
+  },
+  "functionalityMapping": {
+    "fraudPreventionHeaders": true,
+    "businessDetailsList": true,
+    "obligationsIncomeExpenditure": true,
+    "selfEmploymentPeriodSubmit": true,
+    "ukPropertyPeriodSubmit": true,
+    "foreignPropertyPeriodSubmit": true,
+    "digitalRecordsSource": "customer spreadsheet; period file imported for mapping; no retype on submit (server draftId)",
+    "exportRecords": "History → submissions CSV export; books remain in spreadsheet",
+    "taxEstimate": "signpost to HMRC online account (not Individual Calculations in-app)",
+    "endOfYearFinalDeclaration": false,
+    "agentAuthorisation": false,
+    "nonMandatedIncome": "not supported — stated in UI with GOV.UK software list link"
+  },
+  "sandboxEvidenceSpreadsheetTax": {
+    "applicationRestricted": {
+      "clientCredentialsToken": true,
+      "helloWorld": true,
+      "helloApplication": true,
+      "createTestUser": true,
+      "fraudHeaderValidateEndpoint": true,
+      "fraudHeaderPolicy": "honest omit — never invent public port/screens/vendor IP"
+    },
+    "userRestricted": {
+      "oauthGrantPlaywright": true,
+      "connectedMockFalse": true,
+      "businessDetailsList": true,
+      "exampleBusinessIdSeen": "XBIS12345678901",
+      "obligationsEndpoint": true,
+      "selfEmploymentPeriodSubmit": {
+        "status": "HTTP 200",
+        "periodId": "2024-04-06_2024-07-05",
+        "sourceSpreadsheet": "fixture test-spreadsheets/01-self-employment-plumber.csv (not customer file)",
+        "ninoUsed": "sandbox test user TB116925D (Spreadsheet Tax Railway pilot storage)"
+      },
+      "propertyPeriodSubmit": {
+        "status": "code paths live POST /api/hmrc/sandbox-submit-uk and -foreign",
+        "http200ClaimedInThisPack": false,
+        "note": "Re-run via /connect-hmrc pilot panel with property draft for SDSTeam logs if required"
+      }
+    },
+    "automation": {
+      "unitTests": "npm test (100+)",
+      "playwrightProd": "tests/e2e/hmrc-sandbox-oauth.spec.js — 5/5 including OAuth + businesses + obligations"
+    }
+  },
+  "fraudPreventionMissingData": {
+    "Gov-Client-Public-Port": "Omitted when reverse proxy does not supply client public TCP port; browser cannot observe it; not invented",
+    "Gov-Client-Multi-Factor": "Omitted — product auth is password-only",
+    "Gov-Vendor-Public-IP": "Set via VENDOR_PUBLIC_IP=195.180.20.214 (Railway egress measured 2026-07-17)"
+  },
+  "operatorBeforeEmailingSds": [
+    "Paste Sandbox Application ID into checklist header",
+    "Paste Production Application ID into checklist header",
+    "Confirm redirect/privacy/terms on Hub match live URLs",
+    "Optional: run UK+foreign property sandbox submit for log evidence",
+    "Do not re-send only QuarterLink evidence without naming Spreadsheet Tax",
+    "Do not claim HMRC-recognised"
+  ]
+}
