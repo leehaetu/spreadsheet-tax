@@ -9,8 +9,8 @@ Sources: HMRC Developer Hub Self Employment Business (MTD) 5.0, Property Busines
 |------|--------------------------|
 | **Self Employment Business (MTD) 5.0** | **Required** — period submit SE |
 | **Property Business (MTD) 6.0** | **Required** — UK + foreign period submit |
-| **Business Details (MTD) 2.0** | **Required soon** — list business IDs |
-| **Obligations (MTD) 3.0** | **Required soon** — due periods |
+| **Business Details (MTD) 2.0** | **Required** — list business IDs (in-year product) |
+| **Obligations (MTD) 3.0** | **Required** — due periods (in-year product production access) |
 | **Test Fraud Prevention Headers 1.0** | **Required** — header QA (legal requirement on MTD APIs) |
 | **Self Assessment Test Support (MTD) 1.0** | **Required** — sandbox data |
 | **Create Test User 1.0** | **Required** — sandbox individuals |
@@ -31,8 +31,8 @@ Optional extras (BISS, BSAS, Calculations) are fine to keep; they are not needed
 | **YES — sandbox QA** | **Test Fraud Prevention Headers** | **1.0** | HMRC requires fraud headers by law on SE + Property APIs; this test API validates header pack in sandbox |
 | **YES — sandbox setup** | **Self Assessment Test Support (MTD)** | current | Delete/setup stateful sandbox data for MTD journeys |
 | **YES — sandbox setup** | **Create Test User** | current | Create individual test users + NINO for OAuth and submits |
-| **RECOMMENDED soon** | **Business Details (MTD)** | current | List businesses → real business IDs (we currently require user-entered IDs) |
-| **RECOMMENDED soon** | **Obligations (MTD)** family | current | Open period / due dates for workspace |
+| **YES — required (in-year product)** | **Business Details (MTD)** | 2.0 | List businesses → real business IDs (`GET /api/hmrc/businesses`) |
+| **YES — required (in-year product)** | **Obligations (MTD)** | 3.0 | Open period / due dates (`GET /api/hmrc/obligations`) |
 
 Beta versions are normal for MTD IT APIs on the Hub. Prefer the **highest stable-listed beta that matches the e2e guide** (SE **5.0**, Property **6.0**). Do not pick an older 1.0 beta for the same product name if 5.0/6.0 are listed.
 

@@ -21,6 +21,7 @@ Safety and launch readiness cannot honestly be 10/10 until controls are **implem
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | As-is / to-be, ADR index | ADRs accepted |
 | [DATA-MODEL.md](./DATA-MODEL.md) | Tenant-scoped schema | Approved + migrated |
 | [HMRC-WORKSTREAM.md](./HMRC-WORKSTREAM.md) | **Only** H1–H13 checklist (no dup in hub) | Sandbox + production path |
+| [HMRC-PRODUCTION-ACCESS.md](./HMRC-PRODUCTION-ACCESS.md) | Hub Production app + SDSTeam evidence pack | Operator steps for Production APIs |
 | [SECURITY-LAUNCH-GATE.md](./SECURITY-LAUNCH-GATE.md) | Requirement → evidence → go/no-go | All mandatory proven |
 | [COMPLIANCE-REGISTER.md](./COMPLIANCE-REGISTER.md) | Privacy, legal, retention | Launch pack complete |
 | [DECISIONS/](./DECISIONS/) | ADRs | Early ADRs decided |

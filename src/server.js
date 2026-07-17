@@ -95,6 +95,7 @@ import {
   validateFraudPreventionHeaders,
   sandboxReadiness,
   listBusinessDetails,
+  listIncomeExpenditureObligations,
   submitSelfEmploymentPeriodSandbox,
 } from './lib/hmrc-sandbox.js';
 import {
@@ -216,7 +217,7 @@ app.get('/health', (_req, res) => {
   res.status(ready ? 200 : 503).json({
     ok: ready,
     service: 'spreadsheet-tax',
-    version: '1.8.0',
+    version: '1.9.0',
     bridging: true,
     db: dbOk,
     oauthMock: oauthConfig().mock,
@@ -1250,6 +1251,54 @@ app.get('/api/hmrc/businesses', async (req, res) => {
 });
 
 /**
+ * List income & expenditure obligations (Obligations MTD).
+ * Required for HMRC in-year product production access.
+ * Query: nino (required), optional typeOfBusiness, businessId, fromDate, toDate, status.
+ */
+app.get('/api/hmrc/obligations', async (req, res) => {
+  const user = requireUser(req, res);
+  if (!user) return;
+  const conn = getActiveConnection(user.id);
+  if (!conn || conn.expired || conn.mock || !conn.accessToken) {
+    return res.status(400).json({
+      ok: false,
+      error: 'Connect real HMRC sandbox OAuth first (non-mock token required).',
+    });
+  }
+  const nino =
+    typeof req.query.nino === 'string'
+      ? req.query.nino
+      : process.env.HMRC_SANDBOX_TEST_NINO || '';
+  if (!nino) {
+    return res.status(400).json({ ok: false, error: 'nino query required' });
+  }
+  try {
+    const result = await listIncomeExpenditureObligations({
+      accessToken: conn.accessToken,
+      nino,
+      typeOfBusiness:
+        typeof req.query.typeOfBusiness === 'string'
+          ? req.query.typeOfBusiness
+          : undefined,
+      businessId:
+        typeof req.query.businessId === 'string' ? req.query.businessId : undefined,
+      fromDate:
+        typeof req.query.fromDate === 'string' ? req.query.fromDate : undefined,
+      toDate: typeof req.query.toDate === 'string' ? req.query.toDate : undefined,
+      status: typeof req.query.status === 'string' ? req.query.status : undefined,
+      req,
+      userId: user.id,
+    });
+    res.status(result.ok ? 200 : 502).json(result);
+  } catch (e) {
+    res.status(500).json({
+      ok: false,
+      error: e instanceof Error ? e.message : 'obligations failed',
+    });
+  }
+});
+
+/**
  * Controlled sandbox SE period submit using stored user OAuth token.
  * Requires HMRC_ALLOW_LIVE_SUBMIT=1 (still sandbox host when HMRC_OAUTH_ENV=sandbox).
  */
@@ -2067,7 +2116,8 @@ app.get('/api/integrity', (_req, res) => {
     ok: true,
     product: 'Spreadsheet Tax',
     intellectualProperty: 'Lee Hine',
-    version: '1.7.0',
+    version: '1.9.0',
+    productType: 'in-year bridging (quarterly updates)',
     layers: {
       spreadsheetImportMapping: {
         real: true,
@@ -2083,20 +2133,37 @@ app.get('/api/integrity', (_req, res) => {
         enabled: live,
         oauthMock: oauth.mock,
         notes: live
-          ? 'Live flag on — still requires non-mock OAuth token'
+          ? 'Live flag on — still requires non-mock OAuth token; host is sandbox when HMRC_OAUTH_ENV=sandbox'
           : 'Disabled until HMRC_ALLOW_LIVE_SUBMIT=1',
       },
       oauth: {
         mockDefault: oauth.mock,
         hasClientCredentials: Boolean(oauth.clientId && oauth.clientSecret),
       },
+      businessDetails: {
+        real: true,
+        endpoint: 'GET /api/hmrc/businesses',
+        notes: 'User-restricted list via Business Details (MTD) 2.0',
+      },
+      obligations: {
+        real: true,
+        endpoint: 'GET /api/hmrc/obligations',
+        notes: 'User-restricted income & expenditure obligations via Obligations (MTD) 3.0',
+      },
+      taxLiabilityEstimate: {
+        inSoftware: false,
+        signpostToHmrc: true,
+        notes:
+          'Does not call Individual Calculations; customers are signposted to their HMRC online account for estimates',
+      },
       fraudPreventionHeaders: {
         preparedOnOutbound: true,
         connectionMethod: 'WEB_APP_VIA_SERVER',
         keysEmitted: listFraudHeaderKeys(),
         fullHmrcPackValidated: false,
+        inventsMissingFields: false,
         notes:
-          'Expanded WEB_APP_VIA_SERVER pack from request + browser metadata; still requires HMRC validation before production approval',
+          'Honest omit policy: only real sources. HMRC may return POTENTIALLY_INVALID_HEADERS (e.g. MFA missing). Documented for production approval.',
       },
       authenticatedPracticeWorkspace: {
         real: true,

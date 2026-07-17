@@ -172,6 +172,58 @@ export async function listBusinessDetails(opts) {
 }
 
 /**
+ * Retrieve Income Tax (Self Assessment) income and expenditure obligations.
+ * Obligations (MTD) — required for in-year product production access.
+ * @param {{
+ *   accessToken: string,
+ *   nino: string,
+ *   typeOfBusiness?: string,
+ *   businessId?: string,
+ *   fromDate?: string,
+ *   toDate?: string,
+ *   status?: string,
+ *   req?: import('express').Request|null,
+ *   userId?: string|null,
+ * }} opts
+ */
+export async function listIncomeExpenditureObligations(opts) {
+  const nino = String(opts.nino || '').replace(/\s+/g, '').toUpperCase();
+  const fph = buildFraudPreventionHeaders(opts.req || null, {
+    userId: opts.userId || null,
+  });
+  const params = new URLSearchParams();
+  if (opts.typeOfBusiness) params.set('typeOfBusiness', opts.typeOfBusiness);
+  if (opts.businessId) params.set('businessId', opts.businessId);
+  if (opts.fromDate) params.set('fromDate', opts.fromDate);
+  if (opts.toDate) params.set('toDate', opts.toDate);
+  if (opts.status) params.set('status', opts.status);
+  const qs = params.toString();
+  const path = `/obligations/details/${nino}/income-and-expenditure${qs ? `?${qs}` : ''}`;
+  const acceptVersion = process.env.HMRC_OBLIGATIONS_API_VERSION || '3.0';
+  const res = await fetch(`${SANDBOX}${path}`, {
+    headers: {
+      Accept: `application/vnd.hmrc.${acceptVersion}+json`,
+      Authorization: `Bearer ${opts.accessToken}`,
+      ...fph,
+    },
+  });
+  const text = await res.text();
+  let body;
+  try {
+    body = JSON.parse(text);
+  } catch {
+    body = { raw: text.slice(0, 1500) };
+  }
+  return {
+    ok: res.ok,
+    status: res.status,
+    path,
+    body,
+    headersSent: Object.keys(fph),
+  };
+}
+
+/**
  * Submit SE period summary to sandbox (user-restricted).
  * @param {{
  *   accessToken: string,
@@ -221,6 +273,21 @@ export async function submitSelfEmploymentPeriodSandbox(opts) {
 /**
  * Snapshot of sandbox readiness for operators.
  */
+/**
+ * Build path for obligations list (pure helper for unit tests).
+ * @param {string} nino
+ * @param {Record<string, string|undefined>} [query]
+ */
+export function buildObligationsPath(nino, query = {}) {
+  const clean = String(nino || '').replace(/\s+/g, '').toUpperCase();
+  const params = new URLSearchParams();
+  for (const [k, v] of Object.entries(query)) {
+    if (v) params.set(k, v);
+  }
+  const qs = params.toString();
+  return `/obligations/details/${clean}/income-and-expenditure${qs ? `?${qs}` : ''}`;
+}
+
 export async function sandboxReadiness() {
   const cfg = oauthConfig();
   const tok = await getApplicationAccessToken();

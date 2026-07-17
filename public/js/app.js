@@ -649,6 +649,186 @@ document.getElementById('submit-btn')?.addEventListener('click', async () => {
   }
 });
 
+/**
+ * Map HMRC typeOfBusiness to our bid-* fields.
+ * @param {string} typeOfBusiness
+ * @param {string} businessId
+ */
+function applyBusinessId(typeOfBusiness, businessId) {
+  if (!businessId) return;
+  const t = String(typeOfBusiness || '').toLowerCase();
+  if (t.includes('self-employment') || t.includes('self_employment')) {
+    const el = document.getElementById('bid-se');
+    if (el) el.value = businessId;
+  } else if (t.includes('uk-property') || t.includes('uk_property') || t === 'uk property') {
+    const el = document.getElementById('bid-uk');
+    if (el) el.value = businessId;
+  } else if (t.includes('foreign-property') || t.includes('foreign_property')) {
+    const el = document.getElementById('bid-fp');
+    if (el) el.value = businessId;
+  } else {
+    // Fallback: fill first empty business id field
+    for (const id of ['bid-se', 'bid-uk', 'bid-fp']) {
+      const el = document.getElementById(id);
+      if (el && !el.value) {
+        el.value = businessId;
+        break;
+      }
+    }
+  }
+}
+
+function ninoFromForm() {
+  return (document.getElementById('nino')?.value || '').replace(/\s+/g, '').toUpperCase();
+}
+
+document.getElementById('load-businesses-btn')?.addEventListener('click', async () => {
+  const panel = document.getElementById('hmrc-businesses-panel');
+  const list = document.getElementById('hmrc-businesses-list');
+  const errEl = document.getElementById('hmrc-businesses-error');
+  if (panel) panel.hidden = false;
+  if (list) list.innerHTML = '';
+  if (errEl) {
+    errEl.hidden = true;
+    errEl.textContent = '';
+  }
+  const nino = ninoFromForm();
+  if (!nino) {
+    if (errEl) {
+      errEl.textContent = 'Enter your National Insurance number first.';
+      errEl.hidden = false;
+    }
+    return;
+  }
+  try {
+    const res = await apiFetch(`/api/hmrc/businesses?nino=${encodeURIComponent(nino)}`);
+    const data = await res.json();
+    if (!res.ok || !data.ok) {
+      throw new Error(data.error || data.body?.message || `HMRC businesses failed (${res.status})`);
+    }
+    const businesses = data.body?.listOfBusinesses || data.body?.businesses || data.body || [];
+    const rows = Array.isArray(businesses) ? businesses : [];
+    if (!rows.length) {
+      if (list) {
+        list.innerHTML = '<li class="muted">No businesses returned for this NINO in the current environment.</li>';
+      }
+      return;
+    }
+    for (const b of rows) {
+      const id = b.businessId || b.id || '';
+      const type = b.typeOfBusiness || b.businessType || b.type || 'business';
+      const trading = b.tradingName || b.trading_name || '';
+      const li = document.createElement('li');
+      li.innerHTML = `<strong>${type}</strong> · <code>${id}</code>${trading ? ` · ${trading}` : ''}`;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn btn-ghost';
+      btn.style.marginLeft = '0.5rem';
+      btn.textContent = 'Use ID';
+      btn.addEventListener('click', () => applyBusinessId(type, id));
+      li.appendChild(btn);
+      list?.appendChild(li);
+    }
+  } catch (err) {
+    if (errEl) {
+      errEl.textContent =
+        err.message ||
+        'Could not load businesses. Connect HMRC sandbox OAuth first (/connect-hmrc).';
+      errEl.hidden = false;
+    }
+  }
+});
+
+document.getElementById('load-obligations-btn')?.addEventListener('click', async () => {
+  const panel = document.getElementById('hmrc-obligations-panel');
+  const list = document.getElementById('hmrc-obligations-list');
+  const errEl = document.getElementById('hmrc-obligations-error');
+  if (panel) panel.hidden = false;
+  if (list) list.innerHTML = '';
+  if (errEl) {
+    errEl.hidden = true;
+    errEl.textContent = '';
+  }
+  const nino = ninoFromForm();
+  if (!nino) {
+    if (errEl) {
+      errEl.textContent = 'Enter your National Insurance number first.';
+      errEl.hidden = false;
+    }
+    return;
+  }
+  try {
+    const q = new URLSearchParams({ nino });
+    const bid =
+      document.getElementById('bid-se')?.value ||
+      document.getElementById('bid-uk')?.value ||
+      document.getElementById('bid-fp')?.value;
+    if (bid) q.set('businessId', bid);
+    const res = await apiFetch(`/api/hmrc/obligations?${q.toString()}`);
+    const data = await res.json();
+    if (!res.ok || !data.ok) {
+      throw new Error(data.error || data.body?.message || `HMRC obligations failed (${res.status})`);
+    }
+    // Response shapes vary by version; support common list keys
+    const body = data.body || {};
+    const obligations =
+      body.obligations ||
+      body.obligationDetails ||
+      body.incomeAndExpenditureObligations ||
+      (Array.isArray(body) ? body : []);
+    const flat = [];
+    if (Array.isArray(obligations)) {
+      for (const group of obligations) {
+        const type = group.typeOfBusiness || group.businessType || '';
+        const businessId = group.businessId || '';
+        const periods = group.obligationDetails || group.obligations || [group];
+        for (const p of periods) {
+          flat.push({
+            type,
+            businessId: businessId || p.businessId || '',
+            status: p.status || group.status || '',
+            start: p.periodStartDate || p.fromDate || p.start || '',
+            end: p.periodEndDate || p.toDate || p.end || '',
+            due: p.dueDate || p.due || '',
+          });
+        }
+      }
+    }
+    if (!flat.length) {
+      if (list) {
+        list.innerHTML =
+          '<li class="muted">No obligations in response. Raw keys: ' +
+          Object.keys(body).join(', ') +
+          '</li>';
+      }
+      return;
+    }
+    for (const o of flat) {
+      const li = document.createElement('li');
+      li.innerHTML = `<strong>${o.status || 'obligation'}</strong> · ${o.start || '?'} → ${o.end || '?'}${
+        o.due ? ` · due ${o.due}` : ''
+      }${o.businessId ? ` · <code>${o.businessId}</code>` : ''}`;
+      if (o.businessId) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn btn-ghost';
+        btn.style.marginLeft = '0.5rem';
+        btn.textContent = 'Use ID';
+        btn.addEventListener('click', () => applyBusinessId(o.type, o.businessId));
+        li.appendChild(btn);
+      }
+      list?.appendChild(li);
+    }
+  } catch (err) {
+    if (errEl) {
+      errEl.textContent =
+        err.message ||
+        'Could not load obligations. Connect HMRC sandbox OAuth first (/connect-hmrc).';
+      errEl.hidden = false;
+    }
+  }
+});
+
 setWizardStep(1);
 loadStatus();
 loadSavedIdentifiers();

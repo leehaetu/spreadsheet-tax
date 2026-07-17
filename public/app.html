@@ -213,6 +213,26 @@
         </label>
       </div>
 
+      <div class="help-strip" id="hmrc-helpers" style="flex-wrap:wrap;gap:0.5rem">
+        <button type="button" class="btn btn-ghost" id="load-businesses-btn">Load businesses from HMRC</button>
+        <button type="button" class="btn btn-ghost" id="load-obligations-btn">Load open obligations</button>
+        <a class="btn btn-ghost" href="https://www.gov.uk/log-in-register-hmrc-online-services" target="_blank" rel="noopener noreferrer">View tax estimate on GOV.UK</a>
+      </div>
+      <p class="muted" id="hmrc-helpers-note" style="margin-top:0.5rem">
+        Business IDs and due periods come from HMRC when you are connected.
+        Spreadsheet Tax does <strong>not</strong> invent a tax bill — open your HMRC account for liability estimates.
+      </p>
+      <div id="hmrc-businesses-panel" class="panel" hidden style="margin:0.75rem 0;padding:0.75rem">
+        <h3 style="margin-top:0;font-size:1rem">Your HMRC businesses</h3>
+        <ul id="hmrc-businesses-list" class="result-list"></ul>
+        <p id="hmrc-businesses-error" class="error" hidden></p>
+      </div>
+      <div id="hmrc-obligations-panel" class="panel" hidden style="margin:0.75rem 0;padding:0.75rem">
+        <h3 style="margin-top:0;font-size:1rem">Open obligations</h3>
+        <ul id="hmrc-obligations-list" class="result-list"></ul>
+        <p id="hmrc-obligations-error" class="error" hidden></p>
+      </div>
+
       <div class="action-bar">
         <button type="button" class="btn btn-primary btn-lg" id="submit-btn">Run preview submit</button>
         <button type="button" class="btn btn-ghost" id="back-to-review">Back to figures</button>
