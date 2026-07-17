@@ -73,7 +73,7 @@ read:self-assessment
 ### Application description
 
 ```
-Spreadsheet Tax is bridging-only software for Making Tax Digital for Income Tax. It maps period figures from a customer's existing spreadsheet into HMRC-compatible quarterly updates for self-employment, UK property and foreign property. Users review mapped figures before submission. The software is not a full double-entry ledger. Sandbox integration uses individual OAuth (authorization code). Production live filing remains gated until HMRC production approval and operator controls are complete. Intellectual property: Lee Hine.
+Spreadsheet Tax is bridging-only software for Making Tax Digital for Income Tax. It maps period figures from a customer's existing spreadsheet into quarterly updates for self-employment, UK property and foreign property (HMRC MTD API shapes). Users review mapped figures before submission. The software is not a full double-entry ledger. It is NOT currently HMRC-recognised software. Sandbox integration uses individual OAuth (authorization code). Production live filing and any “recognised” claim remain gated until HMRC production approval, recognition, and operator controls are complete. Intellectual property: Lee Hine.
 ```
 
 ### Privacy policy URL

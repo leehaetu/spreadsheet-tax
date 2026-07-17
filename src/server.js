@@ -220,7 +220,14 @@ app.get('/health', (_req, res) => {
   res.status(ready ? 200 : 503).json({
     ok: ready,
     service: 'spreadsheet-tax',
-    version: '1.10.0',
+    /** Our software release number (semver: major.minor.patch). Not an HMRC receipt/submit id. */
+    version: '1.10.1',
+    appVersion: '1.10.1',
+    versionMeaning:
+      'Spreadsheet Tax application release (semantic version). Not HMRC-recognised software ID, not a submission reference, not a tax year.',
+    hmrcRecognisedSoftware: false,
+    hmrcRecognisedNote:
+      'Not on HMRC’s list of recognised MTD software. Public go-live filing for real taxpayers only after HMRC Production access and recognition process — not claimed now.',
     bridging: true,
     db: dbOk,
     oauthMock: oauthConfig().mock,
@@ -247,7 +254,12 @@ app.get('/health', (_req, res) => {
 app.get('/readyz', (_req, res) => {
   try {
     getDb().prepare('SELECT 1 AS x').get();
-    res.status(200).json({ ready: true, version: '1.10.0' });
+    res.status(200).json({
+      ready: true,
+      version: '1.10.1',
+      appVersion: '1.10.1',
+      hmrcRecognisedSoftware: false,
+    });
   } catch {
     res.status(503).json({ ready: false });
   }
@@ -2231,7 +2243,11 @@ app.get('/api/integrity', (_req, res) => {
     ok: true,
     product: 'Spreadsheet Tax',
     intellectualProperty: 'Lee Hine',
-    version: '1.10.0',
+    version: '1.10.1',
+    appVersion: '1.10.1',
+    hmrcRecognisedSoftware: false,
+    hmrcRecognisedNote:
+      'Not HMRC-recognised software. Sandbox integration and pilot only until Production approval and recognition. Do not market as recognised.',
     productType: 'in-year bridging (quarterly updates)',
     layers: {
       spreadsheetImportMapping: {
