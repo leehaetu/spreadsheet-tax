@@ -11,8 +11,8 @@
 | # | Stage | Status |
 |---|--------|--------|
 | 1 | Build product foundation | **Done enough** |
-| 2 | **P1 In-year complete** (sandbox, full operational) | **Current** |
-| 3 | **P2 EOY + BSAS** (sandbox, full operational) | Next after P1 |
+| 2 | **P1 In-year complete** (sandbox) | **Shipped** — `/mtd` + `/api/hmrc/mtd/*` |
+| 3 | **P2 EOY + BSAS** (sandbox) | **Shipped** — routes + UI actions |
 | 4 | Checklist + SDSTeam (logs + form) | After P1+P2 |
 | 5 | Production APIs + env switch | After HMRC approve |
 | 6 | **HMRC Recognised** listing | After Production path |

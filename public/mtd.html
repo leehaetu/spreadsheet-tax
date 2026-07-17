@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MTD workspace — Spreadsheet Tax</title>
+  <meta name="description" content="In-year, end-of-year and BSAS HMRC MTD tools for Spreadsheet Tax (sandbox)." />
+  <link rel="stylesheet" href="/css/site.css" />
+</head>
+<body class="app-body">
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a class="logo" href="/"><span class="logo-mark">ST</span> Spreadsheet Tax</a>
+      <nav>
+        <a href="/app">App</a>
+        <a href="/connect-hmrc">Connect HMRC</a>
+        <a href="/history">History</a>
+        <a href="/account">Account</a>
+      </nav>
+    </div>
+  </header>
+  <main class="wrap app-main">
+    <h1>MTD workspace</h1>
+    <p class="lead">
+      Full bridging tools: <strong>P1 in-year</strong>, <strong>P2 end-of-year / BSAS</strong>, <strong>P3 extras</strong>.
+      Goal: <strong>HMRC Recognised</strong> · Status: not yet recognised. Requires real HMRC OAuth +
+      <code>HMRC_ALLOW_LIVE_SUBMIT=1</code>. No EOPS.
+    </p>
+
+    <section class="panel">
+      <h2>Connection &amp; identifiers</h2>
+      <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
+        <label>NINO <input id="nino" type="text" autocomplete="off" placeholder="Sandbox NINO" /></label>
+        <label>Tax year <input id="taxYear" type="text" value="2024-25" /></label>
+        <label>Draft ID (optional) <input id="draftId" type="text" placeholder="From /history" /></label>
+      </div>
+      <div class="form-row" style="grid-template-columns:1fr 1fr 1fr">
+        <label>SE business ID <input id="bidSe" type="text" /></label>
+        <label>UK property business ID <input id="bidUk" type="text" /></label>
+        <label>Foreign property business ID <input id="bidFp" type="text" /></label>
+      </div>
+      <div class="hero-actions" style="flex-wrap:wrap;gap:0.5rem;margin-top:0.75rem">
+        <button type="button" class="btn btn-ghost" data-act="status">Refresh HMRC status</button>
+        <button type="button" class="btn btn-ghost" data-act="caps">Show capabilities</button>
+        <a class="btn btn-primary" href="/connect-hmrc">Connect HMRC</a>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>P1 — In-year</h2>
+      <div class="hero-actions" style="flex-wrap:wrap;gap:0.5rem">
+        <button type="button" class="btn btn-ghost" data-act="businesses">List businesses</button>
+        <button type="button" class="btn btn-ghost" data-act="obligations">I&amp;E obligations</button>
+        <button type="button" class="btn btn-ghost" data-act="se-submit">Submit SE period</button>
+        <button type="button" class="btn btn-ghost" data-act="uk-submit">Submit UK property</button>
+        <button type="button" class="btn btn-ghost" data-act="fp-submit">Submit foreign property</button>
+        <button type="button" class="btn btn-ghost" data-act="calc-trigger">Trigger in-year calc</button>
+        <button type="button" class="btn btn-ghost" data-act="calc-list">List calculations</button>
+      </div>
+      <p class="muted" style="margin-top:0.75rem">
+        Prefer importing on <a href="/app">/app</a> first so draft payloads exist, then paste draft ID here.
+      </p>
+    </section>
+
+    <section class="panel">
+      <h2>P2 — End of year / BSAS / losses</h2>
+      <div class="hero-actions" style="flex-wrap:wrap;gap:0.5rem">
+        <button type="button" class="btn btn-ghost" data-act="fd-obl">Final declaration obligations</button>
+        <button type="button" class="btn btn-ghost" data-act="se-annual">SE annual (minimal body)</button>
+        <button type="button" class="btn btn-ghost" data-act="bsas-trigger">BSAS trigger (SE)</button>
+        <button type="button" class="btn btn-ghost" data-act="bsas-list">BSAS list</button>
+        <button type="button" class="btn btn-ghost" data-act="losses-list">List brought-forward losses</button>
+        <button type="button" class="btn btn-ghost" data-act="calc-final">Trigger intent-to-finalise</button>
+        <button type="button" class="btn btn-ghost" data-act="poa-get">Periods of account (GET)</button>
+      </div>
+      <label style="display:block;margin-top:0.75rem">Calculation / BSAS ID
+        <input id="calcId" type="text" placeholder="From trigger/list response" />
+      </label>
+      <div class="hero-actions" style="flex-wrap:wrap;gap:0.5rem;margin-top:0.5rem">
+        <button type="button" class="btn btn-ghost" data-act="bsas-se">Retrieve BSAS SE</button>
+        <button type="button" class="btn btn-ghost" data-act="calc-get">Retrieve calculation</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>P3 — Extras</h2>
+      <div class="hero-actions" style="flex-wrap:wrap;gap:0.5rem">
+        <button type="button" class="btn btn-ghost" data-act="itsa">ITSA status</button>
+        <button type="button" class="btn btn-ghost" data-act="biss">BISS (SE)</button>
+        <button type="button" class="btn btn-ghost" data-act="accounts">Accounts balance</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Response</h2>
+      <pre id="out" class="code-block">Ready. Connect HMRC, set NINO, then run an action.</pre>
+    </section>
+  </main>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const out = $('out');
+
+    function show(data) {
+      out.textContent = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+    }
+
+    async function jfetch(url, opts) {
+      const res = await fetch(url, {
+        ...opts,
+        headers: {
+          'Content-Type': 'application/json',
+          ...(opts && opts.headers),
+        },
+      });
+      const data = await res.json().catch(() => ({ error: 'non-json', status: res.status }));
+      show({ httpStatus: res.status, ...data });
+      return data;
+    }
+
+    function base() {
+      return {
+        nino: $('nino').value.trim(),
+        taxYear: $('taxYear').value.trim() || '2024-25',
+        draftId: $('draftId').value.trim() || undefined,
+        businessIdSe: $('bidSe').value.trim(),
+        businessIdUk: $('bidUk').value.trim(),
+        businessIdFp: $('bidFp').value.trim(),
+        calcId: $('calcId').value.trim(),
+      };
+    }
+
+    function q(nino) {
+      return 'nino=' + encodeURIComponent(nino);
+    }
+
+    // Prefill from stored test user
+    fetch('/api/hmrc/sandbox-test-user')
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.ok && d.user?.nino && !$('nino').value) $('nino').value = d.user.nino;
+      })
+      .catch(() => {});
+
+    document.querySelectorAll('[data-act]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const a = btn.getAttribute('data-act');
+        const b = base();
+        if (!b.nino && a !== 'status' && a !== 'caps') {
+          show({ error: 'Enter NINO first' });
+          return;
+        }
+        try {
+          if (a === 'status') return jfetch('/api/hmrc/status');
+          if (a === 'caps') return jfetch('/api/hmrc/mtd/capabilities');
+          if (a === 'businesses') {
+            const data = await jfetch('/api/hmrc/mtd/businesses?' + q(b.nino));
+            const list = data.body?.listOfBusinesses || data.body?.businesses || [];
+            if (Array.isArray(list)) {
+              for (const row of list) {
+                const id = row.businessId || row.id || '';
+                const t = String(row.typeOfBusiness || row.type || '').toLowerCase();
+                if (t.includes('self') && id) $('bidSe').value = id;
+                else if (t.includes('uk') && id) $('bidUk').value = id;
+                else if (t.includes('foreign') && id) $('bidFp').value = id;
+              }
+            }
+            return;
+          }
+          if (a === 'obligations')
+            return jfetch('/api/hmrc/mtd/obligations/ie?' + q(b.nino));
+          if (a === 'se-submit')
+            return jfetch('/api/hmrc/mtd/period/se', {
+              method: 'POST',
+              body: JSON.stringify({
+                nino: b.nino,
+                businessId: b.businessIdSe,
+                draftId: b.draftId,
+              }),
+            });
+          if (a === 'uk-submit')
+            return jfetch('/api/hmrc/mtd/period/uk', {
+              method: 'POST',
+              body: JSON.stringify({
+                nino: b.nino,
+                businessId: b.businessIdUk,
+                taxYear: b.taxYear,
+                draftId: b.draftId,
+              }),
+            });
+          if (a === 'fp-submit')
+            return jfetch('/api/hmrc/mtd/period/foreign', {
+              method: 'POST',
+              body: JSON.stringify({
+                nino: b.nino,
+                businessId: b.businessIdFp,
+                taxYear: b.taxYear,
+                draftId: b.draftId,
+              }),
+            });
+          if (a === 'calc-trigger')
+            return jfetch('/api/hmrc/mtd/calculations/trigger', {
+              method: 'POST',
+              body: JSON.stringify({ nino: b.nino, taxYear: b.taxYear, calculationType: 'in-year' }),
+            });
+          if (a === 'calc-list')
+            return jfetch(
+              '/api/hmrc/mtd/calculations?' + q(b.nino) + '&taxYear=' + encodeURIComponent(b.taxYear)
+            );
+          if (a === 'calc-get')
+            return jfetch(
+              '/api/hmrc/mtd/calculations/' +
+                encodeURIComponent(b.taxYear) +
+                '/' +
+                encodeURIComponent(b.calcId) +
+                '?' +
+                q(b.nino)
+            );
+          if (a === 'fd-obl')
+            return jfetch('/api/hmrc/mtd/obligations/final-declaration?' + q(b.nino));
+          if (a === 'se-annual')
+            return jfetch('/api/hmrc/mtd/annual/se', {
+              method: 'PUT',
+              body: JSON.stringify({
+                nino: b.nino,
+                businessId: b.businessIdSe,
+                taxYear: b.taxYear,
+                body: {
+                  adjustments: {},
+                  allowances: {},
+                  nonFinancials: { businessDetailsChangedRecently: false, class4NicsExemptionReason: null },
+                },
+              }),
+            });
+          if (a === 'bsas-trigger')
+            return jfetch('/api/hmrc/mtd/bsas/trigger', {
+              method: 'POST',
+              body: JSON.stringify({
+                nino: b.nino,
+                body: {
+                  accountingPeriod: { startDate: '2024-04-06', endDate: '2025-04-05' },
+                  typeOfBusiness: 'self-employment',
+                  businessId: b.businessIdSe,
+                },
+              }),
+            });
+          if (a === 'bsas-list')
+            return jfetch(
+              '/api/hmrc/mtd/bsas?' + q(b.nino) + '&taxYear=' + encodeURIComponent(b.taxYear)
+            );
+          if (a === 'bsas-se')
+            return jfetch(
+              '/api/hmrc/mtd/bsas/se/' + encodeURIComponent(b.calcId) + '?' + q(b.nino)
+            );
+          if (a === 'losses-list')
+            return jfetch('/api/hmrc/mtd/losses/brought-forward?' + q(b.nino));
+          if (a === 'calc-final')
+            return jfetch('/api/hmrc/mtd/calculations/final', {
+              method: 'POST',
+              body: JSON.stringify({
+                nino: b.nino,
+                taxYear: b.taxYear,
+                calculationType: 'intent-to-finalise',
+              }),
+            });
+          if (a === 'poa-get')
+            return jfetch(
+              '/api/hmrc/mtd/periods-of-account/' +
+                encodeURIComponent(b.businessIdSe) +
+                '/' +
+                encodeURIComponent(b.taxYear) +
+                '?' +
+                q(b.nino)
+            );
+          if (a === 'itsa')
+            return jfetch(
+              '/api/hmrc/mtd/itsa-status?' + q(b.nino) + '&taxYear=' + encodeURIComponent(b.taxYear)
+            );
+          if (a === 'biss')
+            return jfetch(
+              '/api/hmrc/mtd/biss?' +
+                q(b.nino) +
+                '&taxYear=' +
+                encodeURIComponent(b.taxYear) +
+                '&businessId=' +
+                encodeURIComponent(b.businessIdSe) +
+                '&typeOfBusiness=self-employment'
+            );
+          if (a === 'accounts')
+            return jfetch('/api/hmrc/mtd/accounts/balance?' + q(b.nino));
+        } catch (e) {
+          show(String(e));
+        }
+      });
+    });
+  </script>
+</body>
+</html>

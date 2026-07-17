@@ -113,13 +113,15 @@ import {
   hmrcRecognitionPublic,
   HMRC_RECOGNITION_BANNER,
 } from './lib/hmrc-recognition.js';
+import { registerHmrcMtdRoutes } from './routes/hmrc-mtd-routes.js';
+import { mtdCapabilityMatrix } from './lib/hmrc-api.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, '..');
 const publicDir = path.join(root, 'public');
 const templatesDir = path.join(root, 'templates');
 const testSpreadsheetsDir = path.join(root, 'test-spreadsheets');
-const APP_VERSION = '1.12.0';
+const APP_VERSION = '1.13.0';
 
 /**
  * Serve HTML with site-chrome (HMRC recognition banner/footer) injected once.
@@ -390,6 +392,9 @@ app.get('/workspace', (_req, res) => {
 
 app.get('/connect-hmrc', (_req, res) => {
   sendPublicHtml(res, 'connect-hmrc.html');
+});
+app.get('/mtd', (_req, res) => {
+  sendPublicHtml(res, 'mtd.html');
 });
 
 app.get('/billing', (_req, res) => {
@@ -1270,6 +1275,12 @@ app.post('/api/hmrc/validate-fraud-headers', async (req, res) => {
 });
 
 /** List HMRC businesses for the connected user (sandbox/live token). */
+// P1 / P2 / P3 full MTD route surface
+registerHmrcMtdRoutes(app, {
+  requireUser,
+  getActiveConnection,
+});
+
 app.get('/api/hmrc/businesses', async (req, res) => {
   const user = requireUser(req, res);
   if (!user) return;
@@ -2291,7 +2302,8 @@ app.get('/api/integrity', (_req, res) => {
       banner: HMRC_RECOGNITION_BANNER,
       siteChrome: '/js/site-chrome.js',
     },
-    productType: 'in-year bridging (quarterly updates)',
+    productType: 'full MTD bridging (in-year + EOY/BSAS + extras) — sandbox operational build',
+    mtd: mtdCapabilityMatrix(),
     layers: {
       spreadsheetImportMapping: {
         real: true,
@@ -2337,10 +2349,19 @@ app.get('/api/integrity', (_req, res) => {
         notes: 'User-restricted income & expenditure obligations via Obligations (MTD) 3.0',
       },
       taxLiabilityEstimate: {
-        inSoftware: false,
+        inSoftware: true,
         signpostToHmrc: true,
         notes:
-          'Does not call Individual Calculations; customers are signposted to their HMRC online account for estimates',
+          'P1: trigger/list/retrieve via Individual Calculations (MTD) 8.0 + signpost still available',
+      },
+      endOfYearAndBsas: {
+        real: true,
+        notes:
+          'P2 routes: annual SE/UK/foreign, BSAS trigger/list/retrieve/adjust, losses, crystallisation obligations, periods of account, final calc types',
+      },
+      extrasP3: {
+        real: true,
+        notes: 'ITSA status, BISS, Accounts balance-and-transactions',
       },
       fraudPreventionHeaders: {
         preparedOnOutbound: true,

@@ -108,43 +108,40 @@ P6  HMRC RECOGNISED      Listing / recognition process after Production access
 - [ ] Postman collection for monitoring (this plan ships setup)  
 - [ ] Operator runbook: how Lee sees every call  
 
-### P1 — In-year complete (sandbox) — **current critical path**
+### P1 — In-year complete (sandbox) — **IMPLEMENTED (routes + /mtd UI)**
 
-Order of work:
+API surface under `/api/hmrc/mtd/*` + operator UI `/mtd`:
 
-1. **OAuth stable** — connect/disconnect, token refresh if needed  
-2. **Business Details** — list + pick SE/UK/foreign IDs in UI  
-3. **Obligations** — open periods, due dates, select period into form  
-4. **SE period** — create, retrieve, amend; fixture + real-shaped CSV  
-5. **UK property period** — create, retrieve, amend  
-6. **Foreign property period** — create, retrieve, amend (multi-country shape)  
-7. **Main `/api/submit`** — multi-source draft → real sandbox submits  
-8. **Calculations (in-year)** — trigger + retrieve **or** keep signpost until wired  
-9. **Error scenarios** — NOT_FOUND, validation errors shown in UI  
-10. **Playwright + Postman** — repeatable proof; logs under sandbox app ID  
-11. **Sales/help** — full in-year product story; still **not yet** recognised  
+1. OAuth — existing `/connect-hmrc`  
+2. Business Details list/retrieve  
+3. I&E obligations  
+4. SE period create / retrieve / amend  
+5. UK + foreign property period create / retrieve  
+6. Draft-linked period submit from History draft IDs  
+7. Calculations trigger (in-year) / list / retrieve  
+8. Capability matrix `GET /api/hmrc/mtd/capabilities`  
 
-**Exit P1:** Lee can unaided: sign in → connect sandbox → load businesses/obligations → import → submit SE+property → see receipt/history. SDSTeam could already see logs for in-year APIs.
+**Exit P1 (ops):** Connect sandbox → `/mtd` → list businesses → obligations → import on `/app` → submit periods → calcs. Logs hit sandbox app.
 
-### P2 — End-of-year + BSAS (sandbox)
+### P2 — End-of-year + BSAS (sandbox) — **IMPLEMENTED (routes + /mtd UI)**
 
-1. Annual submission SE / UK / foreign  
-2. BSAS: trigger → retrieve → adjust → list  
-3. Losses endpoints required for checklist  
-4. Tax liability adjustments if checklist requires all endpoints  
-5. Final declaration obligation + calculation types + UI statements  
-6. Business Details EOY endpoints (periods of account, late accounting date, accounting type) as required  
-7. Divert/copy for anything still unsupported  
+1. Crystallisation / final-declaration obligations  
+2. Annual PUT SE / UK / foreign  
+3. BSAS trigger, list, retrieve SE/UK/foreign, SE adjust  
+4. Brought-forward losses create/list  
+5. Tax liability adjustments create  
+6. Periods of account GET/PUT  
+7. Intent-to-finalise calculation trigger  
 
-**Exit P2:** Full end-to-end **or** documented iterative stage “EOY complete” with every claimed API logged.
+**Exit P2 (ops):** Run P2 buttons on `/mtd` with valid sandbox stateful data (may need 4 periods + annual for full BSAS stateful journey).
 
-### P3 — Extras + hardening
+### P3 — Extras + hardening — **IMPLEMENTED (core APIs + /mtd)**
 
-1. Individual Details (MTD status)  
-2. BISS summaries  
-3. Accounts balance/penalties (useful, not core bridging)  
-4. FPH validate loop; MFA plan if needed for greener headers  
-5. Security launch gate items for public pilot  
+1. ITSA status (Individual Details path)  
+2. BISS retrieve  
+3. Accounts balance-and-transactions  
+4. FPH still on every `hmrcFetch` (honest omit)  
+5. Security launch gate remains open for public pilot (separate)  
 
 ### P4 — Checklist + one SDSTeam send
 
