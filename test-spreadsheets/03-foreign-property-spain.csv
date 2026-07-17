@@ -1,0 +1,11 @@
+section,field,value,country
+meta,tax_year,2024-25,
+meta,period_start,2024-04-06,
+meta,period_end,2024-07-05,
+foreign_property,rent_income,4100.00,ESP
+foreign_property,other_property_income,200.00,ESP
+foreign_property,foreign_tax_paid_or_deducted,50.00,ESP
+foreign_property,premises_running_costs,280.00,ESP
+foreign_property,repairs_and_maintenance,190.00,ESP
+foreign_property,professional_fees,110.00,ESP
+foreign_property,other,60.00,ESP

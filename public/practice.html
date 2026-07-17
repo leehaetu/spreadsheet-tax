@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Multi-accountant practice dashboard — Spreadsheet Tax</title>
+  <link rel="stylesheet" href="/css/site.css" />
+</head>
+<body class="app-body">
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a class="logo" href="/">Spreadsheet Tax</a>
+      <nav>
+        <span class="badge">Multi-accountant practice</span>
+        <a href="/accountant">Accountant workspace</a>
+        <a href="/portal">Client portal</a>
+        <a href="/app">Bridging app</a>
+        <a class="btn btn-primary" href="/license">Firm licensing</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap app-main">
+    <h1>Practice / firm dashboard</h1>
+    <p class="lead">
+      For multi-accountant practices, firms and companies that license Spreadsheet Tax
+      and manage clients across multiple bookkeepers and accountants.
+    </p>
+
+    <section class="panel">
+      <h2>Firms on this environment</h2>
+      <div id="firms-list" class="cards"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Team (accountants &amp; bookkeepers)</h2>
+      <div class="table-wrap">
+        <table id="team-table">
+          <thead>
+            <tr><th>Name</th><th>Role</th><th>Firm</th><th>Email</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>All clients (firm-scoped)</h2>
+      <div class="form-row">
+        <label>Filter by firm
+          <select id="practice-firm-filter">
+            <option value="">All</option>
+          </select>
+        </label>
+      </div>
+      <div class="table-wrap">
+        <table id="practice-clients">
+          <thead>
+            <tr><th>Client</th><th>Firm</th><th>Accountant</th><th>Sources</th><th>Portal</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Practice actions</h2>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="/app">Run bridging for a client file</a>
+        <a class="btn btn-ghost" href="/accountant">Open practitioner workspace</a>
+        <a class="btn btn-ghost" href="/portal">Client portal entry</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <p class="muted">Multi-accountant practice surface. Software licensed to companies that may sell subscriptions to their customers. IP © Lee Hine.</p>
+    </div>
+  </footer>
+  <script src="/js/practice.js"></script>
+</body>
+</html>

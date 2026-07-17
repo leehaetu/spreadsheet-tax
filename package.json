@@ -8,8 +8,10 @@
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
     "test": "node --test tests/**/*.test.js",
-    "test:unit": "node --test tests/**/*.test.js"
+    "test:unit": "node --test tests/**/*.test.js",
+    "generate:test-spreadsheets": "node scripts/generate-test-spreadsheets.js"
   },
+  "author": "Lee Hine",
   "engines": {
     "node": ">=20"
   },

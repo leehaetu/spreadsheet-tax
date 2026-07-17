@@ -1,0 +1,16 @@
+section,field,value,country
+meta,tax_year,2024-25,
+meta,period_start,2024-04-06,
+meta,period_end,2024-07-05,
+meta,nino,BB987654C,
+self_employment,turnover,9200.00,
+self_employment,cost_of_goods,1100.00,
+self_employment,car_van_travel_expenses,220.00,
+self_employment,professional_fees,150.00,
+uk_property,period_amount,3600.00,
+uk_property,other_income,50.00,
+uk_property,repairs_and_maintenance,200.00,
+uk_property,other,15.00,
+foreign_property,rent_income,1800.00,FRA
+foreign_property,premises_running_costs,120.00,FRA
+foreign_property,other,25.00,FRA

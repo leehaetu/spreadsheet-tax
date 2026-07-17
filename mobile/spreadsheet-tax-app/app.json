@@ -1,0 +1,27 @@
+{
+  "expo": {
+    "name": "Spreadsheet Tax",
+    "slug": "spreadsheet-tax",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.leehine.spreadsheettax",
+      "infoPlist": {
+        "NSAppTransportSecurity": {
+          "NSAllowsLocalNetworking": true
+        }
+      }
+    },
+    "android": {
+      "package": "com.leehine.spreadsheettax",
+      "adaptiveIcon": {
+        "backgroundColor": "#0f1419"
+      }
+    },
+    "extra": {
+      "productUrl": "https://spreadsheet-tax-production.up.railway.app"
+    }
+  }
+}

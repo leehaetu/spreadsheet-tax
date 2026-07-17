@@ -12,7 +12,9 @@
       <a class="logo" href="/">Spreadsheet Tax</a>
       <nav>
         <a href="/">Sales site</a>
-        <a href="/templates/period-summary-template.csv">Download template</a>
+        <a href="/accountant">Accountants</a>
+        <a href="/portal">Client portal</a>
+        <a href="/download/template">Download template</a>
         <span id="hmrc-mode" class="badge">HMRC: …</span>
       </nav>
     </div>
@@ -28,8 +30,9 @@
     <section class="panel" id="upload-panel">
       <h2>1. Import local file</h2>
       <p class="muted">Accepted: <code>.csv</code>, <code>.xlsx</code>. Use the
-        <a href="/templates/period-summary-template.csv">period summary template</a>
-        or matching column layout (<code>section</code>, <code>field</code>, <code>value</code>).</p>
+        <a href="/download/template">period summary template</a>
+        or matching column layout (<code>section</code>, <code>field</code>, <code>value</code>).
+        Sample files for testing live in the project <code>test-spreadsheets/</code> folder.</p>
       <form id="upload-form" class="upload-form">
         <label class="file-drop" for="file-input">
           <input type="file" id="file-input" name="file" accept=".csv,.xlsx,.xls" required />

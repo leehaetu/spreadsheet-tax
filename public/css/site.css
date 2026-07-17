@@ -298,7 +298,8 @@ th { color: var(--muted); font-weight: 600; }
   flex: 1;
   min-width: 140px;
 }
-.form-row input {
+.form-row input,
+.form-row select {
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 6px;

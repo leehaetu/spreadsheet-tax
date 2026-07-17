@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Accountant &amp; bookkeeper workspace — Spreadsheet Tax</title>
+  <link rel="stylesheet" href="/css/site.css" />
+</head>
+<body class="app-body">
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a class="logo" href="/">Spreadsheet Tax</a>
+      <nav>
+        <span class="badge">Bookkeeper / Accountant</span>
+        <a href="/practice">Practice dashboard</a>
+        <a href="/portal">Client portal</a>
+        <a href="/app">Bridging app</a>
+        <a class="btn btn-primary" href="/download/template">Template</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap app-main">
+    <h1>Accountant &amp; bookkeeper workspace</h1>
+    <p class="lead">
+      Manage client period files for self-employment and property landlords.
+      Import local spreadsheets, preview HMRC quarterly payloads, and open the bridging app for submission.
+    </p>
+
+    <section class="panel">
+      <h2>Your clients</h2>
+      <p class="muted">Demo data for a sole bookkeeper and assigned practice clients. Select a firm filter if you work in a multi-partner firm.</p>
+      <div class="form-row">
+        <label>Firm
+          <select id="firm-filter">
+            <option value="">All firms</option>
+          </select>
+        </label>
+        <label>Accountant
+          <select id="acc-filter">
+            <option value="">All practitioners</option>
+          </select>
+        </label>
+      </div>
+      <div class="table-wrap">
+        <table id="clients-table">
+          <thead>
+            <tr>
+              <th>Client</th>
+              <th>Type</th>
+              <th>Sources</th>
+              <th>Last period</th>
+              <th>Portal</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Quick actions</h2>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="/app">Import client spreadsheet</a>
+        <a class="btn btn-ghost" href="/download/template">Download template for clients</a>
+        <a class="btn btn-ghost" href="/portal">Preview client portal</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <p class="muted">Practitioner surface for bookkeepers and accountants. IP © Lee Hine.</p>
+    </div>
+  </footer>
+  <script src="/js/accountant.js"></script>
+</body>
+</html>

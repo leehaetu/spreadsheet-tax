@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Client portal — Spreadsheet Tax</title>
+  <link rel="stylesheet" href="/css/site.css" />
+</head>
+<body class="app-body">
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a class="logo" href="/">Spreadsheet Tax</a>
+      <nav>
+        <span class="badge">Client portal</span>
+        <a href="/">Sales site</a>
+        <a href="/app">Upload period file</a>
+        <a class="btn btn-primary" href="/download/template">Download template</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap app-main">
+    <h1>Client portal</h1>
+    <p class="lead">
+      For clients of bookkeepers, accountants and multi-accountant practices.
+      View your bridging profile and open the import path for your local spreadsheet.
+    </p>
+
+    <section class="panel">
+      <h2>Select your client access</h2>
+      <p class="muted">Demo environment — choose a client profile to enter the portal view your firm would grant you.</p>
+      <div class="form-row">
+        <label>Client
+          <select id="client-select">
+            <option value="">Choose…</option>
+          </select>
+        </label>
+        <button type="button" class="btn btn-primary" id="enter-portal">Enter portal</button>
+      </div>
+      <p id="portal-error" class="error" hidden></p>
+    </section>
+
+    <section class="panel" id="client-view" hidden>
+      <h2 id="client-name">Client</h2>
+      <div id="client-summary" class="sources-summary"></div>
+      <div class="grid-2">
+        <div>
+          <h3>Your details</h3>
+          <pre id="client-json" class="code-block"></pre>
+        </div>
+        <div>
+          <h3>What you can do</h3>
+          <ul class="checklist">
+            <li>Download the period-summary template</li>
+            <li>Upload your local spreadsheet for mapping</li>
+            <li>Preview figures before your firm submits</li>
+          </ul>
+          <div class="hero-actions" style="margin-top:1rem">
+            <a class="btn btn-primary" href="/app">Upload my period file</a>
+            <a class="btn btn-ghost" href="/download/template">Get template</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <p class="muted">Client portal for clients of licensed practices and practitioners. IP © Lee Hine.</p>
+    </div>
+  </footer>
+  <script src="/js/portal.js"></script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+section,field,value,country
+meta,tax_year,2024-25,
+meta,period_start,2024-04-06,
+meta,period_end,2024-07-05,
+self_employment,sales,6800.00,
+self_employment,other_income,90.00,
+self_employment,materials,950.00,
+self_employment,wages,0,
+self_employment,travel,120.00,
+self_employment,rent,1800.00,
+self_employment,advertising,75.00,
+self_employment,accountancy,200.00,
+self_employment,sundry,40.00,
