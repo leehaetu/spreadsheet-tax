@@ -34,7 +34,23 @@ async function init() {
   }
   if (!firmSel.options.length) {
     gate.hidden = false;
-    gate.textContent = 'No firm membership on this account.';
+    gate.innerHTML =
+      'No firm yet. <button type="button" class="btn btn-primary btn-sm" id="create-firm-btn">Create practice</button>';
+    document.getElementById('create-firm-btn')?.addEventListener('click', async () => {
+      const name = window.prompt('Practice / firm name');
+      if (!name) return;
+      const res = await fetch('/api/me/firms', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || 'Could not create practice');
+        return;
+      }
+      location.reload();
+    });
     return;
   }
 

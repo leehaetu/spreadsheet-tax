@@ -320,6 +320,31 @@ function addDays(isoDate, days) {
 }
 
 /**
+ * Create a practice firm and make the user practice_admin.
+ * @param {{ userId: string, name: string, type?: string }} opts
+ */
+export function createFirm({ userId, name, type = 'accountancy' }) {
+  const n = String(name || '').trim().slice(0, 120);
+  if (!n) return { error: 'Firm name required.', status: 400 };
+  const firmId = newId();
+  const now = new Date().toISOString();
+  const firmType = String(type || 'accountancy').slice(0, 40);
+  getDb()
+    .prepare(`INSERT INTO firms (id, name, type, created_at) VALUES (?, ?, ?, ?)`)
+    .run(firmId, n, firmType, now);
+  getDb()
+    .prepare(
+      `INSERT INTO firm_memberships (id, firm_id, user_id, role) VALUES (?, ?, ?, ?)`
+    )
+    .run(newId(), firmId, userId, 'practice_admin');
+  return {
+    ok: true,
+    firm: { id: firmId, name: n, type: firmType, createdAt: now },
+    role: 'practice_admin',
+  };
+}
+
+/**
  * Soft operational delete: remove client if firm member. Does not cascade drafts.
  * @param {{ clientId: string, userId: string }} opts
  */

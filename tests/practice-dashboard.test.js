@@ -122,6 +122,31 @@ describe('practice dashboard and submissions export', () => {
     assert.equal(res.status, 400);
   });
 
+  it('creates a new firm for signed-in user', async () => {
+    cookie = '';
+    const email = `firm-create-${Date.now()}@example.com`;
+    await request(
+      'POST',
+      '/api/auth/register',
+      JSON.stringify({
+        email,
+        password: 'TestPass123!',
+        name: 'Firm Creator',
+      })
+    );
+    const res = await request(
+      'POST',
+      '/api/me/firms',
+      JSON.stringify({ name: 'Green Bookkeepers LLP' })
+    );
+    assert.equal(res.status, 201);
+    const j = JSON.parse(res.body);
+    assert.equal(j.firm.name, 'Green Bookkeepers LLP');
+    assert.equal(j.role, 'practice_admin');
+    const firms = JSON.parse((await request('GET', '/api/me/firms')).body);
+    assert.ok(firms.firms.some((f) => f.id === j.firm.id));
+  });
+
   it('creates and deletes a client; renames firm', async () => {
     cookie = '';
     await request(

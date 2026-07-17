@@ -76,6 +76,7 @@ import {
   getPracticeDashboard,
   deleteClient,
   renameFirm,
+  createFirm,
 } from './lib/practice-db.js';
 import { getDb } from './lib/db.js';
 import {
@@ -146,7 +147,7 @@ app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'SAMEORIGIN');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  res.setHeader('X-App-Version', '1.4.0');
+  res.setHeader('X-App-Version', '1.4.1');
   res.setHeader(
     'Content-Security-Policy',
     "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self'"
@@ -196,7 +197,7 @@ app.get('/health', (_req, res) => {
   res.status(ready ? 200 : 503).json({
     ok: ready,
     service: 'spreadsheet-tax',
-    version: '1.4.0',
+    version: '1.4.1',
     bridging: true,
     db: dbOk,
     oauthMock: oauthConfig().mock,
@@ -210,7 +211,7 @@ app.get('/health', (_req, res) => {
 app.get('/readyz', (_req, res) => {
   try {
     getDb().prepare('SELECT 1 AS x').get();
-    res.status(200).json({ ready: true, version: '1.4.0' });
+    res.status(200).json({ ready: true, version: '1.4.1' });
   } catch {
     res.status(503).json({ ready: false });
   }
@@ -1329,6 +1330,27 @@ app.get('/api/me/firms', (req, res) => {
   const user = requireUser(req, res);
   if (!user) return;
   res.json({ ok: true, firms: listFirmsForUser(user.id) });
+});
+
+app.post('/api/me/firms', (req, res) => {
+  const user = requireUser(req, res);
+  if (!user) return;
+  const result = createFirm({
+    userId: user.id,
+    name: String(req.body?.name || ''),
+    type: req.body?.type,
+  });
+  if (result.error) {
+    return res.status(result.status || 400).json({ error: result.error });
+  }
+  writeAudit({
+    firmId: result.firm.id,
+    userId: user.id,
+    action: 'firm_created',
+    entityType: 'firm',
+    entityId: result.firm.id,
+  });
+  res.status(201).json({ ok: true, firm: result.firm, role: result.role });
 });
 
 app.patch('/api/me/firms/:firmId', (req, res) => {
