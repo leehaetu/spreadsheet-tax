@@ -89,6 +89,31 @@ describe('practice dashboard and submissions export', () => {
     assert.ok(Array.isArray(j.dashboard.needsAction));
   });
 
+  it('paginates clients for large-book readiness', async () => {
+    cookie = '';
+    await request(
+      'POST',
+      '/api/auth/login',
+      JSON.stringify({
+        email: 'demo@spreadsheet-tax.example',
+        password: 'DemoPass123!',
+      })
+    );
+    const firms = JSON.parse((await request('GET', '/api/me/firms')).body);
+    const firmId = firms.firms[0].id;
+    const res = await request(
+      'GET',
+      `/api/me/clients?firmId=${encodeURIComponent(firmId)}&limit=2&offset=0`
+    );
+    assert.equal(res.status, 200);
+    const j = JSON.parse(res.body);
+    assert.equal(j.ok, true);
+    assert.ok(Array.isArray(j.clients));
+    assert.ok(typeof j.total === 'number');
+    assert.equal(j.limit, 2);
+    assert.ok(j.clients.length <= 2);
+  });
+
   it('exports submissions CSV for signed-in user', async () => {
     cookie = '';
     await request(

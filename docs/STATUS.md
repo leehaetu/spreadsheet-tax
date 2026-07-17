@@ -2,26 +2,26 @@
 
 **Last updated:** 2026-07-17  
 **Live:** https://spreadsheet-tax-production.up.railway.app  
-**Version:** 1.4.1
+**Version:** 1.5.0
 
-## This session (shipped)
+## Volume / scale (this slice)
 
-| Slice | Version | Notes |
-|-------|---------|--------|
-| Draft rename, client search, help search, `/readyz` | 1.2.0 | History + workspace + probes |
-| Practice needs-action dashboard, submissions CSV | 1.3.0 | Portfolio stats + export |
-| Saved HMRC identifiers, receipt download | 1.3.1 | Account prefill for app |
-| Client delete, firm rename | 1.4.0 | Workspace practice CRUD |
-| Create practice firm | 1.4.1 | New accountants onboard without invite |
+| Item | Status |
+|------|--------|
+| Railway volume `spreadsheet-tax-volume` | **Attached** at `/app/data` (5 GB Hobby) |
+| `DATA_DIR=/app/data` | Set in production |
+| Volume layout `db/ uploads/ exports/ backups/` | App creates on boot |
+| SQL indexes for large client books | Shipped |
+| Paginated client list API | Shipped (limit 50 default) |
+| Dashboard SQL aggregates | Shipped |
+| Design target | **600,000** customers |
 
-## Tests
-
-**86** unit tests passing.
+**Resize above 5 GB:** Railway dashboard → volume → Live Resize (Pro plan).
 
 ## Demo
 
 `demo@spreadsheet-tax.example` / `DemoPass123!`
 
-## External remaining (not code)
+## External remaining
 
-HMRC production Client ID/Secret + approval, real card billing, pen-test, legal/GDPR pack, customer interviews / pricing lock.
+HMRC production credentials, card billing, pen-test, legal pack, interviews, Postgres migration for multi-instance 600k.

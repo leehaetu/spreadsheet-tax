@@ -55,6 +55,7 @@
           <button type="button" class="btn btn-ghost btn-sm" id="needs-action-btn">Show needs action</button>
         </div>
       </div>
+      <p class="muted" id="client-count" aria-live="polite"></p>
       <div class="table-wrap">
         <table>
           <thead>
@@ -63,6 +64,9 @@
           <tbody id="client-body"></tbody>
         </table>
       </div>
+      <p style="margin-top:0.75rem">
+        <button type="button" class="btn btn-ghost btn-sm" id="load-more-clients" hidden>Load more clients</button>
+      </p>
     </section>
     <section class="panel" id="import-panel" hidden>
       <h2>Import spreadsheet for client</h2>

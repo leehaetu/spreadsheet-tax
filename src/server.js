@@ -77,8 +77,9 @@ import {
   deleteClient,
   renameFirm,
   createFirm,
+  listClientsPage,
 } from './lib/practice-db.js';
-import { getDb } from './lib/db.js';
+import { getDb, getDataDir } from './lib/db.js';
 import {
   buildAuthorizeUrl,
   exchangeCodeForTokens,
@@ -147,7 +148,7 @@ app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'SAMEORIGIN');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  res.setHeader('X-App-Version', '1.4.1');
+  res.setHeader('X-App-Version', '1.5.0');
   res.setHeader(
     'Content-Security-Policy',
     "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self'"
@@ -187,22 +188,39 @@ app.use('/templates', express.static(templatesDir));
 
 app.get('/health', (_req, res) => {
   let dbOk = false;
+  let clientCount = null;
   try {
     getDb().prepare('SELECT 1 AS x').get();
     dbOk = true;
+    clientCount = getDb().prepare(`SELECT COUNT(*) AS c FROM clients`).get().c;
   } catch {
     dbOk = false;
+  }
+  let dataDir = null;
+  try {
+    dataDir = getDataDir();
+  } catch {
+    dataDir = process.env.DATA_DIR || null;
   }
   const ready = dbOk;
   res.status(ready ? 200 : 503).json({
     ok: ready,
     service: 'spreadsheet-tax',
-    version: '1.4.1',
+    version: '1.5.0',
     bridging: true,
     db: dbOk,
     oauthMock: oauthConfig().mock,
     liveSubmitEnabled: process.env.HMRC_ALLOW_LIVE_SUBMIT === '1',
-    volumeDataDir: process.env.DATA_DIR || null,
+    volumeDataDir: dataDir,
+    volumeConfigured: Boolean(process.env.DATA_DIR),
+    clientRows: clientCount,
+    scale: {
+      clientListPagination: true,
+      sqlIndexes: true,
+      designTargetClients: 600_000,
+      notes:
+        'SQLite on Railway volume for pilot/growth. Resize volume on Pro for headroom; Postgres when multi-instance needed.',
+    },
     portals: ['accountant', 'practice', 'client', 'workspace'],
   });
 });
@@ -211,7 +229,7 @@ app.get('/health', (_req, res) => {
 app.get('/readyz', (_req, res) => {
   try {
     getDb().prepare('SELECT 1 AS x').get();
-    res.status(200).json({ ready: true, version: '1.4.1' });
+    res.status(200).json({ ready: true, version: '1.5.0' });
   } catch {
     res.status(503).json({ ready: false });
   }
@@ -1403,7 +1421,33 @@ app.get('/api/me/clients', (req, res) => {
   if (!firmId || !userCanAccessFirm(user.id, firmId)) {
     return res.status(400).json({ error: 'Valid firmId required for your membership.' });
   }
-  res.json({ ok: true, clients: listDbClients(firmId) });
+  const q = typeof req.query.q === 'string' ? req.query.q : '';
+  const status = typeof req.query.status === 'string' ? req.query.status : '';
+  const needsAction =
+    req.query.needsAction === '1' || req.query.needsAction === 'true';
+  const limit = req.query.limit != null ? Number(req.query.limit) : 50;
+  const offset = req.query.offset != null ? Number(req.query.offset) : 0;
+  // Full dump only when explicitly requested (exports / small books)
+  if (req.query.all === '1' || req.query.all === 'true') {
+    const clients = listDbClients(firmId);
+    return res.json({
+      ok: true,
+      clients,
+      total: clients.length,
+      limit: clients.length,
+      offset: 0,
+      hasMore: false,
+    });
+  }
+  const page = listClientsPage({
+    firmId,
+    q,
+    status,
+    needsAction,
+    limit,
+    offset,
+  });
+  res.json({ ok: true, ...page });
 });
 
 app.get('/api/me/practice-dashboard', (req, res) => {

@@ -13,15 +13,44 @@ const root = path.join(__dirname, '..', '..');
 
 let db;
 
-export function getDb() {
-  if (db) return db;
+/**
+ * Persistent data root (Railway volume mount `/app/data` in production).
+ * Layout supports large client books without relying on container disk.
+ */
+export function getDataDir() {
   const dataDir = process.env.DATA_DIR || path.join(root, 'data');
   fs.mkdirSync(dataDir, { recursive: true });
-  const dbPath =
-    process.env.SQLITE_PATH || path.join(dataDir, 'spreadsheet-tax.sqlite');
+  for (const sub of ['db', 'uploads', 'exports', 'backups']) {
+    fs.mkdirSync(path.join(dataDir, sub), { recursive: true });
+  }
+  return dataDir;
+}
+
+export function getDb() {
+  if (db) return db;
+  const dataDir = getDataDir();
+  // Prefer /app/data/db on volume; keep legacy path if SQLITE_PATH set or old file exists
+  const legacyPath = path.join(dataDir, 'spreadsheet-tax.sqlite');
+  const preferredPath = path.join(dataDir, 'db', 'spreadsheet-tax.sqlite');
+  let dbPath = process.env.SQLITE_PATH;
+  if (!dbPath) {
+    if (fs.existsSync(legacyPath) && !fs.existsSync(preferredPath)) {
+      try {
+        fs.renameSync(legacyPath, preferredPath);
+        dbPath = preferredPath;
+      } catch {
+        dbPath = legacyPath;
+      }
+    } else {
+      dbPath = preferredPath;
+    }
+  }
   db = new DatabaseSync(dbPath);
   db.exec('PRAGMA journal_mode = WAL;');
   db.exec('PRAGMA foreign_keys = ON;');
+  db.exec('PRAGMA busy_timeout = 5000;');
+  // Larger page cache helps firm books in the tens/hundreds of thousands of rows
+  db.exec('PRAGMA cache_size = -64000;'); // ~64MB
   migrate(db);
   return db;
 }
@@ -216,6 +245,23 @@ function migrate(database) {
   } catch {
     /* already exists */
   }
+
+  // Scale indexes for large firm books (hundreds of thousands of clients)
+  database.exec(`
+    CREATE INDEX IF NOT EXISTS idx_clients_firm ON clients(firm_id);
+    CREATE INDEX IF NOT EXISTS idx_clients_firm_status ON clients(firm_id, workflow_status);
+    CREATE INDEX IF NOT EXISTS idx_clients_firm_due ON clients(firm_id, due_date);
+    CREATE INDEX IF NOT EXISTS idx_clients_firm_name ON clients(firm_id, display_name);
+    CREATE INDEX IF NOT EXISTS idx_clients_portal_token ON clients(portal_token);
+    CREATE INDEX IF NOT EXISTS idx_drafts_user_created ON drafts(user_id, created_at);
+    CREATE INDEX IF NOT EXISTS idx_drafts_client ON drafts(client_id);
+    CREATE INDEX IF NOT EXISTS idx_drafts_firm ON drafts(firm_id);
+    CREATE INDEX IF NOT EXISTS idx_submissions_user_created ON submission_attempts(user_id, created_at);
+    CREATE INDEX IF NOT EXISTS idx_audit_firm_created ON audit_events(firm_id, created_at);
+    CREATE INDEX IF NOT EXISTS idx_workflow_client ON workflow_events(client_id, created_at);
+    CREATE INDEX IF NOT EXISTS idx_memberships_user ON firm_memberships(user_id);
+    CREATE INDEX IF NOT EXISTS idx_memberships_firm ON firm_memberships(firm_id);
+  `);
 }
 
 export function closeDb() {

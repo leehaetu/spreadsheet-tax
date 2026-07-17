@@ -68,14 +68,23 @@ async function init() {
       })
       .catch(() => {});
   }
+  let clientOffset = 0;
+  let clientHasMore = false;
+  let searchTimer = null;
   statusFilter?.addEventListener('change', () => {
     needsActionOnly = false;
-    loadClients();
+    clientOffset = 0;
+    loadClients({ append: false });
   });
   const searchEl = document.getElementById('client-search');
-  searchEl?.addEventListener('input', () => loadClients());
+  searchEl?.addEventListener('input', () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => {
+      clientOffset = 0;
+      loadClients({ append: false });
+    }, 250);
+  });
   let needsActionOnly = false;
-  let needsActionIds = new Set();
   document.getElementById('needs-action-btn')?.addEventListener('click', () => {
     needsActionOnly = !needsActionOnly;
     const btn = document.getElementById('needs-action-btn');
@@ -83,7 +92,12 @@ async function init() {
       btn.textContent = needsActionOnly ? 'Show all clients' : 'Show needs action';
     }
     if (needsActionOnly && statusFilter) statusFilter.value = '';
-    loadClients();
+    clientOffset = 0;
+    loadClients({ append: false });
+  });
+  document.getElementById('load-more-clients')?.addEventListener('click', () => {
+    if (!clientHasMore) return;
+    loadClients({ append: true });
   });
 
   async function loadDashboard() {
@@ -100,28 +114,39 @@ async function init() {
       document.getElementById('dash-needs').textContent = String(d.needsActionCount);
       document.getElementById('dash-overdue').textContent = String(d.overdue);
       document.getElementById('dash-soon').textContent = String(d.dueSoon);
-      needsActionIds = new Set((d.needsAction || []).map((c) => c.id));
     } catch {
       /* ignore dashboard errors */
     }
   }
 
-  async function loadClients() {
+  async function loadClients({ append = false } = {}) {
     const firmId = firmSel.value;
-    await loadDashboard();
-    const res = await fetch(`/api/me/clients?firmId=${encodeURIComponent(firmId)}`);
+    if (!append) await loadDashboard();
+    const filter = statusFilter?.value || '';
+    const q = (searchEl?.value || '').trim();
+    if (!append) clientOffset = 0;
+    const params = new URLSearchParams({
+      firmId,
+      limit: '50',
+      offset: String(clientOffset),
+    });
+    if (filter) params.set('status', filter);
+    if (q) params.set('q', q);
+    if (needsActionOnly) params.set('needsAction', '1');
+    const res = await fetch(`/api/me/clients?${params.toString()}`);
     const data = await res.json();
     const tbody = document.getElementById('client-body');
-    tbody.innerHTML = '';
-    const filter = statusFilter?.value || '';
-    const q = (searchEl?.value || '').trim().toLowerCase();
-    const list = (data.clients || []).filter((c) => {
-      if (needsActionOnly && !needsActionIds.has(c.id)) return false;
-      if (filter && c.status !== filter) return false;
-      if (q && !String(c.name || '').toLowerCase().includes(q)) return false;
-      return true;
-    });
-    if (!list.length) {
+    if (!append) tbody.innerHTML = '';
+    const list = data.clients || [];
+    clientHasMore = Boolean(data.hasMore);
+    clientOffset = (data.offset || 0) + list.length;
+    const moreBtn = document.getElementById('load-more-clients');
+    const countEl = document.getElementById('client-count');
+    if (countEl) {
+      countEl.textContent = `Showing ${clientOffset} of ${data.total ?? '—'} clients`;
+    }
+    if (moreBtn) moreBtn.hidden = !clientHasMore;
+    if (!list.length && !append) {
       tbody.innerHTML =
         '<tr><td colspan="4"><div class="empty-state"><strong>No clients match</strong>Try another filter or add a client.</div></td></tr>';
       return;

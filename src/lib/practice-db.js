@@ -31,6 +31,19 @@ const LABELS = {
   correction_required: 'Correction required',
 };
 
+/** Statuses that typically need practice attention (not terminal success). */
+const NEEDS_ACTION = new Set([
+  'awaiting_records',
+  'records_received',
+  'mapping_required',
+  'needs_review',
+  'client_query',
+  'ready_for_approval',
+  'ready_to_submit',
+  'rejected',
+  'correction_required',
+]);
+
 export function listWorkflowStatusCatalog() {
   return Object.entries(LABELS).map(([id, label]) => ({ id, label }));
 }
@@ -52,6 +65,71 @@ export function listClients(firmId) {
     )
     .all(firmId)
     .map(mapClient);
+}
+
+/**
+ * Paginated client list for large firm books (does not load full firm into memory).
+ * @param {{
+ *   firmId: string,
+ *   q?: string,
+ *   status?: string,
+ *   needsAction?: boolean,
+ *   limit?: number,
+ *   offset?: number,
+ * }} opts
+ */
+export function listClientsPage({
+  firmId,
+  q = '',
+  status = '',
+  needsAction = false,
+  limit = 50,
+  offset = 0,
+}) {
+  const take = Math.min(Math.max(Number(limit) || 50, 1), 200);
+  const skip = Math.max(Number(offset) || 0, 0);
+  const today = new Date().toISOString().slice(0, 10);
+  const clauses = ['firm_id = ?'];
+  /** @type {unknown[]} */
+  const params = [firmId];
+  if (status) {
+    clauses.push('workflow_status = ?');
+    params.push(status);
+  }
+  const query = String(q || '').trim();
+  if (query) {
+    clauses.push('LOWER(display_name) LIKE ?');
+    params.push(`%${query.toLowerCase()}%`);
+  }
+  if (needsAction) {
+    clauses.push(
+      `(workflow_status != 'submitted' AND (
+         workflow_status IN (${[...NEEDS_ACTION].map(() => '?').join(',')})
+         OR (due_date IS NOT NULL AND due_date < ?)
+       ))`
+    );
+    params.push(...NEEDS_ACTION, today);
+  }
+  const where = clauses.join(' AND ');
+  const total = getDb()
+    .prepare(`SELECT COUNT(*) AS c FROM clients WHERE ${where}`)
+    .get(...params).c;
+  const rows = getDb()
+    .prepare(
+      `SELECT * FROM clients WHERE ${where}
+       ORDER BY
+         CASE WHEN due_date IS NOT NULL AND due_date < ? AND workflow_status != 'submitted' THEN 0 ELSE 1 END,
+         due_date IS NULL, due_date, display_name
+       LIMIT ? OFFSET ?`
+    )
+    .all(...params, today, take, skip);
+  return {
+    clients: rows.map(mapClient),
+    total: Number(total) || 0,
+    limit: take,
+    offset: skip,
+    hasMore: skip + rows.length < total,
+  };
 }
 
 export function getClientRow(clientId) {
@@ -234,8 +312,14 @@ export function acceptFirmInvite(token, userId, userEmail) {
   return { ok: true, firmId: row.firm_id, role: row.role };
 }
 
-export function exportClientsCsv(firmId) {
-  const clients = listClients(firmId);
+export function exportClientsCsv(firmId, { maxRows = 100_000 } = {}) {
+  const cap = Math.min(Math.max(Number(maxRows) || 100_000, 1), 500_000);
+  const clients = getDb()
+    .prepare(
+      `SELECT * FROM clients WHERE firm_id = ? ORDER BY display_name LIMIT ?`
+    )
+    .all(firmId, cap)
+    .map(mapClient);
   const header = 'client_id,name,status,status_label,due_date,portal_access\n';
   const rows = clients
     .map((c) =>
@@ -252,64 +336,83 @@ export function exportClientsCsv(firmId) {
   return header + rows + (rows ? '\n' : '');
 }
 
-/** Statuses that typically need practice attention (not terminal success). */
-const NEEDS_ACTION = new Set([
-  'awaiting_records',
-  'records_received',
-  'mapping_required',
-  'needs_review',
-  'client_query',
-  'ready_for_approval',
-  'ready_to_submit',
-  'rejected',
-  'correction_required',
-]);
-
 /**
- * Firm portfolio summary for the needs-action dashboard.
+ * Firm portfolio summary using SQL aggregates (safe for large books).
  * @param {string} firmId
  */
 export function getPracticeDashboard(firmId) {
-  const clients = listClients(firmId);
+  const db = getDb();
   const today = new Date().toISOString().slice(0, 10);
+  const soon = addDays(today, 14);
+  const totalClients =
+    db.prepare(`SELECT COUNT(*) AS c FROM clients WHERE firm_id = ?`).get(firmId)
+      .c || 0;
   const byStatus = {};
   for (const id of Object.keys(LABELS)) byStatus[id] = 0;
-  let overdue = 0;
-  let dueSoon = 0;
-  const needsAction = [];
-  for (const c of clients) {
-    byStatus[c.status] = (byStatus[c.status] || 0) + 1;
+  const statusRows = db
+    .prepare(
+      `SELECT workflow_status AS status, COUNT(*) AS c
+       FROM clients WHERE firm_id = ? GROUP BY workflow_status`
+    )
+    .all(firmId);
+  for (const r of statusRows) byStatus[r.status] = r.c;
+  const overdue =
+    db
+      .prepare(
+        `SELECT COUNT(*) AS c FROM clients
+         WHERE firm_id = ? AND due_date IS NOT NULL AND due_date < ?
+           AND workflow_status != 'submitted'`
+      )
+      .get(firmId, today).c || 0;
+  const dueSoon =
+    db
+      .prepare(
+        `SELECT COUNT(*) AS c FROM clients
+         WHERE firm_id = ? AND due_date IS NOT NULL
+           AND due_date >= ? AND due_date <= ?
+           AND workflow_status != 'submitted'`
+      )
+      .get(firmId, today, soon).c || 0;
+  const needsActionStatuses = [...NEEDS_ACTION];
+  const needsActionCount =
+    db
+      .prepare(
+        `SELECT COUNT(*) AS c FROM clients
+         WHERE firm_id = ? AND workflow_status != 'submitted' AND (
+           workflow_status IN (${needsActionStatuses.map(() => '?').join(',')})
+           OR (due_date IS NOT NULL AND due_date < ?)
+         )`
+      )
+      .get(firmId, ...needsActionStatuses, today).c || 0;
+  const needsActionRows = db
+    .prepare(
+      `SELECT * FROM clients
+       WHERE firm_id = ? AND workflow_status != 'submitted' AND (
+         workflow_status IN (${needsActionStatuses.map(() => '?').join(',')})
+         OR (due_date IS NOT NULL AND due_date < ?)
+       )
+       ORDER BY
+         CASE WHEN due_date IS NOT NULL AND due_date < ? THEN 0 ELSE 1 END,
+         due_date IS NULL, due_date, display_name
+       LIMIT 50`
+    )
+    .all(firmId, ...needsActionStatuses, today, today);
+  const needsAction = needsActionRows.map((row) => {
+    const c = mapClient(row);
     const isOverdue = Boolean(c.dueDate && c.dueDate < today && c.status !== 'submitted');
-    if (isOverdue) overdue += 1;
-    if (
-      c.dueDate &&
-      c.dueDate >= today &&
-      c.dueDate <= addDays(today, 14) &&
-      c.status !== 'submitted'
-    ) {
-      dueSoon += 1;
-    }
-    if (NEEDS_ACTION.has(c.status) || isOverdue) {
-      needsAction.push({
-        ...c,
-        overdue: isOverdue,
-        reason: isOverdue
-          ? 'Overdue'
-          : LABELS[c.status] || c.status,
-      });
-    }
-  }
-  needsAction.sort((a, b) => {
-    if (a.overdue !== b.overdue) return a.overdue ? -1 : 1;
-    return String(a.dueDate || '9999').localeCompare(String(b.dueDate || '9999'));
+    return {
+      ...c,
+      overdue: isOverdue,
+      reason: isOverdue ? 'Overdue' : LABELS[c.status] || c.status,
+    };
   });
   return {
-    totalClients: clients.length,
+    totalClients: Number(totalClients) || 0,
     byStatus,
-    overdue,
-    dueSoon,
-    needsActionCount: needsAction.length,
-    needsAction: needsAction.slice(0, 50),
+    overdue: Number(overdue) || 0,
+    dueSoon: Number(dueSoon) || 0,
+    needsActionCount: Number(needsActionCount) || 0,
+    needsAction,
   };
 }
 
