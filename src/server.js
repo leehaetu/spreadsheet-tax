@@ -44,7 +44,9 @@ import {
   markDraftSubmitted,
   recordSubmissionAttempt,
   writeAudit,
+  getIdempotentResponse,
 } from './lib/drafts.js';
+import { runDeadlineReminders, purgeAnonymousDrafts } from './lib/jobs.js';
 import {
   listFirmsForUser,
   listClients as listDbClients,
@@ -264,6 +266,10 @@ app.get('/billing', (_req, res) => {
 
 app.get('/account', (_req, res) => {
   res.sendFile(path.join(publicDir, 'account.html'));
+});
+
+app.get('/history', (_req, res) => {
+  res.sendFile(path.join(publicDir, 'history.html'));
 });
 
 /**
@@ -496,6 +502,7 @@ app.post('/api/submit', async (req, res) => {
       businessIdUk,
       businessIdForeign,
       taxYear,
+      idempotencyKey,
     } = req.body || {};
 
     const ip =
@@ -504,6 +511,22 @@ app.post('/api/submit', async (req, res) => {
         : req.socket.remoteAddress) || 'unknown';
     if (!rateLimit(`submit:${ip}`, 30, 60_000)) {
       return res.status(429).json({ error: 'Too many submit attempts. Try again shortly.' });
+    }
+
+    if (idempotencyKey) {
+      const prior = getIdempotentResponse(String(idempotencyKey));
+      if (prior) {
+        return res.json({
+          ok: prior.ok,
+          mode: prior.mode,
+          draftId: prior.draftId,
+          attemptId: prior.attemptId,
+          idempotentReplay: true,
+          liveSubmitEnabled: process.env.HMRC_ALLOW_LIVE_SUBMIT === '1',
+          fraudHeadersAttached: true,
+          results: prior.results,
+        });
+      }
     }
 
     let payloads = null;
@@ -580,21 +603,25 @@ app.post('/api/submit', async (req, res) => {
     });
 
     const ok = results.every((r) => r.ok);
+    let attemptId = null;
     if (draft) {
       if (ok) markDraftSubmitted(draft.id);
-      recordSubmissionAttempt({
+      attemptId = recordSubmissionAttempt({
         draftId: draft.id,
         userId: user?.id,
         mode: client.mode,
         ok,
         results,
+        idempotencyKey: idempotencyKey
+          ? String(idempotencyKey)
+          : null,
       });
       writeAudit({
         userId: user?.id || null,
         action: ok ? 'submit_ok' : 'submit_failed',
         entityType: 'draft',
         entityId: draft.id,
-        meta: { mode: client.mode },
+        meta: { mode: client.mode, attemptId },
       });
     }
 
@@ -602,6 +629,7 @@ app.post('/api/submit', async (req, res) => {
       ok,
       mode: client.mode,
       draftId: draft?.id || null,
+      attemptId,
       liveSubmitEnabled: process.env.HMRC_ALLOW_LIVE_SUBMIT === '1',
       fraudHeadersAttached: true,
       results,
@@ -824,15 +852,127 @@ app.get('/api/metrics/summary', (req, res) => {
     const submits = database
       .prepare(`SELECT COUNT(*) AS c FROM submission_attempts`)
       .get().c;
+    const ctas = database.prepare(`SELECT COUNT(*) AS c FROM cta_events`).get().c;
     res.json({
       ok: true,
       users: Number(users),
       drafts: Number(drafts),
       submissionAttempts: Number(submits),
+      ctaEvents: Number(ctas),
     });
   } catch {
-    res.json({ ok: true, users: 0, drafts: 0, submissionAttempts: 0 });
+    res.json({ ok: true, users: 0, drafts: 0, submissionAttempts: 0, ctaEvents: 0 });
   }
+});
+
+/** Anonymous CTA analytics — no tax data */
+app.post('/api/analytics/cta', (req, res) => {
+  try {
+    const eventName = String(req.body?.event || '').slice(0, 80);
+    if (!eventName) {
+      return res.status(400).json({ error: 'event required' });
+    }
+    getDb()
+      .prepare(
+        `INSERT INTO cta_events (id, event_name, path, meta_json, created_at)
+         VALUES (?, ?, ?, ?, ?)`
+      )
+      .run(
+        newId(),
+        eventName,
+        String(req.body?.path || '').slice(0, 200) || null,
+        req.body?.meta ? JSON.stringify(req.body.meta).slice(0, 1000) : null,
+        new Date().toISOString()
+      );
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: 'analytics failed' });
+  }
+});
+
+/** Ops jobs (protected by simple shared secret for pilot) */
+app.post('/api/jobs/run', (req, res) => {
+  const secret = process.env.JOBS_SECRET || 'dev-jobs-secret';
+  if (req.headers['x-jobs-secret'] !== secret && req.body?.secret !== secret) {
+    return res.status(403).json({ error: 'Jobs secret required' });
+  }
+  const job = String(req.body?.job || '');
+  if (job === 'deadline_reminders') {
+    return res.json(runDeadlineReminders(Number(req.body?.withinDays) || 14));
+  }
+  if (job === 'purge_anonymous_drafts') {
+    return res.json(purgeAnonymousDrafts(Number(req.body?.maxAgeHours) || 48));
+  }
+  res.status(400).json({
+    error: 'Unknown job',
+    jobs: ['deadline_reminders', 'purge_anonymous_drafts'],
+  });
+});
+
+/** Attach import to client (practice) */
+app.post('/api/me/clients/:clientId/import', (req, res) => {
+  upload.single('file')(req, res, (err) => {
+    if (err) {
+      return res.status(400).json({ error: err.message || 'Upload failed' });
+    }
+    const user = requireUser(req, res);
+    if (!user) return;
+    try {
+      const client = getClientRow(req.params.clientId);
+      if (!client || !userCanAccessFirm(user.id, client.firmId)) {
+        return res.status(403).json({ error: 'Not allowed for this client.' });
+      }
+      if (!req.file) {
+        return res.status(400).json({ error: 'No file uploaded.' });
+      }
+      const result = processLocalFile(req.file.buffer, req.file.originalname);
+      // temporarily bind user for draft ownership
+      const payloads = {
+        meta: result.payloads.meta,
+        selfEmployment: result.payloads.selfEmployment,
+        ukProperty: result.payloads.ukProperty,
+        foreignProperty: result.payloads.foreignProperty,
+      };
+      const draft = createDraft({
+        userId: user.id,
+        clientId: client.id,
+        firmId: client.firmId,
+        filename: req.file.originalname,
+        payloads,
+        summary: result.summary,
+        figures: {
+          selfEmployment: result.mapped.selfEmployment?.figures ?? null,
+          ukProperty: result.mapped.ukProperty?.figures ?? null,
+          foreignProperty: result.mapped.foreignProperty.map((f) => ({
+            countryCode: f.countryCode,
+            figures: f.figures,
+          })),
+        },
+        validation: result.validation,
+      });
+      writeAudit({
+        firmId: client.firmId,
+        userId: user.id,
+        action: 'client_import',
+        entityType: 'draft',
+        entityId: draft.id,
+        meta: { clientId: client.id },
+      });
+      res.json({
+        ok: true,
+        draftId: draft.id,
+        clientId: client.id,
+        summary: result.summary,
+        validation: result.validation,
+        redirectApp: `/app?draftId=${encodeURIComponent(draft.id)}`,
+      });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({
+        error: e instanceof Error ? e.message : 'Import failed',
+      });
+    }
+  });
 });
 
 app.get('/api/drafts', (req, res) => {

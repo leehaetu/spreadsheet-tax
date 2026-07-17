@@ -86,6 +86,7 @@ export function recordSubmissionAttempt({
   mode,
   ok,
   results,
+  idempotencyKey = null,
 }) {
   const id = newId();
   getDb()
@@ -102,7 +103,37 @@ export function recordSubmissionAttempt({
       JSON.stringify(results),
       new Date().toISOString()
     );
+  if (idempotencyKey) {
+    getDb()
+      .prepare(
+        `INSERT OR REPLACE INTO idempotency_keys (key, user_id, response_json, created_at)
+         VALUES (?, ?, ?, ?)`
+      )
+      .run(
+        idempotencyKey,
+        userId || null,
+        JSON.stringify({
+          attemptId: id,
+          ok,
+          mode,
+          draftId,
+          results,
+        }),
+        new Date().toISOString()
+      );
+  }
   return id;
+}
+
+/**
+ * @param {string} key
+ */
+export function getIdempotentResponse(key) {
+  const row = getDb()
+    .prepare(`SELECT * FROM idempotency_keys WHERE key = ?`)
+    .get(key);
+  if (!row) return null;
+  return JSON.parse(row.response_json);
 }
 
 export function writeAudit({

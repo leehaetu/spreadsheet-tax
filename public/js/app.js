@@ -497,6 +497,9 @@ document.getElementById('submit-btn')?.addEventListener('click', async () => {
         draftId: lastDraftId || undefined,
         // Fallback only if draft store failed; server still defaults to double mode
         payloads: lastDraftId ? undefined : lastPayloads,
+        idempotencyKey:
+          lastDraftId ||
+          `anon-${Date.now()}-${Math.random().toString(36).slice(2)}`,
         nino: document.getElementById('nino')?.value || undefined,
         taxYear: document.getElementById('tax-year')?.value || undefined,
         businessIdSe: document.getElementById('bid-se')?.value || undefined,
@@ -513,8 +516,10 @@ document.getElementById('submit-btn')?.addEventListener('click', async () => {
     const count = Array.isArray(data.results) ? data.results.length : 0;
     const ok = data.ok;
     if (summary) {
+      const receiptBit = data.attemptId ? ` Receipt: ${data.attemptId}.` : '';
+      const replay = data.idempotentReplay ? ' (safe replay)' : '';
       summary.textContent = ok
-        ? `Your quarterly update${count === 1 ? ' was' : 's were'} accepted (${count} income source${count === 1 ? '' : 's'}).`
+        ? `Your quarterly update${count === 1 ? ' was' : 's were'} accepted (${count} income source${count === 1 ? '' : 's'}).${receiptBit}${replay}`
         : 'Something went wrong with one or more updates. Review the details below.';
     }
     if (list) {
@@ -545,3 +550,34 @@ document.getElementById('submit-btn')?.addEventListener('click', async () => {
 
 setWizardStep(1);
 loadStatus();
+
+// Resume a server draft when opened from history (?draftId=)
+(async function resumeDraftFromQuery() {
+  const id = new URLSearchParams(location.search).get('draftId');
+  if (!id) return;
+  try {
+    const res = await fetch(`/api/drafts/${encodeURIComponent(id)}`);
+    const data = await res.json();
+    if (!res.ok || !data.draft) return;
+    const d = data.draft;
+    handleImportSuccess({
+      payloads: d.payloads,
+      summary: d.summary,
+      figures: d.figures,
+      validation: d.validation || { ready: true, errors: [], warnings: [] },
+      draftId: d.id,
+      filename: d.filename,
+      sources: {
+        selfEmployment: Boolean(d.payloads?.selfEmployment),
+        ukProperty: Boolean(d.payloads?.ukProperty),
+        foreignProperty: (d.payloads?.foreignProperty?.foreignProperty || []).map(
+          (f) => f.countryCode
+        ),
+      },
+      fieldLinks: [],
+      metadata: {},
+    });
+  } catch {
+    /* ignore */
+  }
+})();

@@ -152,6 +152,21 @@ function migrate(database) {
       count INTEGER NOT NULL,
       window_start TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS cta_events (
+      id TEXT PRIMARY KEY,
+      event_name TEXT NOT NULL,
+      path TEXT,
+      meta_json TEXT,
+      created_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS idempotency_keys (
+      key TEXT PRIMARY KEY,
+      user_id TEXT,
+      response_json TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
   `);
 }
 

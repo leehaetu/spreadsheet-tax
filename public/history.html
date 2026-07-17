@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>History — Spreadsheet Tax</title>
+  <link rel="stylesheet" href="/css/site.css" />
+</head>
+<body class="app-body">
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a class="logo" href="/"><span class="logo-mark">ST</span> Spreadsheet Tax</a>
+      <nav>
+        <a href="/app">App</a>
+        <a href="/account">Account</a>
+      </nav>
+    </div>
+  </header>
+  <main class="wrap app-main">
+    <h1>Your drafts &amp; submissions</h1>
+    <p class="muted">Signed-in history only. Free-check drafts without an account are temporary.</p>
+    <p id="gate" class="error" hidden></p>
+    <section class="panel">
+      <h2>Drafts</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>File</th><th>State</th><th>When</th><th></th></tr></thead>
+          <tbody id="drafts"></tbody>
+        </table>
+      </div>
+    </section>
+    <section class="panel">
+      <h2>Submissions</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Attempt</th><th>Mode</th><th>OK</th><th>When</th><th></th></tr></thead>
+          <tbody id="subs"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+  <script>
+    function esc(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+    }
+    async function load() {
+      const me = await fetch('/api/auth/me').then((r) => r.json());
+      if (!me.user) {
+        document.getElementById('gate').hidden = false;
+        document.getElementById('gate').innerHTML = '<a href="/signin?next=/history">Sign in</a> to view history.';
+        return;
+      }
+      const drafts = await fetch('/api/drafts').then((r) => r.json());
+      const dbody = document.getElementById('drafts');
+      dbody.innerHTML = '';
+      for (const d of drafts.drafts || []) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${esc(d.filename)}</td><td>${esc(d.state)}</td><td>${esc(d.createdAt)}</td>
+          <td><a class="btn btn-primary btn-sm" href="/app?draftId=${esc(d.id)}">Open</a></td>`;
+        dbody.appendChild(tr);
+      }
+      const subs = await fetch('/api/me/submissions').then((r) => r.json());
+      const sbody = document.getElementById('subs');
+      sbody.innerHTML = '';
+      for (const s of subs.submissions || []) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td><code>${esc(s.id.slice(0, 8))}…</code></td><td>${esc(s.mode)}</td>
+          <td>${s.ok ? 'Yes' : 'No'}</td><td>${esc(s.createdAt)}</td>
+          <td><a class="btn btn-ghost btn-sm" href="/api/receipts/${esc(s.id)}">Receipt JSON</a></td>`;
+        sbody.appendChild(tr);
+      }
+    }
+    load();
+  </script>
+</body>
+</html>

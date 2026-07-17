@@ -21,6 +21,7 @@
         <a href="/workspace">Workspace</a>
         <a href="/connect-hmrc">HMRC</a>
         <a href="/account">Account</a>
+        <a href="/history">History</a>
         <a href="/download/template">Download template</a>
         <span id="connection-status" class="badge">Checking connection…</span>
       </nav>
@@ -241,6 +242,11 @@
       <p class="muted">© Lee Hine · Spreadsheet Tax</p>
     </div>
   </footer>
+  <script type="module">
+    import { trackCta } from '/js/analytics.js';
+    trackCta('app_open');
+    window.trackCta = trackCta;
+  </script>
   <script src="/js/app.js"></script>
 </body>
 </html>

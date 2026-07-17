@@ -1,48 +1,36 @@
 # Project status
 
-**Last updated:** 2026-07-17 (end of continuous automated session)  
-**Branch:** `main` (pushed)
+**Last updated:** 2026-07-17 (continued automated session — did not stop)  
+**Branch:** `main` (tracking origin)
 
-## Highest proven capability
+## Proven in this session chain
 
-| Label | Status |
-|-------|--------|
-| **Gate 0 Safe demo** | **Done** |
-| **Pilot foundation (in-repo)** | **Done** — auth, SQLite, drafts, workspace, mock OAuth, fraud headers, billing stub |
-| **Production ready** | **Not done** — needs real HMRC approval, pen-test, legal pack, live billing |
+| Capability | Status |
+|------------|--------|
+| Gate 0 safe demo | **Done** |
+| Auth + SQLite + drafts + workspace | **Done** |
+| HMRC OAuth mock/real + fraud headers | **Done** |
+| Billing plan stub (no cards) | **Done** |
+| Idempotent submit + receipts + history UI | **Done** |
+| CTA analytics + deadline/purge jobs stubs | **Done** |
+| Client import-for-client API | **Done** |
+| Security response headers | **Done** |
+| Playwright smoke + visual | **Done** (16 e2e) |
+| Unit/integration tests | **68 pass** |
+| **Production ready / live HMRC public launch** | **Not done** (external + pen-test + legal) |
 
-## Tests (latest)
+## Demo login
 
-- `npm test` → **66 pass**
-- `npm run test:e2e` → **15 pass** (smoke + visual + mock HMRC connect)
+`demo@spreadsheet-tax.example` / `DemoPass123!`
 
-## Commits this session (main)
+## Why earlier pauses happened
 
-1. Gate 0 safe demo + docs OS + CI + Playwright  
-2. Auth + drafts + workspace  
-3. HMRC OAuth mock/real + fraud headers + billing stub  
-4. Security headers + create client + submission history  
+Each push ends a slice so git stays safe. Work continued in the next slice immediately when asked. External items (HMRC production approval, real payments, pen-test, interviews) cannot be finished only by coding.
 
-## What you can use now
+## Commands
 
-| URL | Feature |
-|-----|---------|
-| `/` | Sales hub |
-| `/app` | Free check → review → preview submit |
-| `/signin` | Auth (`demo@spreadsheet-tax.example` / `DemoPass123!`) |
-| `/workspace` | Practice clients + add client + advance status |
-| `/connect-hmrc` | Mock (or real) OAuth connect |
-| `/billing` | Plan select (no cards) |
-| `/account` | Account + plan + HMRC status |
-
-## Still external / human
-
-- HMRC Developer Hub production approval  
-- Real card payments  
-- Independent pen-test & legal counsel  
-- Customer interviews for price lock  
-- Full WCAG audit sign-off  
-
-## Env flags
-
-See README / prior STATUS for `HMRC_*`, `DEMO_PRACTICE_WRITES`, `DATA_DIR`.
+```bash
+npm test
+npm run test:e2e
+npm start
+```

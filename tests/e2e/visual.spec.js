@@ -69,6 +69,12 @@ test.describe('Auth workspace journey', () => {
     await shot(page, 'workspace-signed-in');
   });
 
+  test('history page requires sign-in', async ({ page }) => {
+    await page.goto('/history');
+    await expect(page.locator('#gate')).toBeVisible();
+    await shot(page, 'history-signed-out');
+  });
+
   test('mock HMRC connect journey', async ({ page }) => {
     await page.goto('/signin?next=/connect-hmrc');
     await page.fill('#email', 'demo@spreadsheet-tax.example');
