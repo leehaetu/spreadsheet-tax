@@ -10,28 +10,38 @@ export const PLAN_PERSONAL = 'personal';
 export const PLAN_PROFESSIONAL = 'professional';
 export const PLAN_PRACTICE = 'practice';
 
+/**
+ * Plan packaging flags (billing is still a stub — no card charge).
+ * `hmrcPathInProduct` means this plan is *intended* to include HMRC path when
+ * the operator enables sandbox/live submit + real OAuth — NOT that HMRC is live now.
+ */
 const PLAN_FEATURES = {
   free: {
     label: 'Free trial',
     maxDraftsPerDay: 20,
+    hmrcPathInProduct: false,
+    /** @deprecated use hmrcPathInProduct — kept for older UI, always false for free */
     liveHmrc: false,
     workspace: false,
   },
   personal: {
     label: 'Personal',
     maxDraftsPerDay: 200,
-    liveHmrc: true,
+    hmrcPathInProduct: true,
+    liveHmrc: true, // packaging intent only; server gate still controls
     workspace: false,
   },
   professional: {
     label: 'Professional',
     maxDraftsPerDay: 2000,
+    hmrcPathInProduct: true,
     liveHmrc: true,
     workspace: true,
   },
   practice: {
     label: 'Practice',
     maxDraftsPerDay: 20000,
+    hmrcPathInProduct: true,
     liveHmrc: true,
     workspace: true,
   },

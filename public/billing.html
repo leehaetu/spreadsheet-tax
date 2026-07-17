@@ -41,7 +41,7 @@
         const art = document.createElement('article');
         art.className = 'price-card';
         art.innerHTML = `<h3>${p.label}</h3>
-          <p class="price-desc">Live HMRC path: ${p.liveHmrc ? 'yes (when enabled)' : 'preview only'}. Workspace: ${p.workspace ? 'yes' : 'no'}.</p>
+          <p class="price-desc">HMRC path in product packaging: ${p.hmrcPathInProduct || p.liveHmrc ? 'yes (only when operator enables sandbox/live + real OAuth — not automatic)' : 'preview packaging only'}. Workspace: ${p.workspace ? 'yes' : 'no'}. No card charge in this build.</p>
           <button type="button" class="btn btn-primary btn-block" data-id="${p.id}">Select</button>`;
         root.appendChild(art);
       }

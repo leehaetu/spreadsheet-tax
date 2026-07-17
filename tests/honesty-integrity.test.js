@@ -53,6 +53,30 @@ after(async () => {
 });
 
 describe('honesty and integrity', () => {
+  it('fraud-headers never invent public port or default screens', async () => {
+    const { buildFraudPreventionHeadersDetailed } = await import(
+      '../src/lib/fraud-headers.js'
+    );
+    const empty = buildFraudPreventionHeadersDetailed(
+      { headers: {}, socket: {} },
+      {}
+    );
+    assert.equal(empty.headers['Gov-Client-Public-Port'], undefined);
+    assert.equal(empty.headers['Gov-Client-Screens'], undefined);
+    assert.equal(empty.headers['Gov-Client-Timezone'], undefined);
+    assert.ok(
+      empty.omitted.some((o) => o.header === 'Gov-Client-Public-Port')
+    );
+    // Source must not contain synthetic port formula
+    const fs = await import('node:fs');
+    const src = fs.readFileSync(
+      new URL('../src/lib/fraud-headers.js', import.meta.url),
+      'utf8'
+    );
+    assert.doesNotMatch(src, /49152/);
+    assert.doesNotMatch(src, /1920x1080/);
+  });
+
   it('exposes machine-readable integrity map', async () => {
     const res = await request('GET', '/api/integrity');
     assert.equal(res.status, 200);
