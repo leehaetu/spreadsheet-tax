@@ -252,6 +252,73 @@ export function exportClientsCsv(firmId) {
   return header + rows + (rows ? '\n' : '');
 }
 
+/** Statuses that typically need practice attention (not terminal success). */
+const NEEDS_ACTION = new Set([
+  'awaiting_records',
+  'records_received',
+  'mapping_required',
+  'needs_review',
+  'client_query',
+  'ready_for_approval',
+  'ready_to_submit',
+  'rejected',
+  'correction_required',
+]);
+
+/**
+ * Firm portfolio summary for the needs-action dashboard.
+ * @param {string} firmId
+ */
+export function getPracticeDashboard(firmId) {
+  const clients = listClients(firmId);
+  const today = new Date().toISOString().slice(0, 10);
+  const byStatus = {};
+  for (const id of Object.keys(LABELS)) byStatus[id] = 0;
+  let overdue = 0;
+  let dueSoon = 0;
+  const needsAction = [];
+  for (const c of clients) {
+    byStatus[c.status] = (byStatus[c.status] || 0) + 1;
+    const isOverdue = Boolean(c.dueDate && c.dueDate < today && c.status !== 'submitted');
+    if (isOverdue) overdue += 1;
+    if (
+      c.dueDate &&
+      c.dueDate >= today &&
+      c.dueDate <= addDays(today, 14) &&
+      c.status !== 'submitted'
+    ) {
+      dueSoon += 1;
+    }
+    if (NEEDS_ACTION.has(c.status) || isOverdue) {
+      needsAction.push({
+        ...c,
+        overdue: isOverdue,
+        reason: isOverdue
+          ? 'Overdue'
+          : LABELS[c.status] || c.status,
+      });
+    }
+  }
+  needsAction.sort((a, b) => {
+    if (a.overdue !== b.overdue) return a.overdue ? -1 : 1;
+    return String(a.dueDate || '9999').localeCompare(String(b.dueDate || '9999'));
+  });
+  return {
+    totalClients: clients.length,
+    byStatus,
+    overdue,
+    dueSoon,
+    needsActionCount: needsAction.length,
+    needsAction: needsAction.slice(0, 50),
+  };
+}
+
+function addDays(isoDate, days) {
+  const d = new Date(`${isoDate}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
 export function updateClientStatus({
   clientId,
   userId,

@@ -117,6 +117,28 @@ export function renameDraft(draftId, userId, filename) {
   return { ok: true, draft: getDraft(draftId) };
 }
 
+/**
+ * CSV of personal submission attempts for the signed-in user.
+ * @param {string} userId
+ */
+export function exportSubmissionsCsv(userId) {
+  const rows = getDb()
+    .prepare(
+      `SELECT id, draft_id, mode, ok, created_at FROM submission_attempts
+       WHERE user_id = ? ORDER BY created_at DESC LIMIT 500`
+    )
+    .all(userId);
+  const header = 'attempt_id,draft_id,mode,ok,created_at\n';
+  const body = rows
+    .map((r) =>
+      [r.id, r.draft_id || '', r.mode, r.ok ? 'yes' : 'no', r.created_at].join(
+        ','
+      )
+    )
+    .join('\n');
+  return header + body + (body ? '\n' : '');
+}
+
 export function recordSubmissionAttempt({
   draftId,
   userId,

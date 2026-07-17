@@ -35,6 +35,12 @@
           <button type="button" class="btn btn-ghost" id="reminders-btn">Send due reminders</button>
         </div>
       </div>
+      <div class="stat-cards" id="dash-stats" aria-live="polite">
+        <div class="stat-card"><div class="n" id="dash-total">—</div><div class="l">Clients</div></div>
+        <div class="stat-card"><div class="n" id="dash-needs">—</div><div class="l">Needs action</div></div>
+        <div class="stat-card"><div class="n" id="dash-overdue">—</div><div class="l">Overdue</div></div>
+        <div class="stat-card"><div class="n" id="dash-soon">—</div><div class="l">Due in 14 days</div></div>
+      </div>
       <div class="form-row">
         <label>Filter by status
           <select id="status-filter">
@@ -44,6 +50,9 @@
         <label>Search clients
           <input type="search" id="client-search" placeholder="Name contains…" autocomplete="off" />
         </label>
+        <div style="display:flex;align-items:flex-end">
+          <button type="button" class="btn btn-ghost btn-sm" id="needs-action-btn">Show needs action</button>
+        </div>
       </div>
       <div class="table-wrap">
         <table>

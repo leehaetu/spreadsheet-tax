@@ -57,6 +57,7 @@ import {
   listAuditForUser,
   deleteDraft,
   renameDraft,
+  exportSubmissionsCsv,
 } from './lib/drafts.js';
 import { runDeadlineReminders, purgeAnonymousDrafts } from './lib/jobs.js';
 import {
@@ -72,6 +73,7 @@ import {
   exportClientsCsv,
   createFirmInvite,
   acceptFirmInvite,
+  getPracticeDashboard,
 } from './lib/practice-db.js';
 import { getDb } from './lib/db.js';
 import {
@@ -142,7 +144,7 @@ app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'SAMEORIGIN');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  res.setHeader('X-App-Version', '1.2.0');
+  res.setHeader('X-App-Version', '1.3.0');
   res.setHeader(
     'Content-Security-Policy',
     "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self'"
@@ -192,7 +194,7 @@ app.get('/health', (_req, res) => {
   res.status(ready ? 200 : 503).json({
     ok: ready,
     service: 'spreadsheet-tax',
-    version: '1.2.0',
+    version: '1.3.0',
     bridging: true,
     db: dbOk,
     oauthMock: oauthConfig().mock,
@@ -206,7 +208,7 @@ app.get('/health', (_req, res) => {
 app.get('/readyz', (_req, res) => {
   try {
     getDb().prepare('SELECT 1 AS x').get();
-    res.status(200).json({ ready: true, version: '1.2.0' });
+    res.status(200).json({ ready: true, version: '1.3.0' });
   } catch {
     res.status(503).json({ ready: false });
   }
@@ -739,9 +741,22 @@ app.post('/api/submit', async (req, res) => {
   }
 });
 
+function clientIp(req) {
+  return (
+    (typeof req.headers['x-forwarded-for'] === 'string'
+      ? req.headers['x-forwarded-for'].split(',')[0].trim()
+      : req.socket.remoteAddress) || 'unknown'
+  );
+}
+
 /** Auth */
 app.post('/api/auth/register', (req, res) => {
   try {
+    if (!rateLimit(`register:${clientIp(req)}`, 10, 60_000)) {
+      return res
+        .status(429)
+        .json({ error: 'Too many registration attempts. Try again shortly.' });
+    }
     const email = String(req.body?.email || '').trim();
     const password = String(req.body?.password || '');
     const name = String(req.body?.name || '').trim();
@@ -778,6 +793,11 @@ app.post('/api/auth/register', (req, res) => {
 
 app.post('/api/auth/login', (req, res) => {
   try {
+    if (!rateLimit(`login:${clientIp(req)}`, 20, 60_000)) {
+      return res
+        .status(429)
+        .json({ error: 'Too many login attempts. Try again shortly.' });
+    }
     const email = String(req.body?.email || '').trim();
     const password = String(req.body?.password || '');
     const row = findUserByEmail(email);
@@ -1314,6 +1334,19 @@ app.get('/api/me/clients', (req, res) => {
   res.json({ ok: true, clients: listDbClients(firmId) });
 });
 
+app.get('/api/me/practice-dashboard', (req, res) => {
+  const user = requireUser(req, res);
+  if (!user) return;
+  const firmId =
+    typeof req.query.firmId === 'string' ? req.query.firmId : null;
+  if (!firmId || !userCanAccessFirm(user.id, firmId)) {
+    return res
+      .status(400)
+      .json({ error: 'Valid firmId required for your membership.' });
+  }
+  res.json({ ok: true, dashboard: getPracticeDashboard(firmId) });
+});
+
 app.patch('/api/me/clients/:clientId/workflow', (req, res) => {
   const user = requireUser(req, res);
   if (!user) return;
@@ -1412,6 +1445,18 @@ app.get('/api/me/submissions', (req, res) => {
       createdAt: r.created_at,
     })),
   });
+});
+
+app.get('/api/me/submissions/export', (req, res) => {
+  const user = requireUser(req, res);
+  if (!user) return;
+  const csv = exportSubmissionsCsv(user.id);
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader(
+    'Content-Disposition',
+    'attachment; filename="submissions-export.csv"'
+  );
+  res.status(200).send(csv);
 });
 
 app.get('/api/me/clients/export', (req, res) => {

@@ -2,18 +2,20 @@
 
 **Last updated:** 2026-07-17  
 **Live:** https://spreadsheet-tax-production.up.railway.app  
-**Version:** 1.2.0
+**Version:** 1.3.0
 
 ## This slice
 
 | Item | Status |
 |------|--------|
-| Client search in workspace | `/workspace` name filter |
-| Rename drafts | `/history` + `PATCH /api/drafts/:id` |
-| Help FAQ search | `/help` |
-| `X-App-Version` header | all responses |
-| `/readyz` readiness probe | 200 when DB up |
-| Tests | **81** unit |
+| Practice needs-action dashboard | `/workspace` + `GET /api/me/practice-dashboard` |
+| Submissions CSV export | `/history` + `GET /api/me/submissions/export` |
+| Auth rate limits | login 20/min · register 10/min per IP |
+| Version / readyz | **1.3.0** |
+
+## Prior (1.2.0)
+
+Client search, draft rename, help FAQ search, `/readyz`, `X-App-Version`.
 
 ## Demo
 

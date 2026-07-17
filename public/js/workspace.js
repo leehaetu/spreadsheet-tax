@@ -52,12 +52,47 @@ async function init() {
       })
       .catch(() => {});
   }
-  statusFilter?.addEventListener('change', () => loadClients());
+  statusFilter?.addEventListener('change', () => {
+    needsActionOnly = false;
+    loadClients();
+  });
   const searchEl = document.getElementById('client-search');
   searchEl?.addEventListener('input', () => loadClients());
+  let needsActionOnly = false;
+  let needsActionIds = new Set();
+  document.getElementById('needs-action-btn')?.addEventListener('click', () => {
+    needsActionOnly = !needsActionOnly;
+    const btn = document.getElementById('needs-action-btn');
+    if (btn) {
+      btn.textContent = needsActionOnly ? 'Show all clients' : 'Show needs action';
+    }
+    if (needsActionOnly && statusFilter) statusFilter.value = '';
+    loadClients();
+  });
+
+  async function loadDashboard() {
+    const firmId = firmSel.value;
+    if (!firmId) return;
+    try {
+      const res = await fetch(
+        `/api/me/practice-dashboard?firmId=${encodeURIComponent(firmId)}`
+      );
+      const data = await res.json();
+      const d = data.dashboard;
+      if (!d) return;
+      document.getElementById('dash-total').textContent = String(d.totalClients);
+      document.getElementById('dash-needs').textContent = String(d.needsActionCount);
+      document.getElementById('dash-overdue').textContent = String(d.overdue);
+      document.getElementById('dash-soon').textContent = String(d.dueSoon);
+      needsActionIds = new Set((d.needsAction || []).map((c) => c.id));
+    } catch {
+      /* ignore dashboard errors */
+    }
+  }
 
   async function loadClients() {
     const firmId = firmSel.value;
+    await loadDashboard();
     const res = await fetch(`/api/me/clients?firmId=${encodeURIComponent(firmId)}`);
     const data = await res.json();
     const tbody = document.getElementById('client-body');
@@ -65,6 +100,7 @@ async function init() {
     const filter = statusFilter?.value || '';
     const q = (searchEl?.value || '').trim().toLowerCase();
     const list = (data.clients || []).filter((c) => {
+      if (needsActionOnly && !needsActionIds.has(c.id)) return false;
       if (filter && c.status !== filter) return false;
       if (q && !String(c.name || '').toLowerCase().includes(q)) return false;
       return true;
@@ -76,8 +112,12 @@ async function init() {
     }
     for (const c of list) {
       const tr = document.createElement('tr');
+      const overdue =
+        c.dueDate &&
+        c.dueDate < new Date().toISOString().slice(0, 10) &&
+        c.status !== 'submitted';
       tr.innerHTML = `
-        <td><strong>${esc(c.name)}</strong></td>
+        <td><strong>${esc(c.name)}</strong>${overdue ? ' <span class="status-pill review">Overdue</span>' : ''}</td>
         <td><span class="status-pill">${esc(c.statusLabel || c.status)}</span></td>
         <td>${esc(c.dueDate || '—')}</td>
         <td>
