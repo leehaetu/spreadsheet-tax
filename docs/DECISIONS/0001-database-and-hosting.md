@@ -1,6 +1,6 @@
 # ADR 0001: Database and hosting
 
-**Status:** Proposed  
+**Status:** Accepted (interim)  
 **Date:** 2026-07-17  
 **Deciders:** Lee Hine  
 
@@ -10,12 +10,8 @@ Practice and pilot require durable tenancy. Current store is in-memory only. Hos
 
 ## Decision
 
-_Pending._ Leading options:
-
-1. **PostgreSQL** managed (Railway Postgres or equivalent) + app on Railway  
-2. SQLite only for single-node demos (reject for multi-tenant pilot)
-
-**Proposed lean:** PostgreSQL on same platform as app for pilot simplicity; document exit path if host lock-in becomes a risk.
+**Interim:** **SQLite** via Node `node:sqlite` (`DATA_DIR` / `SQLITE_PATH`) for pilot foundation without external DB provisioning.  
+**Next:** migrate to managed **PostgreSQL** when multi-instance / Railway production scale requires it (same schema intent in DATA-MODEL.md).
 
 ## Alternatives considered
 

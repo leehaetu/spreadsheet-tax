@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Practice workspace — Spreadsheet Tax</title>
+  <link rel="stylesheet" href="/css/site.css" />
+</head>
+<body class="app-body">
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a class="logo" href="/"><span class="logo-mark">ST</span> Spreadsheet Tax</a>
+      <nav>
+        <span class="badge" id="user-badge">Checking session…</span>
+        <a href="/app">Personal app</a>
+        <a href="/accountant">Demo portfolio</a>
+        <button type="button" class="btn btn-ghost btn-sm" id="logout-btn">Sign out</button>
+      </nav>
+    </div>
+  </header>
+  <main class="wrap app-main">
+    <div class="app-hero">
+      <h1>Practice workspace</h1>
+      <p class="lead">Authenticated client book for your firm. Demo login seeds a practice with sample clients.</p>
+    </div>
+    <p id="gate" class="error" hidden></p>
+    <section class="panel" id="ws-panel" hidden>
+      <div class="form-row">
+        <label>Firm
+          <select id="firm-select"></select>
+        </label>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Client</th><th>Status</th><th>Due</th><th>Actions</th></tr>
+          </thead>
+          <tbody id="client-body"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+  <script src="/js/workspace.js"></script>
+</body>
+</html>

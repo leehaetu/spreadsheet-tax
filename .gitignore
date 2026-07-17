@@ -3,12 +3,17 @@ node_modules/
 .env
 .env.local
 uploads/
+data/
+*.sqlite
+*.sqlite-*
 *.log
 .railway/
 dist/
 coverage/
 .idea/
 .vscode/
+test-results/
+playwright-report/
 
 test-results/
 playwright-report/

@@ -1,6 +1,6 @@
 # ADR 0002: Authentication method
 
-**Status:** Proposed  
+**Status:** Accepted (v1)  
 **Date:** 2026-07-17  
 **Deciders:** Lee Hine  
 
@@ -10,13 +10,8 @@ Pilot ready requires authenticated users. Free spreadsheet check may remain anon
 
 ## Decision
 
-_Pending._ Leading options:
-
-1. **Email magic link** — low friction Personal  
-2. **Email + password** — familiar for practices  
-3. **Hosted auth (Clerk/Auth.js/etc.)** — faster MFA/session features  
-
-**Proposed lean:** Start with secure session cookies + email magic link or password for pilot; MFA mandatory for practice admins before multi-user production.
+**v1 shipped:** Email + password (scrypt) + HTTP-only `st_session` cookie; SQLite session rows; free check remains anonymous.  
+**Later:** MFA for practice admins; optional magic link; hosted auth if ops burden grows.
 
 ## Alternatives considered
 

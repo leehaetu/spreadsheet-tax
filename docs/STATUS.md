@@ -1,33 +1,34 @@
 # Project status
 
-**Last updated:** 2026-07-17  
-**Highest proven gate:** **Gate 0 — Safe demo** (repo controls implemented)
+**Last updated:** 2026-07-17 (automated session)  
+**Highest proven gate:** **Gate 0 complete** · **Gate 1–2 foundation started** (auth, SQLite, drafts, workspace)
 
-## Status 2026-07-17
+## Status 2026-07-17 — session progress
 
 | Field | Value |
 |-------|--------|
-| Gate | **0 Safe demo** — proven in repo |
-| Done | Credential-isolated submit (double default); practice write freeze; privacy copy; docs OS; CI; Playwright smoke; sales pages pricing/how-it-works/security; Gate 0 tests |
-| In progress | Push to origin; customer interviews; Gate 1 ADRs formal accept |
-| Blocked / external | HMRC production approval; legal pack; pen-test; billing |
-| Tests | `npm test` **59 pass** · `npm run test:e2e` **6 pass** |
-| Next | Auth + Postgres (Gate 1–2); deepen sales conversion; interviews |
+| Gate | 0 proven · pilot foundation (auth/drafts/workspace) in repo |
+| Done this session | SQLite DB; register/login sessions; server-owned drafts; submit by draftId; authenticated `/workspace` + workflow; help/templates/signin/register; visual Playwright screenshots; auth-drafts tests |
+| Tests | `npm test` **63 pass** · `npm run test:e2e` **12 pass** (smoke + visual) |
+| Visual | Screenshots under `test-results/visual/` (local; gitignored) |
+| Next | Formal ADR accepts; HMRC OAuth; fraud headers; billing; pen-test; interviews |
+| Blocked external | HMRC production approval; legal counsel; paid pen-test |
 
-### Gate 0 checklist
+### Demo credentials
 
-| Item | Status |
-|------|--------|
-| 0.1 Commit docs + intentional WIP | this commit |
-| 0.2 No anonymous credentialed HMRC submit | **done** (`HMRC_ALLOW_LIVE_SUBMIT` required for live) |
-| 0.3 Privacy claims accurate | **done** |
-| 0.4 CI | **done** (`.github/workflows/ci.yml`) |
-| 0.5 Cumulative-update decision | **done** (ADR 0011 pending research) |
-| 0.6 Practice writes frozen | **done** (403 unless `DEMO_PRACTICE_WRITES=1`) |
-| 0.7 Package names | documented |
-| 0.9 Data model / ADRs | drafted; 0008 direction accepted |
+- Email: `demo@spreadsheet-tax.example`  
+- Password: `DemoPass123!`  
+- Opens seeded practice clients in `/workspace`
 
-### Allowed external claims
+### Env flags
 
-- Try spreadsheet check / demo preview submit  
-- **Not yet:** production-ready multi-tenant live HMRC practice product  
+| Variable | Effect |
+|----------|--------|
+| `HMRC_ALLOW_LIVE_SUBMIT=1` | Allow non-double submit (still needs token config) |
+| `DEMO_PRACTICE_WRITES=1` | Unlock legacy unauthenticated practice PATCH |
+| `DATA_DIR` / `SQLITE_PATH` | SQLite location |
+
+### Allowed claims
+
+- Free spreadsheet check; sign-in; save drafts; demo practice workspace  
+- **Not:** production multi-tenant live HMRC for all customers  

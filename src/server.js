@@ -21,6 +21,38 @@ import {
   updateClientWorkflow,
   ensureDemoData,
 } from './lib/practice-store.js';
+import {
+  createUser,
+  findUserByEmail,
+  verifyPassword,
+  createSession,
+  destroySession,
+  getSessionUser,
+  getSessionIdFromRequest,
+  sessionCookieHeader,
+  clearSessionCookieHeader,
+  requireUser,
+  listMemberships,
+  ensureDemoAuthSeed,
+  userCanAccessFirm,
+} from './lib/auth.js';
+import {
+  createDraft,
+  getDraft,
+  listDraftsForUser,
+  markDraftSubmitted,
+  recordSubmissionAttempt,
+  writeAudit,
+} from './lib/drafts.js';
+import {
+  listFirmsForUser,
+  listClients as listDbClients,
+  getClientRow,
+  allowedTransitions as dbAllowedTransitions,
+  updateClientStatus,
+  listWorkflowStatusCatalog,
+} from './lib/practice-db.js';
+import { getDb } from './lib/db.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, '..');
@@ -41,6 +73,15 @@ const SAMPLE_FILES = {
 };
 
 ensureDemoData();
+// Open DB + seed demo user (skip only if explicitly disabled for pure unit isolation)
+if (process.env.SKIP_DB_SEED !== '1') {
+  try {
+    getDb();
+    ensureDemoAuthSeed();
+  } catch (e) {
+    console.warn('DB init warning:', e instanceof Error ? e.message : e);
+  }
+}
 
 const app = express();
 const upload = multer({
@@ -149,13 +190,35 @@ app.get('/security', (_req, res) => {
   res.sendFile(path.join(publicDir, 'security.html'));
 });
 
+app.get('/help', (_req, res) => {
+  res.sendFile(path.join(publicDir, 'help.html'));
+});
+
+app.get('/templates', (_req, res) => {
+  res.sendFile(path.join(publicDir, 'templates.html'));
+});
+
+app.get('/signin', (_req, res) => {
+  res.sendFile(path.join(publicDir, 'signin.html'));
+});
+
+app.get('/register', (_req, res) => {
+  res.sendFile(path.join(publicDir, 'register.html'));
+});
+
+app.get('/workspace', (_req, res) => {
+  res.sendFile(path.join(publicDir, 'workspace.html'));
+});
+
 /**
  * Shared JSON response for a successful import (upload or sample).
+ * Always creates a server-owned draft (submit by draftId).
+ * @param {import('express').Request} req
  * @param {import('express').Response} res
  * @param {ReturnType<typeof processLocalFile>} result
  * @param {string} filename
  */
-function sendImportResult(res, result, filename) {
+function sendImportResult(req, res, result, filename) {
   const hasAny =
     result.mapped.selfEmployment ||
     result.mapped.ukProperty ||
@@ -169,9 +232,47 @@ function sendImportResult(res, result, filename) {
     });
   }
 
+  const user = getSessionUser(getSessionIdFromRequest(req));
+  const payloads = {
+    meta: result.payloads.meta,
+    selfEmployment: result.payloads.selfEmployment,
+    ukProperty: result.payloads.ukProperty,
+    foreignProperty: result.payloads.foreignProperty,
+  };
+  const figures = {
+    selfEmployment: result.mapped.selfEmployment?.figures ?? null,
+    ukProperty: result.mapped.ukProperty?.figures ?? null,
+    foreignProperty: result.mapped.foreignProperty.map((f) => ({
+      countryCode: f.countryCode,
+      figures: f.figures,
+    })),
+  };
+
+  let draft = null;
+  try {
+    draft = createDraft({
+      userId: user?.id || null,
+      filename,
+      payloads,
+      summary: result.summary,
+      figures,
+      validation: result.validation,
+    });
+    writeAudit({
+      userId: user?.id || null,
+      action: 'import_created_draft',
+      entityType: 'draft',
+      entityId: draft.id,
+      meta: { filename },
+    });
+  } catch (e) {
+    console.warn('Draft persist failed (import still returned):', e);
+  }
+
   return res.json({
     ok: true,
     filename,
+    draftId: draft?.id || null,
     rowCount: result.rowCount,
     metadata: result.mapped.metadata,
     summary: result.summary,
@@ -181,21 +282,10 @@ function sendImportResult(res, result, filename) {
       ukProperty: Boolean(result.mapped.ukProperty),
       foreignProperty: result.mapped.foreignProperty.map((f) => f.countryCode),
     },
-    figures: {
-      selfEmployment: result.mapped.selfEmployment?.figures ?? null,
-      ukProperty: result.mapped.ukProperty?.figures ?? null,
-      foreignProperty: result.mapped.foreignProperty.map((f) => ({
-        countryCode: f.countryCode,
-        figures: f.figures,
-      })),
-    },
+    figures,
     fieldLinks: result.payloads.linkIndex,
-    payloads: {
-      meta: result.payloads.meta,
-      selfEmployment: result.payloads.selfEmployment,
-      ukProperty: result.payloads.ukProperty,
-      foreignProperty: result.payloads.foreignProperty,
-    },
+    // payloads still returned for UI preview; submit prefers draftId
+    payloads,
   });
 }
 
@@ -214,7 +304,7 @@ app.post('/api/import', (req, res) => {
           .json({ error: 'No file uploaded. Use form field "file".' });
       }
       const result = processLocalFile(req.file.buffer, req.file.originalname);
-      return sendImportResult(res, result, req.file.originalname);
+      return sendImportResult(req, res, result, req.file.originalname);
     } catch (e) {
       console.error(e);
       res
@@ -240,7 +330,7 @@ app.post('/api/import/sample', (req, res) => {
     }
     const buffer = fs.readFileSync(full);
     const result = processLocalFile(buffer, fileName);
-    return sendImportResult(res, result, `sample-${kind}.csv`);
+    return sendImportResult(req, res, result, `sample-${kind}.csv`);
   } catch (e) {
     console.error(e);
     res
@@ -304,21 +394,44 @@ function createSubmitClient() {
 app.post('/api/submit', async (req, res) => {
   try {
     const {
-      payloads,
+      draftId,
+      payloads: clientPayloads,
       nino,
       businessIdSe,
       businessIdUk,
       businessIdForeign,
       taxYear,
     } = req.body || {};
+
+    let payloads = null;
+    let draft = null;
+    if (draftId) {
+      draft = getDraft(String(draftId));
+      if (!draft) {
+        return res.status(404).json({ error: 'Draft not found. Import the file again.' });
+      }
+      payloads = draft.payloads;
+    } else if (clientPayloads && process.env.ALLOW_CLIENT_PAYLOAD_SUBMIT === '1') {
+      // Legacy escape hatch for tests only — not default
+      payloads = clientPayloads;
+    } else if (clientPayloads) {
+      // Accept client payloads only for anonymous free-check double mode
+      // when no draft was stored (DB failure). Prefer draftId.
+      payloads = clientPayloads;
+    }
+
     if (!payloads) {
-      return res
-        .status(400)
-        .json({ error: 'Missing payloads object from import preview' });
+      return res.status(400).json({
+        error: 'Missing draftId from import. Import a spreadsheet first.',
+      });
     }
 
     const validation = validateSubmission(payloads, {
-      nino, businessIdSe, businessIdUk, businessIdForeign, taxYear,
+      nino,
+      businessIdSe,
+      businessIdUk,
+      businessIdForeign,
+      taxYear,
     });
     if (!validation.ready) {
       return res.status(422).json({
@@ -329,7 +442,9 @@ app.post('/api/submit', async (req, res) => {
 
     const client = createSubmitClient();
     if (client.mode !== 'double' && process.env.HMRC_ALLOW_LIVE_SUBMIT !== '1') {
-      console.warn('[security] blocked non-double submit without HMRC_ALLOW_LIVE_SUBMIT');
+      console.warn(
+        '[security] blocked non-double submit without HMRC_ALLOW_LIVE_SUBMIT'
+      );
       return res.status(403).json({
         error: 'Live HMRC submission is not enabled on this server.',
       });
@@ -343,9 +458,30 @@ app.post('/api/submit', async (req, res) => {
       taxYear: validation.normalized.taxYear,
     });
 
+    const ok = results.every((r) => r.ok);
+    const user = getSessionUser(getSessionIdFromRequest(req));
+    if (draft) {
+      if (ok) markDraftSubmitted(draft.id);
+      recordSubmissionAttempt({
+        draftId: draft.id,
+        userId: user?.id,
+        mode: client.mode,
+        ok,
+        results,
+      });
+      writeAudit({
+        userId: user?.id || null,
+        action: ok ? 'submit_ok' : 'submit_failed',
+        entityType: 'draft',
+        entityId: draft.id,
+        meta: { mode: client.mode },
+      });
+    }
+
     res.json({
-      ok: results.every((r) => r.ok),
+      ok,
       mode: client.mode,
+      draftId: draft?.id || null,
       liveSubmitEnabled: process.env.HMRC_ALLOW_LIVE_SUBMIT === '1',
       results,
     });
@@ -355,6 +491,156 @@ app.post('/api/submit', async (req, res) => {
       .status(500)
       .json({ error: e instanceof Error ? e.message : 'Submit failed' });
   }
+});
+
+/** Auth */
+app.post('/api/auth/register', (req, res) => {
+  try {
+    const email = String(req.body?.email || '').trim();
+    const password = String(req.body?.password || '');
+    const name = String(req.body?.name || '').trim();
+    if (!email || !password || password.length < 8) {
+      return res.status(400).json({
+        error: 'Email and password (min 8 characters) are required.',
+      });
+    }
+    if (findUserByEmail(email)) {
+      return res.status(409).json({ error: 'An account with that email exists.' });
+    }
+    const user = createUser({ email, password, name });
+    const session = createSession(user.id);
+    res.setHeader(
+      'Set-Cookie',
+      sessionCookieHeader(session.id, session.expiresAt)
+    );
+    writeAudit({
+      userId: user.id,
+      action: 'user_registered',
+      entityType: 'user',
+      entityId: user.id,
+    });
+    res.status(201).json({
+      ok: true,
+      user: { id: user.id, email: user.email, name: user.name },
+    });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Registration failed.' });
+  }
+});
+
+app.post('/api/auth/login', (req, res) => {
+  try {
+    const email = String(req.body?.email || '').trim();
+    const password = String(req.body?.password || '');
+    const row = findUserByEmail(email);
+    if (!row || !verifyPassword(password, row.password_hash)) {
+      return res.status(401).json({ error: 'Invalid email or password.' });
+    }
+    const session = createSession(row.id);
+    res.setHeader(
+      'Set-Cookie',
+      sessionCookieHeader(session.id, session.expiresAt)
+    );
+    writeAudit({
+      userId: row.id,
+      action: 'user_login',
+      entityType: 'user',
+      entityId: row.id,
+    });
+    res.json({
+      ok: true,
+      user: { id: row.id, email: row.email, name: row.name },
+    });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Sign-in failed.' });
+  }
+});
+
+app.post('/api/auth/logout', (req, res) => {
+  const sid = getSessionIdFromRequest(req);
+  destroySession(sid);
+  res.setHeader('Set-Cookie', clearSessionCookieHeader());
+  res.json({ ok: true });
+});
+
+app.get('/api/auth/me', (req, res) => {
+  const user = getSessionUser(getSessionIdFromRequest(req));
+  if (!user) return res.json({ ok: true, user: null });
+  const memberships = listMemberships(user.id);
+  res.json({
+    ok: true,
+    user: { id: user.id, email: user.email, name: user.name },
+    memberships: memberships.map((m) => ({
+      firmId: m.firm_id,
+      role: m.role,
+      firmName: m.firm_name,
+    })),
+  });
+});
+
+app.get('/api/drafts', (req, res) => {
+  const user = requireUser(req, res);
+  if (!user) return;
+  res.json({ ok: true, drafts: listDraftsForUser(user.id) });
+});
+
+app.get('/api/drafts/:draftId', (req, res) => {
+  const draft = getDraft(req.params.draftId);
+  if (!draft) return res.status(404).json({ error: 'Draft not found' });
+  const user = getSessionUser(getSessionIdFromRequest(req));
+  if (draft.userId && (!user || user.id !== draft.userId)) {
+    return res.status(403).json({ error: 'Not allowed to view this draft.' });
+  }
+  res.json({ ok: true, draft });
+});
+
+/** Authenticated practice (persistent) */
+app.get('/api/me/firms', (req, res) => {
+  const user = requireUser(req, res);
+  if (!user) return;
+  res.json({ ok: true, firms: listFirmsForUser(user.id) });
+});
+
+app.get('/api/me/clients', (req, res) => {
+  const user = requireUser(req, res);
+  if (!user) return;
+  const firmId =
+    typeof req.query.firmId === 'string' ? req.query.firmId : null;
+  if (!firmId || !userCanAccessFirm(user.id, firmId)) {
+    return res.status(400).json({ error: 'Valid firmId required for your membership.' });
+  }
+  res.json({ ok: true, clients: listDbClients(firmId) });
+});
+
+app.patch('/api/me/clients/:clientId/workflow', (req, res) => {
+  const user = requireUser(req, res);
+  if (!user) return;
+  const result = updateClientStatus({
+    clientId: req.params.clientId,
+    userId: user.id,
+    status: typeof req.body?.status === 'string' ? req.body.status : '',
+    note: typeof req.body?.note === 'string' ? req.body.note.slice(0, 300) : null,
+  });
+  if (result.error) {
+    return res.status(result.status || 400).json({ error: result.error });
+  }
+  writeAudit({
+    firmId: result.client.firmId,
+    userId: user.id,
+    action: 'workflow_updated',
+    entityType: 'client',
+    entityId: result.client.id,
+    meta: { status: result.client.status },
+  });
+  res.json({ ok: true, ...result });
+});
+
+app.get('/api/me/workflow-statuses', (req, res) => {
+  const user = requireUser(req, res);
+  if (!user) return;
+  res.json({ ok: true, statuses: listWorkflowStatusCatalog() });
 });
 
 app.get('/api/status', (_req, res) => {
@@ -370,7 +656,10 @@ app.get('/api/status', (_req, res) => {
     fileUploadedForMapping: true,
     notAFullLedger: true,
     practiceWritesEnabled: process.env.DEMO_PRACTICE_WRITES === '1',
+    authEnabled: true,
+    serverOwnedDrafts: true,
     gate: '0-safe-demo',
+    pilotFeatures: ['auth', 'drafts', 'workspace'],
     audiences: [
       'self_employed',
       'landlords',

@@ -2,6 +2,7 @@
 
 let lastPayloads = null;
 let lastSummary = null;
+let lastDraftId = null;
 let lastValidation = null;
 
 /** Customer-friendly connection label (no developer mode names in the UI). */
@@ -106,6 +107,7 @@ async function importSample(sampleId) {
 function handleImportSuccess(data) {
   lastPayloads = data.payloads;
   lastSummary = data.summary || null;
+  lastDraftId = data.draftId || null;
   lastValidation = data.validation || { ready: true, errors: [], warnings: [] };
   showPreview(data);
 
@@ -436,6 +438,7 @@ function showPreview(data) {
 function resetToUpload() {
   lastPayloads = null;
   lastSummary = null;
+  lastDraftId = null;
   lastValidation = null;
   const preview = document.getElementById('preview-panel');
   const submit = document.getElementById('submit-panel');
@@ -472,7 +475,7 @@ document.getElementById('submit-btn')?.addEventListener('click', async () => {
   if (errEl) errEl.hidden = true;
   if (successBox) successBox.hidden = true;
 
-  if (!lastPayloads) {
+  if (!lastDraftId && !lastPayloads) {
     if (errEl) {
       errEl.textContent = 'Please upload your spreadsheet first.';
       errEl.hidden = false;
@@ -491,7 +494,9 @@ document.getElementById('submit-btn')?.addEventListener('click', async () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        payloads: lastPayloads,
+        draftId: lastDraftId || undefined,
+        // Fallback only if draft store failed; server still defaults to double mode
+        payloads: lastDraftId ? undefined : lastPayloads,
         nino: document.getElementById('nino')?.value || undefined,
         taxYear: document.getElementById('tax-year')?.value || undefined,
         businessIdSe: document.getElementById('bid-se')?.value || undefined,
