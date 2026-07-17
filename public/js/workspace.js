@@ -51,11 +51,25 @@ async function init() {
         <td><span class="status-pill">${esc(c.statusLabel || c.status)}</span></td>
         <td>${esc(c.dueDate || '—')}</td>
         <td>
-          <a class="btn btn-primary btn-sm" href="/app">Import</a>
+          <button type="button" class="btn btn-primary btn-sm import-for" data-id="${esc(c.id)}" data-name="${esc(c.name)}">Import file</button>
+          <a class="btn btn-ghost btn-sm" href="/app">Personal app</a>
           <button type="button" class="btn btn-ghost btn-sm advance" data-id="${esc(c.id)}" data-status="${esc(c.status)}">Advance</button>
         </td>`;
       tbody.appendChild(tr);
     }
+    tbody.querySelectorAll('.import-for').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const panel = document.getElementById('import-panel');
+        const idEl = document.getElementById('import-client-id');
+        const label = document.getElementById('import-client-label');
+        if (panel) panel.hidden = false;
+        if (idEl) idEl.value = btn.getAttribute('data-id') || '';
+        if (label) {
+          label.textContent = `Importing for: ${btn.getAttribute('data-name') || 'client'}`;
+        }
+        panel?.scrollIntoView({ behavior: 'smooth' });
+      });
+    });
     tbody.querySelectorAll('.advance').forEach((btn) => {
       btn.addEventListener('click', async () => {
         const id = btn.getAttribute('data-id');
@@ -107,6 +121,42 @@ async function init() {
   document.getElementById('logout-btn')?.addEventListener('click', async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
     location.href = '/signin';
+  });
+
+  document.getElementById('client-import-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const msg = document.getElementById('import-msg');
+    const err = document.getElementById('import-err');
+    if (msg) msg.hidden = true;
+    if (err) err.hidden = true;
+    const clientId = document.getElementById('import-client-id')?.value;
+    const fileInput = document.getElementById('client-file');
+    const file = fileInput?.files?.[0];
+    if (!clientId || !file) {
+      if (err) {
+        err.textContent = 'Choose a client and a spreadsheet file.';
+        err.hidden = false;
+      }
+      return;
+    }
+    const fd = new FormData();
+    fd.append('file', file);
+    const res = await fetch(
+      `/api/me/clients/${encodeURIComponent(clientId)}/import`,
+      { method: 'POST', body: fd }
+    );
+    const data = await res.json();
+    if (!res.ok) {
+      if (err) {
+        err.textContent = data.error || 'Import failed';
+        err.hidden = false;
+      }
+      return;
+    }
+    if (msg) {
+      msg.hidden = false;
+      msg.innerHTML = `Draft created. <a href="${esc(data.redirectApp || '/app')}">Review in the app</a>`;
+    }
   });
 }
 

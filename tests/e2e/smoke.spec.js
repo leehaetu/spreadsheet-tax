@@ -33,6 +33,11 @@ test.describe('Gate 0 smoke — sales and personal app', () => {
     await expect(page.locator('#metric-income')).not.toHaveText('—');
   });
 
+  test('E2E-audience mode changes self-employed headline', async ({ page }) => {
+    await page.goto('/app?mode=self-employed');
+    await expect(page.getByRole('heading', { name: /self-employment/i })).toBeVisible();
+  });
+
   test('E2E-06 preview submit path works without live credentials', async ({
     page,
   }) => {

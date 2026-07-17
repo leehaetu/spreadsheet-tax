@@ -42,6 +42,20 @@
         </table>
       </div>
     </section>
+    <section class="panel" id="import-panel" hidden>
+      <h2>Import spreadsheet for client</h2>
+      <p class="muted" id="import-client-label">Select a client, then choose a CSV/Excel file.</p>
+      <form id="client-import-form" class="upload-form">
+        <input type="hidden" id="import-client-id" />
+        <label class="file-drop" for="client-file">
+          <input type="file" id="client-file" accept=".csv,.xlsx,.xls" required />
+          <span>Choose client period file…</span>
+        </label>
+        <button type="submit" class="btn btn-primary">Import for client</button>
+      </form>
+      <p id="import-msg" class="muted" hidden></p>
+      <p id="import-err" class="error" hidden></p>
+    </section>
   </main>
   <script src="/js/workspace.js"></script>
 </body>

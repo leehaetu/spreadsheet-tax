@@ -551,6 +551,31 @@ document.getElementById('submit-btn')?.addEventListener('click', async () => {
 setWizardStep(1);
 loadStatus();
 
+// Audience mode from sales CTAs (?mode=self-employed|property|landlord)
+(function applyAudienceMode() {
+  const mode = new URLSearchParams(location.search).get('mode') || '';
+  const lead = document.querySelector('.app-hero .lead');
+  const h1 = document.querySelector('.app-hero h1');
+  if (mode === 'self-employed' || mode === 'self_employment') {
+    if (h1) h1.textContent = 'Submit your self-employment quarterly update';
+    if (lead) {
+      lead.innerHTML =
+        'Built for sole traders and trades. Upload your period spreadsheet, review turnover and expenses, then submit — <strong>no retyping totals</strong>.';
+    }
+    // Prefer self-employment sample first
+    const se = document.querySelector('.sample-btn[data-sample="self_employment"]');
+    if (se) se.classList.add('tag', 'green');
+  } else if (mode === 'property' || mode === 'landlord' || mode === 'landlords') {
+    if (h1) h1.textContent = 'Submit your property quarterly update';
+    if (lead) {
+      lead.innerHTML =
+        'Built for UK and foreign property landlords. Map rental income and costs from your spreadsheet, then review before sending.';
+    }
+    const uk = document.querySelector('.sample-btn[data-sample="uk_property"]');
+    if (uk) uk.classList.add('tag', 'green');
+  }
+})();
+
 // Resume a server draft when opened from history (?draftId=)
 (async function resumeDraftFromQuery() {
   const id = new URLSearchParams(location.search).get('draftId');
