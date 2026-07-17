@@ -40,14 +40,16 @@ Spreadsheet Tax first. Home-based (Reading area / prefer **Wokingham**). Plumbin
 | **Personal pilot MVP** | Largely in place: auth, drafts, import, review, OAuth, sandbox SE submit, history/receipts, businesses/obligations UI |
 | **HMRC Production credentials** | Operator process on Hub — see production pack |
 
-## Operator next (truthful)
+## Operator next (truthful — only open items)
 
-1. Confirm **Obligations (MTD) 3.0** subscribed on Sandbox Hub app  
-2. Connect sandbox → Load businesses + obligations on `/app`  
-3. Set `VENDOR_PUBLIC_IP` if Railway egress known  
-4. Create **Production** application on Hub + email SDSTeam (template in production pack)  
-5. Complete HMRC Production Approvals Checklist when issued  
-6. Do **not** claim live taxpayer filing until approval + gate  
+1. ~~VENDOR_PUBLIC_IP~~ **done** — Railway egress `195.180.20.214`  
+2. ~~In-year Hub API subscriptions~~ **you already have them**  
+3. ~~OAuth + businesses + obligations e2e~~ **Playwright 5/5 passed** (production + sandbox test user)  
+4. Property sandbox period HTTP evidence when you want SDSTeam logs for Property 6.0  
+5. **Not next yet:** Production Hub application — only after you are happy with sandbox evidence  
+6. Never claim live taxpayer filing until Production approval + gate  
+
+See [DONE-VS-NOT.md](./DONE-VS-NOT.md).
 
 ## Honesty rule for agents
 
