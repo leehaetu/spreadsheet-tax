@@ -109,7 +109,11 @@ describe('HMRC OAuth mock connect', () => {
     assert.ok([302, 301].includes(cb.status) || cb.status === 200);
     const st = await request('GET', '/api/hmrc/status');
     const stj = JSON.parse(st.body);
-    assert.ok(stj.connection?.connected || stj.connection?.mode);
+    // Mock connect stores a token but must not claim real HMRC connection
+    assert.equal(stj.connection?.mock, true);
+    assert.equal(stj.connection?.connected, false);
+    assert.ok(stj.connection?.mode);
+    assert.equal(stj.oauth?.mock, true);
   });
 });
 

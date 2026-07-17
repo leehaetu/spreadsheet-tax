@@ -36,8 +36,17 @@ const DEFAULT_SANDBOX_BASE = 'https://test-api.service.hmrc.gov.uk';
  */
 export function buildSubmitRequest(req, config) {
   const base = (config.baseUrl || DEFAULT_SANDBOX_BASE).replace(/\/$/, '');
-  const nino = req.nino || config.nino || 'AA123456A';
+  const nino = req.nino || config.nino;
+  if (!nino) {
+    throw new Error('National Insurance number is required for HMRC request construction.');
+  }
   const { businessId, taxYear, body, source, periodId } = req;
+  if (!businessId) {
+    throw new Error('HMRC business ID is required for HMRC request construction.');
+  }
+  if (!taxYear) {
+    throw new Error('Tax year is required for HMRC request construction.');
+  }
 
   let path;
   let method = 'POST';
@@ -116,39 +125,56 @@ export function createHmrcClient(overrides = {}) {
      * @param {{ nino?: string, businessIdSe?: string, businessIdUk?: string, businessIdForeign?: string, taxYear?: string }} ids
      */
     async submitBundle(payloads, ids = {}) {
-      const nino = ids.nino || payloads.meta?.nino || config.nino || 'AA123456A';
-      const taxYear = ids.taxYear || payloads.meta?.taxYear || '2024-25';
+      const nino = ids.nino || payloads.meta?.nino || config.nino;
+      const taxYear = ids.taxYear || payloads.meta?.taxYear;
+      if (!nino || !taxYear) {
+        throw new Error(
+          'NINO and tax year must be provided by the validated submit path (no placeholder defaults).'
+        );
+      }
       const results = [];
 
       if (payloads.selfEmployment) {
+        const businessId = ids.businessIdSe || payloads.meta?.businessId;
+        if (!businessId) {
+          throw new Error('Self-employment business ID required (no placeholder defaults).');
+        }
         results.push(
           await this.submitPeriodSummary({
             source: 'self_employment',
             nino,
-            businessId: ids.businessIdSe || payloads.meta?.businessId || 'XAIS12345678901',
+            businessId,
             taxYear,
             body: payloads.selfEmployment,
           })
         );
       }
       if (payloads.ukProperty) {
+        const businessId = ids.businessIdUk || payloads.meta?.businessIdUk;
+        if (!businessId) {
+          throw new Error('UK property business ID required (no placeholder defaults).');
+        }
         results.push(
           await this.submitPeriodSummary({
             source: 'uk_property',
             nino,
-            businessId: ids.businessIdUk || payloads.meta?.businessId || 'XPIS12345678901',
+            businessId,
             taxYear,
             body: payloads.ukProperty,
           })
         );
       }
       if (payloads.foreignProperty) {
+        const businessId =
+          ids.businessIdForeign || payloads.meta?.businessIdForeign;
+        if (!businessId) {
+          throw new Error('Foreign property business ID required (no placeholder defaults).');
+        }
         results.push(
           await this.submitPeriodSummary({
             source: 'foreign_property',
             nino,
-            businessId:
-              ids.businessIdForeign || payloads.meta?.businessId || 'XFIS12345678901',
+            businessId,
             taxYear,
             body: payloads.foreignProperty,
           })
@@ -198,6 +224,7 @@ export async function submitViaDouble(prepared) {
   return {
     ok: true,
     mode: 'double',
+    externalCallMade: false,
     status: 200,
     request: {
       method: prepared.method,
@@ -205,6 +232,7 @@ export async function submitViaDouble(prepared) {
       url: prepared.url,
       source: prepared.source,
       body: prepared.body,
+      headers: prepared.headers,
     },
     response: {
       links: [
@@ -214,8 +242,11 @@ export async function submitViaDouble(prepared) {
           rel: 'self',
         },
       ],
-      submissionId: `double-${prepared.source}-${Date.now()}`,
-      message: 'Accepted by HMRC test double (no external call)',
+      // Explicitly not an HMRC correlation id
+      previewReceiptId: `preview-${prepared.source}-${Date.now()}`,
+      submissionId: null,
+      message:
+        'PREVIEW ONLY — not sent to HMRC. Same request shape as a real submit for inspection.',
     },
   };
 }
@@ -226,15 +257,16 @@ export async function submitViaDouble(prepared) {
  * @param {HmrcConfig} config
  */
 export async function submitViaSandbox(prepared, config) {
-  if (!config.accessToken && !process.env.HMRC_ACCESS_TOKEN) {
-    // Fall back to double if sandbox not fully configured
-    const fallback = await submitViaDouble(prepared);
-    return {
-      ...fallback,
-      mode: 'double',
-      warning:
-        'HMRC sandbox selected but no access token; used test double for this request',
-    };
+  const token = config.accessToken || process.env.HMRC_ACCESS_TOKEN;
+  if (!token) {
+    throw new Error(
+      'HMRC sandbox submit requires a real access token. Mock/demo tokens are not used for external calls.'
+    );
+  }
+  if (String(token).startsWith('mock-')) {
+    throw new Error(
+      'Refusing sandbox submit with a mock access token. Connect real HMRC OAuth credentials.'
+    );
   }
 
   const res = await fetch(prepared.url, {
@@ -254,6 +286,7 @@ export async function submitViaSandbox(prepared, config) {
   return {
     ok: res.ok,
     mode: 'sandbox',
+    externalCallMade: true,
     status: res.status,
     request: {
       method: prepared.method,

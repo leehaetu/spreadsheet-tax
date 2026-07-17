@@ -62,5 +62,18 @@ export function validateSubmission(payloads, ids = {}) {
   for (const [present, value, field, label] of requiredIds) {
     if (present && !BUSINESS_ID.test(String(value || ''))) errors.push(issue('INVALID_BUSINESS_ID', `Enter the HMRC business ID for ${label}.`, field, label));
   }
-  return { ready: errors.length === 0, errors, normalized: { nino, taxYear } };
+  const businessIdSe = String(
+    ids.businessIdSe || payloads?.meta?.businessId || ''
+  ).trim();
+  const businessIdUk = String(
+    ids.businessIdUk || payloads?.meta?.businessIdUk || ''
+  ).trim();
+  const businessIdForeign = String(
+    ids.businessIdForeign || payloads?.meta?.businessIdForeign || ''
+  ).trim();
+  return {
+    ready: errors.length === 0,
+    errors,
+    normalized: { nino, taxYear, businessIdSe, businessIdUk, businessIdForeign },
+  };
 }

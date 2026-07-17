@@ -86,6 +86,7 @@ import {
   getActiveConnection,
   revokeConnection,
   oauthConfig,
+  isMockAccessToken,
 } from './lib/hmrc-oauth.js';
 import {
   ensureFreePlan,
@@ -148,7 +149,7 @@ app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'SAMEORIGIN');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  res.setHeader('X-App-Version', '1.5.0');
+  res.setHeader('X-App-Version', '1.6.0');
   res.setHeader(
     'Content-Security-Policy',
     "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self'"
@@ -206,20 +207,22 @@ app.get('/health', (_req, res) => {
   res.status(ready ? 200 : 503).json({
     ok: ready,
     service: 'spreadsheet-tax',
-    version: '1.5.0',
+    version: '1.6.0',
     bridging: true,
     db: dbOk,
     oauthMock: oauthConfig().mock,
     liveSubmitEnabled: process.env.HMRC_ALLOW_LIVE_SUBMIT === '1',
+    previewOnlyDefault: process.env.HMRC_ALLOW_LIVE_SUBMIT !== '1',
     volumeDataDir: dataDir,
     volumeConfigured: Boolean(process.env.DATA_DIR),
     clientRows: clientCount,
+    integrity: '/api/integrity',
     scale: {
       clientListPagination: true,
       sqlIndexes: true,
       designTargetClients: 600_000,
-      notes:
-        'SQLite on Railway volume for pilot/growth. Resize volume on Pro for headroom; Postgres when multi-instance needed.',
+      designTargetNote:
+        'Capacity design target only — not a load-test claim. SQLite on volume for pilot; Postgres for multi-instance.',
     },
     portals: ['accountant', 'practice', 'client', 'workspace'],
   });
@@ -229,7 +232,7 @@ app.get('/health', (_req, res) => {
 app.get('/readyz', (_req, res) => {
   try {
     getDb().prepare('SELECT 1 AS x').get();
-    res.status(200).json({ ready: true, version: '1.5.0' });
+    res.status(200).json({ ready: true, version: '1.6.0' });
   } catch {
     res.status(503).json({ ready: false });
   }
@@ -289,6 +292,9 @@ app.get('/how-it-works', (_req, res) => {
 
 app.get('/security', (_req, res) => {
   res.sendFile(path.join(publicDir, 'security.html'));
+});
+app.get('/integrity', (_req, res) => {
+  res.sendFile(path.join(publicDir, 'integrity.html'));
 });
 
 app.get('/help', (_req, res) => {
@@ -369,6 +375,7 @@ app.get('/sitemap.xml', (_req, res) => {
     '/how-it-works',
     '/templates',
     '/security',
+    '/integrity',
     '/help',
     '/license',
     '/legal',
@@ -643,7 +650,10 @@ app.post('/api/submit', async (req, res) => {
           attemptId: prior.attemptId,
           idempotentReplay: true,
           liveSubmitEnabled: process.env.HMRC_ALLOW_LIVE_SUBMIT === '1',
-          fraudHeadersAttached: true,
+          externalCallMade: prior.mode !== 'double',
+          fraudHeadersPrepared: true,
+          fraudHeadersSentToHmrc: prior.mode !== 'double',
+          previewOnly: prior.mode === 'double',
           results: prior.results,
         });
       }
@@ -692,11 +702,20 @@ app.post('/api/submit', async (req, res) => {
     const user = getSessionUser(getSessionIdFromRequest(req));
     let accessToken;
     let tokenMode;
+    let connectionMock = false;
     if (user && process.env.HMRC_ALLOW_LIVE_SUBMIT === '1') {
       const conn = getActiveConnection(user.id);
       if (conn && !conn.expired && conn.accessToken) {
+        if (conn.mock || isMockAccessToken(conn.accessToken)) {
+          return res.status(403).json({
+            error:
+              'HMRC connection is a local mock for UI testing only. Connect real HMRC OAuth before external submit.',
+            mockConnection: true,
+          });
+        }
         accessToken = conn.accessToken;
         tokenMode = conn.mode;
+        connectionMock = false;
       }
     }
 
@@ -716,13 +735,15 @@ app.post('/api/submit', async (req, res) => {
 
     const results = await client.submitBundle(payloads, {
       nino: validation.normalized.nino,
-      businessIdSe,
-      businessIdUk,
-      businessIdForeign,
+      businessIdSe: validation.normalized.businessIdSe || businessIdSe,
+      businessIdUk: validation.normalized.businessIdUk || businessIdUk,
+      businessIdForeign:
+        validation.normalized.businessIdForeign || businessIdForeign,
       taxYear: validation.normalized.taxYear,
     });
 
     const ok = results.every((r) => r.ok);
+    const externalCallMade = results.some((r) => r.externalCallMade === true);
     let attemptId = null;
     if (draft) {
       if (ok) markDraftSubmitted(draft.id);
@@ -741,7 +762,12 @@ app.post('/api/submit', async (req, res) => {
         action: ok ? 'submit_ok' : 'submit_failed',
         entityType: 'draft',
         entityId: draft.id,
-        meta: { mode: client.mode, attemptId },
+        meta: {
+          mode: client.mode,
+          attemptId,
+          externalCallMade,
+          previewOnly: client.mode === 'double',
+        },
       });
     }
 
@@ -751,7 +777,12 @@ app.post('/api/submit', async (req, res) => {
       draftId: draft?.id || null,
       attemptId,
       liveSubmitEnabled: process.env.HMRC_ALLOW_LIVE_SUBMIT === '1',
-      fraudHeadersAttached: true,
+      previewOnly: client.mode === 'double',
+      externalCallMade,
+      // Headers are prepared on the request descriptor; only "sent" on external calls
+      fraudHeadersPrepared: true,
+      fraudHeadersSentToHmrc: externalCallMade,
+      connectionMock,
       results,
     });
   } catch (e) {
@@ -952,12 +983,20 @@ app.get('/api/auth/me', (req, res) => {
     },
     hmrc: hmrc
       ? {
-          connected: !hmrc.expired,
+          connected: !hmrc.expired && !hmrc.mock,
+          mock: Boolean(hmrc.mock),
           expired: Boolean(hmrc.expired),
           mode: hmrc.mode,
           expiresAt: hmrc.expiresAt,
+          label: hmrc.expired
+            ? 'Expired'
+            : hmrc.mock
+              ? 'Mock connection (not HMRC)'
+              : hmrc.mode === 'production'
+                ? 'HMRC live connected'
+                : 'HMRC sandbox connected',
         }
-      : { connected: false },
+      : { connected: false, mock: false, label: 'Not connected' },
   });
 });
 
@@ -1015,17 +1054,37 @@ app.get('/api/hmrc/status', (req, res) => {
   const user = requireUser(req, res);
   if (!user) return;
   const hmrc = getActiveConnection(user.id);
+  const oauth = oauthConfig();
   res.json({
     ok: true,
-    oauth: oauthConfig(),
+    oauth: {
+      mock: oauth.mock,
+      mode: oauth.mode,
+      hasClientCredentials: Boolean(oauth.clientId && oauth.clientSecret),
+      redirectUri: oauth.redirectUri,
+    },
     connection: hmrc
       ? {
-          connected: !hmrc.expired,
+          // "connected" means a non-mock, non-expired HMRC token
+          connected: !hmrc.expired && !hmrc.mock,
+          mock: Boolean(hmrc.mock),
           expired: Boolean(hmrc.expired),
           mode: hmrc.mode,
           expiresAt: hmrc.expiresAt,
+          label: hmrc.expired
+            ? 'Expired'
+            : hmrc.mock
+              ? 'Mock connection (UI journey only — not HMRC)'
+              : 'HMRC OAuth token stored',
         }
       : null,
+    honesty: {
+      mockOAuthEnabled: oauth.mock,
+      liveSubmitEnabled: process.env.HMRC_ALLOW_LIVE_SUBMIT === '1',
+      note: oauth.mock
+        ? 'Connect uses a local mock callback until HMRC_CLIENT_ID/SECRET are set and HMRC_OAUTH_MOCK is not 1.'
+        : 'OAuth uses real HMRC authorize/token endpoints.',
+    },
   });
 });
 
@@ -1107,7 +1166,14 @@ app.post('/api/analytics/cta', (req, res) => {
 
 /** Ops jobs (protected by simple shared secret for pilot) */
 app.post('/api/jobs/run', (req, res) => {
-  const secret = process.env.JOBS_SECRET || 'dev-jobs-secret';
+  const secret =
+    process.env.JOBS_SECRET ||
+    (process.env.NODE_ENV === 'production' ? null : 'dev-jobs-secret');
+  if (!secret) {
+    return res.status(503).json({
+      error: 'JOBS_SECRET is not configured on this server.',
+    });
+  }
   if (req.headers['x-jobs-secret'] !== secret && req.body?.secret !== secret) {
     return res.status(403).json({ error: 'Jobs secret required' });
   }
@@ -1666,10 +1732,13 @@ app.get('/api/portal/client', (req, res) => {
 
 app.get('/api/status', (_req, res) => {
   const client = createSubmitClient();
+  const oauth = oauthConfig();
   res.json({
     ok: true,
     hmrcMode: client.mode,
     liveSubmitEnabled: process.env.HMRC_ALLOW_LIVE_SUBMIT === '1',
+    previewOnly: client.mode === 'double',
+    oauthMock: oauth.mock,
     product: 'HMRC MTD ITSA bridging-only',
     supported: ['self_employment', 'uk_property', 'foreign_property'],
     // Accurate privacy: files are uploaded for mapping; ongoing books stay in the user's spreadsheet.
@@ -1681,6 +1750,15 @@ app.get('/api/status', (_req, res) => {
     serverOwnedDrafts: true,
     gate: '0-safe-demo',
     pilotFeatures: ['auth', 'drafts', 'workspace'],
+    honesty: {
+      publicSubmitIsPreview: client.mode === 'double',
+      realHmrcRequires:
+        'HMRC Developer Hub app + OAuth credentials + HMRC_ALLOW_LIVE_SUBMIT=1 + non-mock token',
+      demoPracticeStore: true,
+      realAuthenticatedWorkspace: true,
+      billingCharged: false,
+      emailDelivered: false,
+    },
     audiences: [
       'self_employed',
       'landlords',
@@ -1692,14 +1770,79 @@ app.get('/api/status', (_req, res) => {
   });
 });
 
+/** Machine-readable honesty map for HMRC / security review */
+app.get('/api/integrity', (_req, res) => {
+  const oauth = oauthConfig();
+  const live = process.env.HMRC_ALLOW_LIVE_SUBMIT === '1';
+  res.json({
+    ok: true,
+    product: 'Spreadsheet Tax',
+    intellectualProperty: 'Lee Hine',
+    version: '1.6.0',
+    layers: {
+      spreadsheetImportMapping: {
+        real: true,
+        notes: 'CSV/XLSX parse → map → payloads → validation; server-owned drafts',
+      },
+      submitPreviewDouble: {
+        real: true,
+        isHmrcFiling: false,
+        notes: 'Default public submit path; builds same request shape, no external HMRC call',
+      },
+      submitSandboxOrLive: {
+        real: Boolean(live && !oauth.mock),
+        enabled: live,
+        oauthMock: oauth.mock,
+        notes: live
+          ? 'Live flag on — still requires non-mock OAuth token'
+          : 'Disabled until HMRC_ALLOW_LIVE_SUBMIT=1',
+      },
+      oauth: {
+        mockDefault: oauth.mock,
+        hasClientCredentials: Boolean(oauth.clientId && oauth.clientSecret),
+      },
+      fraudPreventionHeaders: {
+        preparedOnOutbound: true,
+        fullHmrcPackValidated: false,
+        notes: 'Subset for WEB_APP_VIA_SERVER; expand before production approval',
+      },
+      authenticatedPracticeWorkspace: {
+        real: true,
+        path: '/workspace',
+        persistence: 'SQLite on DATA_DIR volume',
+      },
+      publicDemoPracticePortfolio: {
+        real: false,
+        fictional: true,
+        paths: ['/accountant', '/practice', '/api/firms', '/api/clients'],
+        notes: 'In-memory demonstration data only',
+      },
+      billing: { cardPayments: false, planSelectionStored: true },
+      email: { delivered: false, provider: 'stub-log' },
+    },
+  });
+});
+
 /** Practice / accountant / client portal APIs (demo store) */
 app.get('/api/firms', (_req, res) => {
-  res.json({ ok: true, firms: listFirms() });
+  res.json({
+    ok: true,
+    demo: true,
+    fictional: true,
+    notice:
+      'Demonstration portfolio only — not real client data. Use /workspace for authenticated firm books.',
+    firms: listFirms(),
+  });
 });
 
 app.get('/api/accountants', (req, res) => {
   const firmId = typeof req.query.firmId === 'string' ? req.query.firmId : null;
-  res.json({ ok: true, accountants: listAccountants(firmId) });
+  res.json({
+    ok: true,
+    demo: true,
+    fictional: true,
+    accountants: listAccountants(firmId),
+  });
 });
 
 app.get('/api/clients', (req, res) => {
@@ -1708,6 +1851,10 @@ app.get('/api/clients', (req, res) => {
     typeof req.query.accountantId === 'string' ? req.query.accountantId : null;
   res.json({
     ok: true,
+    demo: true,
+    fictional: true,
+    notice:
+      'Demonstration portfolio only. Authenticated firm books are at /api/me/clients.',
     clients: listClientsForFirm({ firmId, accountantId }),
   });
 });
@@ -1717,11 +1864,17 @@ app.get('/api/clients/:clientId', (req, res) => {
   if (!client) {
     return res.status(404).json({ error: 'Client not found' });
   }
-  res.json({ ok: true, client, transitions: allowedClientTransitions(client.id) });
+  res.json({
+    ok: true,
+    demo: true,
+    fictional: true,
+    client,
+    transitions: allowedClientTransitions(client.id),
+  });
 });
 
 app.get('/api/workflow-statuses', (_req, res) => {
-  res.json({ ok: true, statuses: listWorkflowStatuses() });
+  res.json({ ok: true, demo: true, statuses: listWorkflowStatuses() });
 });
 
 /**

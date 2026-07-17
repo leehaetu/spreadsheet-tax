@@ -2,26 +2,27 @@
 
 **Last updated:** 2026-07-17  
 **Live:** https://spreadsheet-tax-production.up.railway.app  
-**Version:** 1.5.0
+**Version:** 1.6.0
 
-## Volume / scale (this slice)
+## Honesty (HMRC-inspectable)
 
-| Item | Status |
-|------|--------|
-| Railway volume `spreadsheet-tax-volume` | **Attached** at `/app/data` (5 GB Hobby) |
-| `DATA_DIR=/app/data` | Set in production |
-| Volume layout `db/ uploads/ exports/ backups/` | App creates on boot |
-| SQL indexes for large client books | Shipped |
-| Paginated client list API | Shipped (limit 50 default) |
-| Dashboard SQL aggregates | Shipped |
-| Design target | **600,000** customers |
+| Layer | Reality |
+|-------|---------|
+| Spreadsheet → map → validate → draft | **Real** |
+| Public submit | **Preview only** (not HMRC) until live flag + real OAuth |
+| Mock OAuth | Labelled mock; `connected: false` |
+| Demo `/accountant` `/practice` | **Fictional** in-memory data |
+| Authenticated `/workspace` | **Real** SQLite firm book |
+| Integrity | `/integrity` · `/api/integrity` · `docs/HONESTY-FOR-HMRC.md` |
 
-**Resize above 5 GB:** Railway dashboard → volume → Live Resize (Pro plan).
+## Tests
 
-## Demo
+**91** unit tests passing (includes honesty gates).
+
+## Demo login (labelled demo)
 
 `demo@spreadsheet-tax.example` / `DemoPass123!`
 
-## External remaining
+## External remaining (not claimed complete)
 
-HMRC production credentials, card billing, pen-test, legal pack, interviews, Postgres migration for multi-instance 600k.
+HMRC Developer Hub credentials, real OAuth, fraud-header pack validation, production approval, card billing, real email, pen-test, legal pack.

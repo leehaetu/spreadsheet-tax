@@ -170,6 +170,14 @@ export function saveConnection(p) {
 /**
  * @param {string} userId
  */
+/**
+ * True when token is a local mock (never a real HMRC-issued token).
+ * @param {string|null|undefined} token
+ */
+export function isMockAccessToken(token) {
+  return Boolean(token && String(token).startsWith('mock-'));
+}
+
 export function getActiveConnection(userId) {
   const row = getDb()
     .prepare(
@@ -180,16 +188,28 @@ export function getActiveConnection(userId) {
     .get(userId);
   if (!row) return null;
   if (new Date(row.expires_at) < new Date()) {
-    return { ...row, expired: true, accessToken: null };
+    return {
+      id: row.id,
+      mode: row.mode,
+      authorityType: row.authority_type,
+      expiresAt: row.expires_at,
+      scopes: row.scopes,
+      expired: true,
+      accessToken: null,
+      mock: false,
+    };
   }
+  const accessToken = decryptSecret(row.access_token_enc);
+  const mock = isMockAccessToken(accessToken);
   return {
     id: row.id,
     mode: row.mode,
     authorityType: row.authority_type,
     expiresAt: row.expires_at,
     scopes: row.scopes,
-    accessToken: decryptSecret(row.access_token_enc),
+    accessToken,
     expired: false,
+    mock,
   };
 }
 

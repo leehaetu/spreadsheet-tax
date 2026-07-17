@@ -144,11 +144,15 @@
         abody.appendChild(tr);
       }
       document.getElementById('st-plan').textContent = me.plan?.label || me.plan?.planId || '—';
-      document.getElementById('st-hmrc').textContent = me.hmrc?.connected
-        ? 'Connected'
-        : me.hmrc?.expired
-          ? 'Expired'
-          : 'Not connected';
+      document.getElementById('st-hmrc').textContent =
+        me.hmrc?.label ||
+        (me.hmrc?.mock
+          ? 'Mock (not HMRC)'
+          : me.hmrc?.connected
+            ? 'Connected'
+            : me.hmrc?.expired
+              ? 'Expired'
+              : 'Not connected');
       document.getElementById('profile').innerHTML = [
         ['Name', me.user.name],
         ['Email', me.user.email],

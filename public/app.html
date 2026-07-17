@@ -183,11 +183,10 @@
     <section class="panel" id="submit-panel" hidden>
       <div class="panel-header">
         <div>
-          <h2>3. Send to HMRC</h2>
+          <h2>3. Confirm and send</h2>
           <p class="muted">
-            Enter your tax identifiers if they were not already in the file, then send your quarterly update.
-            When HMRC credentials are connected for your account, submissions go to HMRC;
-            otherwise you still get a full confirmation of what would be sent.
+            Enter your tax identifiers if they were not already in the file.
+            <strong>Public demo default is preview only</strong> — the app builds the real HMRC request shape and stores a local receipt, but does <strong>not</strong> call HMRC until sandbox/live credentials and the live-submit control are enabled.
           </p>
         </div>
       </div>
@@ -215,7 +214,7 @@
       </div>
 
       <div class="action-bar">
-        <button type="button" class="btn btn-primary btn-lg" id="submit-btn">Submit quarterly update</button>
+        <button type="button" class="btn btn-primary btn-lg" id="submit-btn">Run preview submit</button>
         <button type="button" class="btn btn-ghost" id="back-to-review">Back to figures</button>
       </div>
       <p id="submit-error" class="error" hidden></p>

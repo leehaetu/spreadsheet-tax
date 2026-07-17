@@ -5,11 +5,19 @@ let lastSummary = null;
 let lastDraftId = null;
 let lastValidation = null;
 
-/** Customer-friendly connection label (no developer mode names in the UI). */
-function connectionLabel(mode) {
-  if (mode === 'sandbox') return 'Connected to HMRC test environment';
-  if (mode === 'double') return 'Ready to submit (preview mode)';
-  return 'Ready';
+/** Honest connection label — never imply HMRC filing when preview-only. */
+function connectionLabel(data) {
+  if (data?.previewOnly || data?.hmrcMode === 'double') {
+    return 'Preview mode — not sent to HMRC';
+  }
+  if (data?.oauthMock) {
+    return 'HMRC OAuth not configured (mock connect only)';
+  }
+  if (data?.hmrcMode === 'sandbox' && data?.liveSubmitEnabled) {
+    return 'HMRC sandbox submit enabled';
+  }
+  if (data?.liveSubmitEnabled) return 'Live HMRC submit enabled';
+  return 'Preview mode — not sent to HMRC';
 }
 
 function setWizardStep(step) {
@@ -27,12 +35,15 @@ async function loadStatus() {
     const data = await res.json();
     const el = document.getElementById('connection-status');
     if (el) {
-      el.textContent = connectionLabel(data.hmrcMode);
+      el.textContent = connectionLabel(data);
       el.classList.add('ok');
+      el.title =
+        data.honesty?.realHmrcRequires ||
+        'Default path is preview-only until HMRC credentials and live flag are set.';
     }
   } catch {
     const el = document.getElementById('connection-status');
-    if (el) el.textContent = 'Ready';
+    if (el) el.textContent = 'Preview mode — not sent to HMRC';
   }
 }
 
@@ -540,20 +551,38 @@ document.getElementById('submit-btn')?.addEventListener('click', async () => {
 
     const count = Array.isArray(data.results) ? data.results.length : 0;
     const ok = data.ok;
+    const previewOnly = data.previewOnly || data.mode === 'double';
     if (summary) {
-      const receiptBit = data.attemptId ? ` Receipt: ${data.attemptId}.` : '';
+      const receiptBit = data.attemptId
+        ? ` Local record: ${data.attemptId}.`
+        : '';
       const replay = data.idempotentReplay ? ' (safe replay)' : '';
-      summary.textContent = ok
-        ? `Your quarterly update${count === 1 ? ' was' : 's were'} accepted (${count} income source${count === 1 ? '' : 's'}).${receiptBit}${replay}`
-        : 'Something went wrong with one or more updates. Review the details below.';
+      if (ok && previewOnly) {
+        summary.textContent = `Preview complete for ${count} income source${count === 1 ? '' : 's'} — NOT sent to HMRC. The request shape matches a real submit for review.${receiptBit}${replay}`;
+      } else if (ok) {
+        summary.textContent = `HMRC response received for ${count} income source${count === 1 ? '' : 's'}.${receiptBit}${replay}`;
+      } else {
+        summary.textContent =
+          'Something went wrong with one or more updates. Review the details below.';
+      }
     }
     if (list) {
       list.innerHTML = '';
       for (const r of data.results || []) {
         const li = document.createElement('li');
         const src = friendlySource(r.request?.source || 'update');
-        const id = r.response?.submissionId || r.response?.message || r.status || '';
-        li.innerHTML = `<span>${esc(src)}</span><span>${r.ok ? 'Accepted' : 'Not accepted'}${id ? ` · ${esc(String(id))}` : ''}</span>`;
+        const id =
+          r.response?.previewReceiptId ||
+          r.response?.submissionId ||
+          r.response?.message ||
+          r.status ||
+          '';
+        const statusLabel = !r.ok
+          ? 'Not accepted'
+          : previewOnly || r.mode === 'double'
+            ? 'Preview only (not HMRC)'
+            : 'HMRC response OK';
+        li.innerHTML = `<span>${esc(src)}</span><span>${esc(statusLabel)}${id ? ` · ${esc(String(id))}` : ''}</span>`;
         list.appendChild(li);
       }
     }
@@ -568,7 +597,7 @@ document.getElementById('submit-btn')?.addEventListener('click', async () => {
   } finally {
     if (btn) {
       btn.disabled = false;
-      btn.textContent = 'Submit quarterly update';
+      btn.textContent = 'Run preview submit';
     }
   }
 });

@@ -9,7 +9,7 @@
  * @param {{ vendorVersion?: string }} [opts]
  */
 export function buildFraudPreventionHeaders(req, opts = {}) {
-  const vendorVersion = opts.vendorVersion || '1.0.0';
+  const vendorVersion = opts.vendorVersion || process.env.APP_VERSION || '1.6.0';
   const ua = req?.headers?.['user-agent'] || 'unknown';
   const ip =
     (typeof req?.headers?.['x-forwarded-for'] === 'string'
@@ -19,6 +19,7 @@ export function buildFraudPreventionHeaders(req, opts = {}) {
     '127.0.0.1';
 
   /** @type {Record<string, string>} */
+  // Subset required for WEB_APP_VIA_SERVER. Expand before HMRC production approval.
   const headers = {
     'Gov-Client-Connection-Method': 'WEB_APP_VIA_SERVER',
     'Gov-Client-Browser-JS-User-Agent': String(ua).slice(0, 500),

@@ -133,7 +133,7 @@ describe('bridging app customer focus', () => {
     // Customer task flow
     assert.match(html, /Upload your spreadsheet|Upload your/i);
     assert.match(html, /Check your figures|Review my figures|before sending/i);
-    assert.match(html, /Submit quarterly update|Send to HMRC/i);
+    assert.match(html, /Run preview submit|Confirm and send|preview only/i);
     // Polished multi-step product surface
     assert.match(html, /Drop your spreadsheet|Choose a CSV|Review my figures/i);
     assert.match(html, /Total income|Total expenses|Continue to send/i);

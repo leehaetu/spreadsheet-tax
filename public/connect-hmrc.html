@@ -18,18 +18,25 @@
   </header>
   <main class="wrap app-main" style="max-width:640px">
     <h1>Connect to HMRC</h1>
-    <p class="muted">Sandbox OAuth for pilot. Without Developer Hub credentials the app uses a <strong>mock connect</strong> so you can test the journey safely.</p>
+    <p class="muted">
+      Real OAuth uses HMRC Developer Hub client ID/secret. Without those credentials the app uses a
+      <strong>local mock connect</strong> so the UI journey can be tested — mock tokens are <strong>not</strong> HMRC access tokens and cannot file.
+    </p>
     <p id="flash" class="success-box" hidden></p>
     <p id="err" class="error" hidden></p>
     <section class="panel">
       <h2>Status</h2>
       <pre id="status" class="code-block">Loading…</pre>
       <div class="hero-actions" style="margin-top:1rem">
-        <button type="button" class="btn btn-primary" id="connect-btn">Connect HMRC</button>
+        <button type="button" class="btn btn-primary" id="connect-btn">Start connect journey</button>
         <button type="button" class="btn btn-ghost" id="disconnect-btn">Disconnect</button>
       </div>
     </section>
-    <p class="muted">Live submissions still require <code>HMRC_ALLOW_LIVE_SUBMIT=1</code> and real credentials. Fraud-prevention headers are attached on HMRC API calls.</p>
+    <p class="muted">
+      External HMRC API calls also require <code>HMRC_ALLOW_LIVE_SUBMIT=1</code> and a non-mock token.
+      Fraud-prevention headers are prepared on outbound requests; the full HMRC header pack is not yet production-validated.
+      See <a href="/integrity">software integrity</a>.
+    </p>
   </main>
   <script>
     const params = new URLSearchParams(location.search);
@@ -37,7 +44,8 @@
     const err = document.getElementById('err');
     if (params.get('connected')) {
       flash.hidden = false;
-      flash.textContent = 'HMRC connection saved.';
+      flash.textContent =
+        'Connection record saved. If OAuth is in mock mode this is not a real HMRC token — check status below.';
     }
     if (params.get('error')) {
       err.hidden = false;

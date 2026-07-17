@@ -80,9 +80,11 @@ describe('Gate 0 submit safety', () => {
     const json = JSON.parse(res.body);
     assert.equal(json.hmrcMode, 'double');
     assert.equal(json.liveSubmitEnabled, false);
+    assert.equal(json.previewOnly, true);
     assert.equal(json.fileUploadedForMapping, true);
     assert.equal(json.recordsStayInSpreadsheet, true);
     assert.notEqual(json.recordsStayLocal, true);
+    assert.equal(json.honesty?.publicSubmitIsPreview, true);
   });
 
   it('submit uses double mode even if env token present', async () => {
@@ -104,7 +106,14 @@ describe('Gate 0 submit safety', () => {
     const json = JSON.parse(res.body);
     assert.equal(json.mode, 'double');
     assert.equal(json.liveSubmitEnabled, false);
+    assert.equal(json.previewOnly, true);
+    assert.equal(json.externalCallMade, false);
+    assert.equal(json.fraudHeadersSentToHmrc, false);
     assert.ok(json.ok);
+    assert.match(
+      JSON.stringify(json.results),
+      /PREVIEW ONLY|preview-|not sent to HMRC/i
+    );
   });
 
   it('practice workflow writes are frozen by default', async () => {
