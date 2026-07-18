@@ -1,0 +1,108 @@
+{
+  "at": "2026-07-18T12:11:11.754Z",
+  "env": {
+    "postgres": true,
+    "redis": true,
+    "objectStorage": true,
+    "capacityClaimFull": false
+  },
+  "dataset": {
+    "mode": "postgres",
+    "firms": 200,
+    "clients": 5000,
+    "largestPractices": [
+      {
+        "firm_id": "firm-cap-0000",
+        "c": 2000
+      },
+      {
+        "firm_id": "firm-cap-0199",
+        "c": 30
+      },
+      {
+        "firm_id": "firm-cap-0002",
+        "c": 15
+      },
+      {
+        "firm_id": "firm-cap-0004",
+        "c": 15
+      },
+      {
+        "firm_id": "firm-cap-0003",
+        "c": 15
+      }
+    ]
+  },
+  "clientList": {
+    "samples": 80,
+    "p50ms": 17.335291999999754,
+    "p95ms": 101.2047090000001,
+    "p99ms": 109.910167,
+    "maxms": 109.910167,
+    "minms": 15.40020800000002
+  },
+  "concurrentLists": {
+    "concurrency": 25,
+    "requests": 100,
+    "wallMs": 208.03270799999973,
+    "samples": 100,
+    "p50ms": 165.67241600000034,
+    "p95ms": 206.4096669999999,
+    "p99ms": 206.57999999999993,
+    "maxms": 206.57999999999993,
+    "minms": 17.595041000000492
+  },
+  "tenantIsolation": {
+    "ok": true,
+    "firmA": "firm-cap-0000",
+    "firmB": "firm-cap-0009",
+    "firmBClients": 15,
+    "crossTenantSharedIds": 0,
+    "rlsProbe": {
+      "note": "App superuser/bypass may still see rows; app-layer firm_id filter is primary. FORCE RLS applies to non-bypass roles.",
+      "firmBVisibleWithFirmAContext": 15,
+      "superuserBypassesRls": true
+    }
+  },
+  "queue": {
+    "enqueued": 200,
+    "enqueueMs": 6553.824833000001,
+    "processed": 200,
+    "depthAfter": 0
+  },
+  "workerRecovery": {
+    "ok": true,
+    "recovered": 19,
+    "note": "Simulated worker crash; second worker drained queue"
+  },
+  "excel": {
+    "ok": true,
+    "kind": "xlsx",
+    "ms": 135.77612499999668,
+    "rowCount": 15,
+    "sha256": "4318473fc0453adc7da2d447a3e7303b5b0bc16875a04df572e8e3f73eb07697",
+    "hasSe": true
+  },
+  "redisRateLimit": {
+    "enabled": true,
+    "firstAllowed": true,
+    "secondAllowed": true,
+    "redisPing": true
+  },
+  "httpBurst": {
+    "skipped": true,
+    "note": "Set CAPACITY_HTTP_PORT with running server for HTTP burst"
+  },
+  "capacityGate": {
+    "required": {
+      "practices": 200,
+      "customers": 800000
+    },
+    "datasetMeets200Practices": true,
+    "datasetMeets800kCustomers": false,
+    "largestPracticeTensOfThousands": false,
+    "claimFull": false,
+    "met": false,
+    "note": "Gate MET only with full dataset + isolation + Postgres + Redis + CAPACITY_CLAIM_FULL=1 + recovery ok."
+  }
+}

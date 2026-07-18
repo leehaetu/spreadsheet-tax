@@ -439,15 +439,39 @@ app.get('/api/template', sendTemplateDownload);
 // Static fallback for any other template files
 app.use('/templates', express.static(templatesDir));
 
-app.get('/health', (_req, res) => {
+app.get('/health', async (_req, res) => {
   let dbOk = false;
   let clientCount = null;
+  let firmCount = null;
+  let clientCountSource = null;
   try {
     getDb().prepare('SELECT 1 AS x').get();
     dbOk = true;
-    clientCount = getDb().prepare(`SELECT COUNT(*) AS c FROM clients`).get().c;
   } catch {
     dbOk = false;
+  }
+  // Prefer Postgres counts when DATABASE_URL is the system of record
+  try {
+    if (isPostgresMode()) {
+      await ensureOperationalPostgres();
+      const { pgOne } = await import('./lib/pg-pool.js');
+      const c = await pgOne(`SELECT COUNT(*)::int AS c FROM clients`);
+      const f = await pgOne(`SELECT COUNT(*)::int AS c FROM firms`);
+      clientCount = c?.c ?? 0;
+      firmCount = f?.c ?? 0;
+      clientCountSource = 'postgres';
+    } else {
+      clientCount = getDb().prepare(`SELECT COUNT(*) AS c FROM clients`).get().c;
+      firmCount = getDb().prepare(`SELECT COUNT(*) AS c FROM firms`).get().c;
+      clientCountSource = 'sqlite';
+    }
+  } catch {
+    try {
+      clientCount = getDb().prepare(`SELECT COUNT(*) AS c FROM clients`).get().c;
+      clientCountSource = 'sqlite-fallback';
+    } catch {
+      clientCount = null;
+    }
   }
   let dataDir = null;
   try {
@@ -457,7 +481,7 @@ app.get('/health', (_req, res) => {
   }
   const capacity = evaluateCapacityPlatform(process.env);
   const store = operationalStoreHealth();
-  const ready = dbOk;
+  const ready = dbOk || capacity.postgres;
   res.status(ready ? 200 : 503).json({
     ok: ready,
     service: 'spreadsheet-tax',
@@ -492,6 +516,8 @@ app.get('/health', (_req, res) => {
     volumeDataDir: dataDir,
     volumeConfigured: Boolean(process.env.DATA_DIR),
     clientRows: clientCount,
+    firmRows: firmCount,
+    clientCountSource,
     integrity: '/api/integrity',
     fraudHeaderKeys: listFraudHeaderKeys().length,
     scale: {

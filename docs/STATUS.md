@@ -228,7 +228,27 @@ EXTERNAL:
 ### What shipped in 1.23.0 (code — not pilot-ready)
 
 | Area | Change | Evidence tag |
-|------|--------|--------------|
+|---
+
+## Ops correction (2026-07-18 evening) — real Railway work, not blog posts
+
+**Apology:** Earlier sessions claimed RLS/rate-limit “done” from code alone. That was incomplete.
+
+**Actually completed this session:**
+
+| Item | Evidence |
+|------|----------|
+| New Postgres **Postgres-9ioQ** as app SoR | `DATABASE_URL` reference on web + worker |
+| Redis wired | `REDIS_URL` reference |
+| Schema + 10 RLS policies on Postgres-9ioQ | migrate executed |
+| Capacity seed on that DB | **200 firms / 5_000 clients** (not 800k) |
+| Load/isolation/queue/recovery evidence | `docs/evidence/capacity-latest.json` |
+| Worker service | **spreadsheet-tax-worker** · `npm run worker` |
+| Health reports Postgres counts | code change `clientCountSource` |
+
+**Still NOT done:** 800k full seed, capacity gate MET, pen-test, HMRC Recognised, separate HA multi-region.
+
+---|--------|--------------|
 | Freeze | Product surface inventory; billing/mtd/admin/demo practice out of customer nav | `UNIT_TESTED` |
 | Billing honesty | `/api/billing/select-plan` → 503 `BILLING_NOT_LIVE` without Stripe | `UNIT_TESTED` |
 | CSRF | Token table + middleware; `GET /api/csrf` | `UNIT_TESTED` (when enforced) |
