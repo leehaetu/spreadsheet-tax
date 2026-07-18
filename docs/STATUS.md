@@ -3,19 +3,25 @@
 **Last updated:** 2026-07-18  
 **Protocol:** [AGENT-TRUTH-PROTOCOL.md](./AGENT-TRUTH-PROTOCOL.md)  
 **Capacity gate:** [CAPACITY-REQUIREMENTS.md](./CAPACITY-REQUIREMENTS.md) — **NOT MET**  
+**Release gates:** [RELEASE-GATES.md](./RELEASE-GATES.md) — **OPEN** (tax, integrity, security, DR, ops, commercial…)  
 **Live:** https://spreadsheet-tax-production.up.railway.app  
 
 ---
 
 ## Truth status (2026-07-18)
 
+### Master completion rule
+
+Code + scripts without executed production-like proof **≠ complete**.  
+See final statement in `RELEASE-GATES.md`.
+
 ### Capacity (P0 — blocks all readiness claims)
 
-- **Required:** **200** accounting practices + **800,000** self-employed/landlord customers  
+- **Required:** **200** accounting practices + **800,000** self-employed/landlord customers **plus peak envelope** (deadline concurrency, not dormant rows only)  
 - **Proven:** **No**  
-- **Current platform:** 1× Railway web service, SQLite on single volume (~5 GB), in-process jobs/rate limits, no Redis/queue/object-storage workers  
+- **Current platform:** 1× Railway web service, SQLite default, platform foundations optional via env  
 - **Verdict:** **Not pilot-ready. Not production-ready. Not marketable at scale. Not complete.**  
-- Infrastructure migration + load evidence **must** come before any readiness claim  
+- Also open: tax governance, submission integrity chain, agent authority, SQLite→PG migration rehearsal, deadline resilience, DR, pen-test, privacy lifecycle, WCAG, ops, billing (all in RELEASE-GATES)  
 
 ### HMRC / product (secondary until capacity gate opens)
 

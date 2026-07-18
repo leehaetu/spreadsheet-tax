@@ -14,7 +14,9 @@
 
 1. Read `docs/AGENT-TRUTH-PROTOCOL.md` before any readiness/progress answer.  
 2. Read `docs/CAPACITY-REQUIREMENTS.md` — **200 practices + 800k customers is a hard gate**.  
-3. **Never** claim pilot-ready / production-ready / complete / marketable while capacity gate is NOT MET.  
+3. Read `docs/RELEASE-GATES.md` — tax, integrity, authority, DR, security, privacy, a11y, ops, commercial.  
+4. **Never** claim pilot-ready / production-ready / complete / marketable while capacity or release gates are open.  
+5. **Proof required:** executed production-like tests with artifacts — not “code exists”.  
 4. Gate 0 + capacity platform before expanding product claims. One code writer at a time.  
 5. Default: **not pilot-ready** until capacity acceptance tests pass with recorded evidence.
 

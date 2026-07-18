@@ -33,6 +33,7 @@ Do **not** use these words/phrases for Spreadsheet Tax unless the exit evidence 
 | journey all green / N successful HMRC calls | Every counted call has real HMRC status 2xx; non-2xx counted as fail |
 | pilot-ready / secure pilot | Capacity gate MET (200 practices / 800k customers proven) **and** P0 security/tenant findings closed + launch gate evidence |
 | supports N practices / M customers | Load evidence + CAPACITY-REQUIREMENTS acceptance gate |
+| complete product / launch ready | All RELEASE-GATES.md sections proven in production-like env |
 | mostly done / ~X% complete | Prefer stage ladder (§2); percentages only with explicit basis |
 
 **Default posture when unsure:**  

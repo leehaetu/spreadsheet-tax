@@ -49,13 +49,16 @@ Until this capacity is **implemented and proven** with the acceptance tests belo
 
 1. **Dataset:** ≥200 practices and ≥800,000 customer/client records in the test environment.  
 2. **Large practices:** largest practices tested with **tens of thousands** of clients each.  
-3. **Deadline traffic:** quarterly peak concurrency simulated.  
+3. **Deadline traffic:** quarterly peak concurrency simulated (**not** only dormant 800k rows).  
 4. **Queues:** spreadsheet import and HMRC submission queues under peak load.  
 5. **Integrity:** no lost, changed, or duplicate figures.  
 6. **Isolation:** no cross-firm access under concurrent load.  
-7. **Latency:** acceptable response times **documented** (p50/p95 targets agreed and measured).  
+7. **Latency:** p50 / p95 / **p99** documented and measured.  
 8. **Failure:** DB and worker failure recovery demonstrated.  
-9. **Evidence:** test runs recorded, repeatable, and linked from STATUS.  
+9. **Peak envelope** (lock numbers before launch): concurrent users, uploads/min, jobs, HMRC submits/min, max workbook, max portfolio, queue recovery time, max error rate.  
+10. **Evidence:** test runs recorded, repeatable, and linked from STATUS.  
+
+Master gates beyond capacity: [RELEASE-GATES.md](./RELEASE-GATES.md).
 
 ### Suggested latency targets (draft until Lee confirms)
 
