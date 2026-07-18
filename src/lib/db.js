@@ -324,7 +324,9 @@ function migrate(database) {
       file_sha256 TEXT,
       check_json TEXT NOT NULL,
       approved INTEGER NOT NULL DEFAULT 0,
-      created_at TEXT NOT NULL
+      created_at TEXT NOT NULL,
+      figure_hash TEXT,
+      approver_user_id TEXT
     );
     CREATE TABLE IF NOT EXISTS cell_comments (
       id TEXT PRIMARY KEY,
@@ -351,7 +353,80 @@ function migrate(database) {
       updated_at TEXT NOT NULL,
       UNIQUE(user_id, tax_year)
     );
+
+    CREATE TABLE IF NOT EXISTS csrf_tokens (
+      token TEXT PRIMARY KEY,
+      user_id TEXT,
+      created_at TEXT NOT NULL,
+      expires_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS login_failures (
+      key TEXT PRIMARY KEY,
+      count INTEGER NOT NULL DEFAULT 0,
+      first_at TEXT NOT NULL,
+      last_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS hmrc_service_status (
+      id TEXT PRIMARY KEY,
+      status TEXT NOT NULL,
+      message TEXT,
+      updated_at TEXT NOT NULL
+    );
   `);
+
+  // Additive columns for integrity chain (idempotent)
+  try {
+    const reviewCols = database
+      .prepare(`PRAGMA table_info(spreadsheet_reviews)`)
+      .all()
+      .map((c) => c.name);
+    if (!reviewCols.includes('figure_hash')) {
+      database.exec(`ALTER TABLE spreadsheet_reviews ADD COLUMN figure_hash TEXT`);
+    }
+    if (!reviewCols.includes('approver_user_id')) {
+      database.exec(
+        `ALTER TABLE spreadsheet_reviews ADD COLUMN approver_user_id TEXT`
+      );
+    }
+  } catch (e) {
+    console.warn(
+      'spreadsheet_reviews integrity columns:',
+      e instanceof Error ? e.message : e
+    );
+  }
+  try {
+    const attCols = database
+      .prepare(`PRAGMA table_info(submission_attempts)`)
+      .all()
+      .map((c) => c.name);
+    if (!attCols.includes('evidence_json')) {
+      database.exec(
+        `ALTER TABLE submission_attempts ADD COLUMN evidence_json TEXT`
+      );
+    }
+    if (!attCols.includes('correlation_id')) {
+      database.exec(
+        `ALTER TABLE submission_attempts ADD COLUMN correlation_id TEXT`
+      );
+    }
+    if (!attCols.includes('supersedes_attempt_id')) {
+      database.exec(
+        `ALTER TABLE submission_attempts ADD COLUMN supersedes_attempt_id TEXT`
+      );
+    }
+    if (!attCols.includes('status')) {
+      database.exec(
+        `ALTER TABLE submission_attempts ADD COLUMN status TEXT DEFAULT 'recorded'`
+      );
+    }
+  } catch (e) {
+    console.warn(
+      'submission_attempts integrity columns:',
+      e instanceof Error ? e.message : e
+    );
+  }
 
   // Scale indexes for large firm books (hundreds of thousands of clients)
   database.exec(`

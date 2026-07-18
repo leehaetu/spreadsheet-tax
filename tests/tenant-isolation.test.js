@@ -109,6 +109,7 @@ describe('tenant isolation', () => {
       '/api/submit',
       JSON.stringify({
         draftId,
+        cellsApproved: true,
         nino: 'AA123456A',
         taxYear: '2024-25',
         businessIdSe: 'XAIS12345678901',
@@ -138,6 +139,7 @@ describe('tenant isolation', () => {
       '/api/submit',
       JSON.stringify({
         draftId,
+        cellsApproved: true,
         idempotencyKey: key,
         nino: 'AA123456A',
         taxYear: '2024-25',
@@ -162,6 +164,7 @@ describe('tenant isolation', () => {
       '/api/submit',
       JSON.stringify({
         draftId: draftB,
+        cellsApproved: true,
         idempotencyKey: key,
         nino: 'AA123456A',
         taxYear: '2024-25',

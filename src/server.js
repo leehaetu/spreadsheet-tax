@@ -55,6 +55,7 @@ import {
   listDraftsForUser,
   markDraftSubmitted,
   recordSubmissionAttempt,
+  getSubmissionEvidence,
   writeAudit,
   getIdempotentResponse,
   listAuditForFirm,
@@ -131,6 +132,8 @@ import {
   submitBsasSeAdjustments,
   createTaxLiabilityAdjustment,
   amendSePeriod,
+  amendUkPropertyPeriod,
+  amendForeignPropertyPeriod,
   createSePeriod,
   createUkPropertyPeriod,
   createForeignPropertyPeriod,
@@ -142,8 +145,13 @@ import {
   defaultSeAnnualBody,
   resolveSeAnnualBody,
   periodBodyFromDraft,
+  annualBodyFromDraft,
   taxYearFromPeriodId,
   listBusinesses as listBusinessesHmrc,
+  submitBsasUkAdjustments,
+  submitBsasForeignAdjustments,
+  retrievePeriodsOfAccount,
+  createOrUpdatePeriodsOfAccount,
 } from './lib/hmrc-api.js';
 import {
   loadDraftForUser,
@@ -182,13 +190,24 @@ import {
   stageToWorkflow,
   EOY_STAGES,
 } from './lib/eoy-case.js';
+import {
+  assertDraftSubmitApproval,
+  recordDraftApproval,
+  buildEvidencePack,
+  newCorrelationId,
+  figureHash,
+  getLatestApproval,
+  APPROVAL_WORDING,
+  firmRequiresDualControl,
+} from './lib/submission-integrity.js';
+
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, '..');
 const publicDir = path.join(root, 'public');
 const templatesDir = path.join(root, 'templates');
 const testSpreadsheetsDir = path.join(root, 'test-spreadsheets');
-const APP_VERSION = '1.20.0';
+const APP_VERSION = '1.21.0';
 
 /**
  * Serve HTML with site-chrome (HMRC recognition banner/footer) injected once.
@@ -916,6 +935,25 @@ app.post('/api/submit', async (req, res) => {
       });
     }
 
+    // Server-enforced figure lock + approval (cannot bypass with raw API)
+    let approvalGate = null;
+    if (draft) {
+      approvalGate = assertDraftSubmitApproval({
+        draft,
+        user,
+        payloads,
+        body: req.body || {},
+        mode: 'pending',
+      });
+      if (approvalGate.error) {
+        return res.status(approvalGate.status || 403).json({
+          error: approvalGate.error,
+          code: approvalGate.code || 'APPROVAL_REQUIRED',
+          figureHash: approvalGate.figureHash,
+        });
+      }
+    }
+
     const validation = validateSubmission(payloads, {
       nino,
       businessIdSe,
@@ -1002,9 +1040,20 @@ app.post('/api/submit', async (req, res) => {
 
     const ok = results.every((r) => r.ok);
     const externalCallMade = results.some((r) => r.externalCallMade === true);
+    const correlationId = newCorrelationId();
     let attemptId = null;
     if (draft) {
       if (ok) markDraftSubmitted(draft.id);
+      const evidence = buildEvidencePack({
+        correlationId,
+        draft,
+        payloads,
+        approval: approvalGate?.approval || null,
+        mode: client.mode,
+        results,
+        mappingVersion: 'v1-deterministic',
+        supersedesAttemptId: req.body?.supersedesAttemptId || null,
+      });
       attemptId = recordSubmissionAttempt({
         draftId: draft.id,
         userId: user?.id,
@@ -1014,6 +1063,10 @@ app.post('/api/submit', async (req, res) => {
         idempotencyKey: idempotencyKey
           ? String(idempotencyKey)
           : null,
+        evidence,
+        correlationId,
+        supersedesAttemptId: req.body?.supersedesAttemptId || null,
+        status: client.mode === 'double' ? 'preview' : ok ? 'accepted' : 'failed',
       });
       writeAudit({
         userId: user?.id || null,
@@ -1023,6 +1076,8 @@ app.post('/api/submit', async (req, res) => {
         meta: {
           mode: client.mode,
           attemptId,
+          correlationId,
+          figureHash: approvalGate?.figureHash || figureHash(payloads),
           externalCallMade,
           previewOnly: client.mode === 'double',
         },
@@ -1034,6 +1089,8 @@ app.post('/api/submit', async (req, res) => {
       mode: client.mode,
       draftId: draft?.id || null,
       attemptId,
+      correlationId,
+      figureHash: approvalGate?.figureHash || (payloads ? figureHash(payloads) : null),
       liveSubmitEnabled: process.env.HMRC_ALLOW_LIVE_SUBMIT === '1',
       previewOnly: client.mode === 'double',
       externalCallMade,
@@ -1042,6 +1099,9 @@ app.post('/api/submit', async (req, res) => {
       fraudHeadersSentToHmrc: externalCallMade,
       connectionMock,
       results,
+      evidenceUrl: attemptId
+        ? `/api/receipts/${encodeURIComponent(attemptId)}/evidence`
+        : null,
     });
   } catch (e) {
     console.error(e);
@@ -2306,28 +2366,35 @@ app.post('/api/me/drafts/:draftId/approve-spreadsheet', (req, res) => {
         'Spreadsheet changed since last review — re-check cells before approving.',
     });
   }
-  // Store approval flag on a new review row
-  const check = req.body?.spreadsheetCheck || null;
-  if (check) {
-    saveSpreadsheetReview({
-      userId: user.id,
-      draftId: loaded.draft.id,
-      fileSha256: check.fileSha256,
-      check,
-      approved: true,
-    });
+  const dual =
+    Boolean(loaded.draft.firmId) && firmRequiresDualControl(loaded.draft.firmId);
+  const recorded = recordDraftApproval({
+    userId: user.id,
+    draftId: loaded.draft.id,
+    payloads: loaded.draft.payloads,
+    fileSha256:
+      req.body?.spreadsheetCheck?.fileSha256 ||
+      req.body?.fileSha256 ||
+      null,
+    check: req.body?.spreadsheetCheck || null,
+    firmId: loaded.draft.firmId,
+    dualControl: dual,
+  });
+  if (recorded.error) {
+    return res.status(recorded.status || 403).json({ error: recorded.error });
   }
   writeAudit({
     userId: user.id,
     action: 'spreadsheet_cells_approved',
     entityType: 'draft',
     entityId: loaded.draft.id,
+    meta: { figureHash: recorded.figureHash, dualControl: dual },
   });
   res.json({
     ok: true,
-    approvedAt: new Date().toISOString(),
-    wording:
-      'I have checked the spreadsheet cells and mappings shown above. The cumulative figures displayed are the figures I authorise Spreadsheet Tax to send to HMRC.',
+    approvedAt: recorded.approvedAt,
+    figureHash: recorded.figureHash,
+    wording: APPROVAL_WORDING,
   });
 });
 
@@ -2835,7 +2902,11 @@ app.post('/api/workflows/run', async (req, res) => {
         hmrcResult = await putSeAnnualSubmission({
           ...o,
           businessId: req.body.businessIdSe,
-          body: resolveSeAnnualBody(req.body?.body || defaultSeAnnualBody()),
+          body: resolveSeAnnualBody(
+            req.body?.body ||
+              annualBodyFromDraft(draftBody, 'se') ||
+              defaultSeAnnualBody()
+          ),
         });
         break;
       case 'uk_annual':
@@ -2845,7 +2916,11 @@ app.post('/api/workflows/run', async (req, res) => {
         hmrcResult = await putUkPropertyAnnualSubmission({
           ...o,
           businessId: req.body.businessIdUk,
-          body: req.body?.body || { ukOtherProperty: { adjustments: {} } },
+          body:
+            req.body?.body ||
+            annualBodyFromDraft(draftBody, 'uk') || {
+              ukOtherProperty: { adjustments: {} },
+            },
         });
         break;
       case 'fp_annual':
@@ -2855,9 +2930,11 @@ app.post('/api/workflows/run', async (req, res) => {
         hmrcResult = await putForeignPropertyAnnualSubmission({
           ...o,
           businessId: req.body.businessIdForeign,
-          body: req.body?.body || {
-            foreignProperty: [{ countryCode: 'ESP', adjustments: {} }],
-          },
+          body:
+            req.body?.body ||
+            annualBodyFromDraft(draftBody, 'foreign') || {
+              foreignProperty: [{ countryCode: 'ESP', adjustments: {} }],
+            },
         });
         break;
       case 'other_income':
@@ -2942,16 +3019,153 @@ app.post('/api/workflows/run', async (req, res) => {
           ...o,
           businessId: req.body.businessIdSe,
           periodId: req.body.periodId,
-          body: req.body?.body || {
-            periodDates: {
-              periodStartDate: String(req.body.periodId).split('_')[0],
-              periodEndDate: String(req.body.periodId).split('_')[1],
+          body:
+            req.body?.body ||
+            periodBodyFromDraft(draftBody, 'self_employment') || {
+              periodDates: {
+                periodStartDate: String(req.body.periodId).split('_')[0],
+                periodEndDate: String(req.body.periodId).split('_')[1],
+              },
+              periodIncome: { turnover: 1, other: 0 },
+              periodExpenses: { consolidatedExpenses: 0 },
             },
-            periodIncome: { turnover: 1, other: 0 },
-            periodExpenses: { consolidatedExpenses: 0 },
+        });
+        break;
+      case 'uk_amend':
+        if (!req.body?.businessIdUk || !req.body?.periodId) {
+          return res
+            .status(400)
+            .json({ error: 'businessIdUk and periodId required' });
+        }
+        hmrcResult = await amendUkPropertyPeriod({
+          ...o,
+          businessId: req.body.businessIdUk,
+          periodId: req.body.periodId,
+          taxYear:
+            taxYear ||
+            taxYearFromPeriodId(req.body.periodId) ||
+            '2024-25',
+          body:
+            req.body?.body ||
+            periodBodyFromDraft(draftBody, 'uk_property') || {
+              fromDate: String(req.body.periodId).split('_')[0],
+              toDate: String(req.body.periodId).split('_')[1],
+              ukOtherProperty: {
+                income: { periodAmount: 1 },
+                expenses: { consolidatedExpenses: 0 },
+              },
+            },
+        });
+        break;
+      case 'fp_amend':
+        if (!req.body?.businessIdForeign || !req.body?.periodId) {
+          return res
+            .status(400)
+            .json({ error: 'businessIdForeign and periodId required' });
+        }
+        hmrcResult = await amendForeignPropertyPeriod({
+          ...o,
+          businessId: req.body.businessIdForeign,
+          periodId: req.body.periodId,
+          taxYear:
+            taxYear ||
+            taxYearFromPeriodId(req.body.periodId) ||
+            '2024-25',
+          body:
+            req.body?.body ||
+            periodBodyFromDraft(draftBody, 'foreign_property') || {
+              fromDate: String(req.body.periodId).split('_')[0],
+              toDate: String(req.body.periodId).split('_')[1],
+              foreignProperty: [
+                {
+                  countryCode: 'ESP',
+                  income: {
+                    rentIncome: { rentAmount: 1 },
+                    foreignTaxCreditRelief: false,
+                  },
+                  expenses: { consolidatedExpenses: 0 },
+                },
+              ],
+            },
+        });
+        break;
+      case 'bsas_adjust_uk': {
+        const calculationId =
+          req.body?.calculationId || req.body?.bsasCalculationId;
+        if (!calculationId) {
+          return res.status(400).json({
+            error: 'calculationId required (from BSAS trigger/list)',
+          });
+        }
+        hmrcResult = await submitBsasUkAdjustments({
+          ...o,
+          calculationId,
+          body: req.body?.body || {
+            ukProperty: { income: { totalRentsReceived: 1 } },
           },
         });
         break;
+      }
+      case 'bsas_adjust_fp': {
+        const calculationId =
+          req.body?.calculationId || req.body?.bsasCalculationId;
+        if (!calculationId) {
+          return res.status(400).json({
+            error: 'calculationId required (from BSAS trigger/list)',
+          });
+        }
+        hmrcResult = await submitBsasForeignAdjustments({
+          ...o,
+          calculationId,
+          body: req.body?.body || {
+            foreignProperty: {
+              income: { totalRentsReceived: 1 },
+            },
+          },
+        });
+        break;
+      }
+      case 'periods_of_account': {
+        const businessId =
+          req.body?.businessId ||
+          req.body?.businessIdSe ||
+          req.body?.businessIdUk ||
+          req.body?.businessIdForeign;
+        if (!businessId) {
+          return res.status(400).json({ error: 'businessId required' });
+        }
+        hmrcResult = await retrievePeriodsOfAccount({
+          ...o,
+          businessId,
+          taxYear,
+        });
+        break;
+      }
+      case 'periods_of_account_put': {
+        const businessId =
+          req.body?.businessId ||
+          req.body?.businessIdSe ||
+          req.body?.businessIdUk ||
+          req.body?.businessIdForeign;
+        if (!businessId) {
+          return res.status(400).json({ error: 'businessId required' });
+        }
+        hmrcResult = await createOrUpdatePeriodsOfAccount({
+          ...o,
+          businessId,
+          taxYear,
+          body: req.body?.body || {
+            periodsOfAccount: true,
+            periodsOfAccountDates: [
+              {
+                startDate: `${taxYear.slice(0, 4)}-04-06`,
+                endDate: `${Number(taxYear.slice(0, 4)) + 1}-04-05`,
+              },
+            ],
+          },
+        });
+        break;
+      }
       default:
         return res.status(400).json({
           error: 'Unknown workflow',
@@ -3027,13 +3241,23 @@ app.get('/api/receipts/:attemptId', (req, res) => {
   if (row.user_id && row.user_id !== user.id) {
     return res.status(403).json({ error: 'Not allowed' });
   }
+  let evidence = null;
+  try {
+    evidence = row.evidence_json ? JSON.parse(row.evidence_json) : null;
+  } catch {
+    evidence = null;
+  }
   const receipt = {
     id: row.id,
     draftId: row.draft_id,
     mode: row.mode,
     ok: Boolean(row.ok),
+    status: row.status || null,
+    correlationId: row.correlation_id || evidence?.correlationId || null,
+    supersedesAttemptId: row.supersedes_attempt_id || null,
     createdAt: row.created_at,
     results: JSON.parse(row.results_json),
+    evidence,
   };
   if (req.query.download === '1' || req.query.download === 'true') {
     const body = JSON.stringify({ ok: true, receipt }, null, 2);
@@ -3045,6 +3269,70 @@ app.get('/api/receipts/:attemptId', (req, res) => {
     return res.status(200).send(body);
   }
   res.json({ ok: true, receipt });
+});
+
+/** Full integrity evidence pack for a submission attempt */
+app.get('/api/receipts/:attemptId/evidence', (req, res) => {
+  const user = requireUser(req, res);
+  if (!user) return;
+  const pack = getSubmissionEvidence(req.params.attemptId, user.id);
+  if (!pack) {
+    // Fallback: allow owner check via raw row
+    const row = getDb()
+      .prepare(`SELECT * FROM submission_attempts WHERE id = ?`)
+      .get(req.params.attemptId);
+    if (!row) return res.status(404).json({ error: 'Evidence not found' });
+    if (row.user_id && row.user_id !== user.id) {
+      return res.status(403).json({ error: 'Not allowed' });
+    }
+    return res.status(404).json({ error: 'Evidence pack not stored for this attempt' });
+  }
+  if (req.query.download === '1' || req.query.download === 'true') {
+    const body = JSON.stringify({ ok: true, evidence: pack }, null, 2);
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="evidence-${pack.id.slice(0, 8)}.json"`
+    );
+    return res.status(200).send(body);
+  }
+  res.json({ ok: true, evidence: pack });
+});
+
+/** Operator-set HMRC service status for deadline messaging */
+app.get('/api/hmrc/service-status', (_req, res) => {
+  const row = getDb()
+    .prepare(
+      `SELECT status, message, updated_at FROM hmrc_service_status WHERE id = 'current'`
+    )
+    .get();
+  res.json({
+    ok: true,
+    status: row?.status || 'unknown',
+    message:
+      row?.message ||
+      'No operator status set — check GOV.UK HMRC service status for live incidents.',
+    updatedAt: row?.updated_at || null,
+    govUk:
+      'https://www.gov.uk/government/collections/hmrc-service-availability-and-issues',
+  });
+});
+
+app.put('/api/admin/hmrc-service-status', (req, res) => {
+  const secret = process.env.ADMIN_JOB_SECRET || process.env.JOB_SECRET;
+  if (!secret || req.get('x-job-secret') !== secret) {
+    return res.status(401).json({ error: 'Admin secret required' });
+  }
+  const status = String(req.body?.status || 'unknown').slice(0, 40);
+  const message = String(req.body?.message || '').slice(0, 500);
+  const now = new Date().toISOString();
+  getDb()
+    .prepare(
+      `INSERT OR REPLACE INTO hmrc_service_status (id, status, message, updated_at)
+       VALUES ('current', ?, ?, ?)`
+    )
+    .run(status, message, now);
+  res.json({ ok: true, status, message, updatedAt: now });
 });
 
 app.get('/api/me/submissions', (req, res) => {

@@ -246,10 +246,54 @@ function handleImportSuccess(data) {
     const se = document.getElementById('bid-se');
     if (se && !se.value) se.value = data.metadata.business_id;
   }
+  // Bind saved taxpayer profile / income sources (unified journey)
+  bindTaxpayerIds().catch(() => {});
 
   setWizardStep(2);
   panel('review-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   loadCumulativeReview(data.draftId);
+}
+
+/** Prefill NINO and business IDs from profile + income sources */
+async function bindTaxpayerIds() {
+  try {
+    const [profRes, srcRes] = await Promise.all([
+      apiFetch('/api/me/taxpayer-profile'),
+      apiFetch('/api/me/income-sources'),
+    ]);
+    if (profRes.ok) {
+      const p = await profRes.json();
+      const nino = p.profile?.nino || p.nino || p.profile?.meta?.nino;
+      if (nino) {
+        const el = document.getElementById('nino');
+        if (el && !el.value) el.value = nino;
+      }
+      const ty = p.profile?.taxYear || p.taxYear;
+      if (ty) {
+        const el = document.getElementById('tax-year');
+        if (el && !el.dataset.userEdited) el.value = ty;
+      }
+    }
+    if (srcRes.ok) {
+      const d = await srcRes.json();
+      for (const s of d.sources || []) {
+        if (s.type === 'self_employment' && s.businessId) {
+          const el = document.getElementById('bid-se');
+          if (el && !el.value) el.value = s.businessId;
+        }
+        if (s.type === 'uk_property' && s.businessId) {
+          const el = document.getElementById('bid-uk');
+          if (el && !el.value) el.value = s.businessId;
+        }
+        if (s.type === 'foreign_property' && s.businessId) {
+          const el = document.getElementById('bid-fp');
+          if (el && !el.value) el.value = s.businessId;
+        }
+      }
+    }
+  } catch {
+    /* ignore — guest or offline */
+  }
 }
 
 /**
@@ -1045,6 +1089,7 @@ document.getElementById('submit-btn')?.addEventListener('click', async () => {
       body: JSON.stringify({
         draftId: lastDraftId || undefined,
         payloads: lastDraftId ? undefined : lastPayloads,
+        cellsApproved: true,
         idempotencyKey:
           lastDraftId ||
           `anon-${Date.now()}-${Math.random().toString(36).slice(2)}`,

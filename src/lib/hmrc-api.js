@@ -180,6 +180,36 @@ export async function amendSePeriod(opts) {
   });
 }
 
+/** Amend UK property period (PUT — same path family as retrieve). */
+export async function amendUkPropertyPeriod(opts) {
+  const nino = ninoClean(opts.nino);
+  const taxYear = opts.taxYear || taxYearFromPeriodId(opts.periodId) || '2024-25';
+  const body = sanitizeUkPropertyPeriodBody(opts.body, taxYear);
+  return hmrcFetch({
+    ...opts,
+    method: 'PUT',
+    path: `/individuals/business/property/uk/${nino}/${opts.businessId}/period/${taxYear}/${opts.periodId}`,
+    accept: `application/vnd.hmrc.${PROP()}+json`,
+    body,
+    label: 'uk_property_period_amend',
+  });
+}
+
+/** Amend foreign property period. */
+export async function amendForeignPropertyPeriod(opts) {
+  const nino = ninoClean(opts.nino);
+  const taxYear = opts.taxYear || taxYearFromPeriodId(opts.periodId) || '2024-25';
+  const body = sanitizeForeignPropertyPeriodBody(opts.body, taxYear);
+  return hmrcFetch({
+    ...opts,
+    method: 'PUT',
+    path: `/individuals/business/property/foreign/${nino}/${opts.businessId}/period/${taxYear}/${opts.periodId}`,
+    accept: `application/vnd.hmrc.${PROP()}+json`,
+    body,
+    label: 'foreign_property_period_amend',
+  });
+}
+
 /** periodId like 2024-04-06_2024-07-05 → 2024-25 */
 export function taxYearFromPeriodId(periodId) {
   const m = String(periodId || '').match(/^(\d{4})-\d{2}-\d{2}_/);
@@ -404,6 +434,30 @@ export async function submitBsasSeAdjustments(opts) {
   });
 }
 
+export async function submitBsasUkAdjustments(opts) {
+  const nino = ninoClean(opts.nino);
+  return hmrcFetch({
+    ...opts,
+    method: 'POST',
+    path: `/individuals/self-assessment/adjustable-summary/${nino}/uk-property/${opts.calculationId}/adjust`,
+    accept: `application/vnd.hmrc.${BSAS()}+json`,
+    body: opts.body,
+    label: 'bsas_adjust_uk',
+  });
+}
+
+export async function submitBsasForeignAdjustments(opts) {
+  const nino = ninoClean(opts.nino);
+  return hmrcFetch({
+    ...opts,
+    method: 'POST',
+    path: `/individuals/self-assessment/adjustable-summary/${nino}/foreign-property/${opts.calculationId}/adjust`,
+    accept: `application/vnd.hmrc.${BSAS()}+json`,
+    body: opts.body,
+    label: 'bsas_adjust_foreign',
+  });
+}
+
 /** Brought-forward loss create (Individual Losses) */
 export async function createBroughtForwardLoss(opts) {
   const nino = ninoClean(opts.nino);
@@ -546,11 +600,58 @@ export function resolveSeAnnualBody(body) {
  * @param {string} source
  */
 export function periodBodyFromDraft(draft, source) {
-  const p = draft?.payloads;
+  const p = draft?.payloads || draft;
   if (!p) return null;
   if (source === 'self_employment' || source === 'se') return p.selfEmployment || null;
   if (source === 'uk_property' || source === 'uk') return p.ukProperty || null;
   if (source === 'foreign_property' || source === 'foreign') return p.foreignProperty || null;
+  return null;
+}
+
+/**
+ * Annual submission body from draft/EOY figures when present; else defaults.
+ * @param {object|null} draftOrPayloads
+ * @param {'se'|'uk'|'foreign'} source
+ */
+export function annualBodyFromDraft(draftOrPayloads, source) {
+  const p = draftOrPayloads?.payloads || draftOrPayloads || {};
+  const annual = p.annual || p.yearEnd || p.eoy || {};
+  if (source === 'se') {
+    if (annual.selfEmployment) return resolveSeAnnualBody(annual.selfEmployment);
+    if (p.seAnnual) return resolveSeAnnualBody(p.seAnnual);
+    return defaultSeAnnualBody();
+  }
+  if (source === 'uk') {
+    if (annual.ukProperty) return annual.ukProperty;
+    if (p.ukAnnual) return p.ukAnnual;
+    return {
+      ukOtherProperty: {
+        adjustments: {
+          balancingCharge: 0,
+          privateUseAdjustment: 0,
+          businessPremisesRenovationAllowanceBalancingCharges: 0,
+        },
+        allowances: {
+          annualInvestmentAllowance: 0,
+          otherCapitalAllowance: 0,
+          zeroEmissionsCarAllowance: 0,
+        },
+      },
+    };
+  }
+  if (source === 'foreign') {
+    if (annual.foreignProperty) return annual.foreignProperty;
+    if (p.fpAnnual) return p.fpAnnual;
+    return {
+      foreignProperty: [
+        {
+          countryCode: 'ESP',
+          adjustments: { privateUseAdjustment: 0, balancingCharge: 0 },
+          allowances: { annualInvestmentAllowance: 0, otherCapitalAllowance: 0 },
+        },
+      ],
+    };
+  }
   return null;
 }
 

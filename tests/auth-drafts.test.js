@@ -113,6 +113,7 @@ describe('auth and drafts', () => {
       '/api/submit',
       JSON.stringify({
         draftId: imported.draftId,
+        cellsApproved: true,
         nino: 'AA123456A',
         taxYear: '2024-25',
         businessIdSe: 'XAIS12345678901',

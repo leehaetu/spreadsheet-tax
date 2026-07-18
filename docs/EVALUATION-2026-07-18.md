@@ -1,7 +1,7 @@
 # Evaluation — Spreadsheet Tax current state
 
 **Date:** 2026-07-18  
-**App version:** **1.20.0**  
+**App version:** **1.21.0**  
 **Branch:** `main`  
 
 ## Verdict (truth protocol)

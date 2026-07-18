@@ -108,6 +108,10 @@ describe('year-end workflows', () => {
       'bsas_adjust',
       'final_calc',
       'se_amend',
+      'uk_amend',
+      'fp_amend',
+      'bsas_adjust_uk',
+      'periods_of_account',
     ]) {
       assert.match(
         res.body,
@@ -242,6 +246,7 @@ describe('year-end workflows', () => {
         '/api/submit',
         JSON.stringify({
           draftId,
+          cellsApproved: true,
           nino: 'AA123456A',
           taxYear: '2024-25',
           businessIdSe: 'XAIS12345678901',

@@ -22,6 +22,7 @@ import { newId } from './auth.js';
  */
 export function recordWorkflowReceipt(opts) {
   const id = newId();
+  const correlationId = opts.correlationId || `st-wf-${id.replace(/-/g, '').slice(0, 16)}`;
   const results = [
     {
       workflow: opts.workflow,
@@ -33,27 +34,69 @@ export function recordWorkflowReceipt(opts) {
       request: opts.request ?? null,
       response: opts.response ?? null,
       readback: opts.readback ?? null,
+      correlationId,
+      figureHash: opts.figureHash || null,
+      mappingVersion: opts.mappingVersion || 'v1-deterministic',
+      fileSha256: opts.fileSha256 || null,
+      approverUserId: opts.approverUserId || null,
     },
   ];
-  getDb()
-    .prepare(
-      `INSERT INTO submission_attempts (id, draft_id, user_id, mode, ok, results_json, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`
-    )
-    .run(
-      id,
-      opts.draftId || null,
-      opts.userId || null,
-      opts.mode || 'double',
-      opts.ok ? 1 : 0,
-      JSON.stringify(results),
-      new Date().toISOString()
-    );
+  const evidence = {
+    version: 1,
+    correlationId,
+    workflow: opts.workflow,
+    figureHash: opts.figureHash || null,
+    mappingVersion: opts.mappingVersion || 'v1-deterministic',
+    fileSha256: opts.fileSha256 || null,
+    approverUserId: opts.approverUserId || null,
+    request: opts.request ?? null,
+    response: opts.response ?? null,
+    readback: opts.readback ?? null,
+    supersedesAttemptId: opts.supersedesAttemptId || null,
+  };
+  try {
+    getDb()
+      .prepare(
+        `INSERT INTO submission_attempts (
+           id, draft_id, user_id, mode, ok, results_json, created_at,
+           evidence_json, correlation_id, supersedes_attempt_id, status
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      )
+      .run(
+        id,
+        opts.draftId || null,
+        opts.userId || null,
+        opts.mode || 'double',
+        opts.ok ? 1 : 0,
+        JSON.stringify(results),
+        new Date().toISOString(),
+        JSON.stringify(evidence),
+        correlationId,
+        opts.supersedesAttemptId || null,
+        opts.ok ? 'accepted' : 'failed'
+      );
+  } catch {
+    getDb()
+      .prepare(
+        `INSERT INTO submission_attempts (id, draft_id, user_id, mode, ok, results_json, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`
+      )
+      .run(
+        id,
+        opts.draftId || null,
+        opts.userId || null,
+        opts.mode || 'double',
+        opts.ok ? 1 : 0,
+        JSON.stringify(results),
+        new Date().toISOString()
+      );
+  }
   return {
     receiptId: id,
     workflow: opts.workflow,
     ok: Boolean(opts.ok),
     mode: opts.mode,
+    correlationId,
   };
 }
 

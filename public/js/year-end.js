@@ -35,6 +35,8 @@ const STAGE_ACTIONS = {
     { wf: 'bsas_trigger', label: 'Trigger BSAS', primary: true },
     { wf: 'bsas_list', label: 'List BSAS' },
     { wf: 'bsas_adjust', label: 'Adjust BSAS (SE)' },
+    { wf: 'bsas_adjust_uk', label: 'Adjust BSAS (UK)' },
+    { wf: 'bsas_adjust_fp', label: 'Adjust BSAS (foreign)' },
   ],
   final_declaration: [
     { wf: 'final_calc', label: 'Intent to finalise', primary: true },

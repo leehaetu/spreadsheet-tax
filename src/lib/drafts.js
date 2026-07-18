@@ -146,22 +146,53 @@ export function recordSubmissionAttempt({
   ok,
   results,
   idempotencyKey = null,
+  evidence = null,
+  correlationId = null,
+  supersedesAttemptId = null,
+  status = null,
 }) {
   const id = newId();
-  getDb()
-    .prepare(
-      `INSERT INTO submission_attempts (id, draft_id, user_id, mode, ok, results_json, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`
-    )
-    .run(
-      id,
-      draftId,
-      userId || null,
-      mode,
-      ok ? 1 : 0,
-      JSON.stringify(results),
-      new Date().toISOString()
-    );
+  const attemptStatus =
+    status ||
+    (mode === 'double' ? 'preview' : ok ? 'accepted' : 'failed');
+  // Prefer full integrity columns when migrated
+  try {
+    getDb()
+      .prepare(
+        `INSERT INTO submission_attempts (
+           id, draft_id, user_id, mode, ok, results_json, created_at,
+           evidence_json, correlation_id, supersedes_attempt_id, status
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      )
+      .run(
+        id,
+        draftId,
+        userId || null,
+        mode,
+        ok ? 1 : 0,
+        JSON.stringify(results),
+        new Date().toISOString(),
+        evidence ? JSON.stringify(evidence) : null,
+        correlationId || null,
+        supersedesAttemptId || null,
+        attemptStatus
+      );
+  } catch {
+    getDb()
+      .prepare(
+        `INSERT INTO submission_attempts (id, draft_id, user_id, mode, ok, results_json, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`
+      )
+      .run(
+        id,
+        draftId,
+        userId || null,
+        mode,
+        ok ? 1 : 0,
+        JSON.stringify(results),
+        new Date().toISOString()
+      );
+  }
   if (idempotencyKey) {
     getDb()
       .prepare(
@@ -177,11 +208,50 @@ export function recordSubmissionAttempt({
           mode,
           draftId,
           results,
+          correlationId,
         }),
         new Date().toISOString()
       );
   }
   return id;
+}
+
+/**
+ * Load full receipt / evidence pack for a submission attempt.
+ * @param {string} attemptId
+ * @param {string|null} [userId]
+ */
+export function getSubmissionEvidence(attemptId, userId = null) {
+  const row = getDb()
+    .prepare(`SELECT * FROM submission_attempts WHERE id = ?`)
+    .get(attemptId);
+  if (!row) return null;
+  if (userId && row.user_id && row.user_id !== userId) return null;
+  let results = [];
+  let evidence = null;
+  try {
+    results = JSON.parse(row.results_json);
+  } catch {
+    results = [];
+  }
+  try {
+    evidence = row.evidence_json ? JSON.parse(row.evidence_json) : null;
+  } catch {
+    evidence = null;
+  }
+  return {
+    id: row.id,
+    draftId: row.draft_id,
+    userId: row.user_id,
+    mode: row.mode,
+    ok: Boolean(row.ok),
+    status: row.status || (row.mode === 'double' ? 'preview' : 'recorded'),
+    correlationId: row.correlation_id || evidence?.correlationId || null,
+    supersedesAttemptId: row.supersedes_attempt_id || null,
+    createdAt: row.created_at,
+    results,
+    evidence,
+  };
 }
 
 /**

@@ -8,8 +8,10 @@ export const KNOWN_WORKFLOWS = [
   'se_period',
   'uk_period',
   'fp_period',
-  // Corrections
+  // Corrections (all three sources)
   'se_amend',
+  'uk_amend',
+  'fp_amend',
   // Annual / EOY
   'final_obligations',
   'se_annual',
@@ -22,6 +24,10 @@ export const KNOWN_WORKFLOWS = [
   'bsas_trigger',
   'bsas_list',
   'bsas_adjust',
+  'bsas_adjust_uk',
+  'bsas_adjust_fp',
+  'periods_of_account',
+  'periods_of_account_put',
   'final_calc',
 ];
 

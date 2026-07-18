@@ -53,7 +53,8 @@ export async function performWorkflowReadback(ctx, deps = {}) {
         });
         return pack(r, 'se_period_retrieve');
       }
-      case 'uk_period': {
+      case 'uk_period':
+      case 'uk_amend': {
         const subId =
           periodId ||
           hmrcResult?.body?.submissionId ||
@@ -72,7 +73,8 @@ export async function performWorkflowReadback(ctx, deps = {}) {
         });
         return pack(r, 'uk_property_period_retrieve');
       }
-      case 'fp_period': {
+      case 'fp_period':
+      case 'fp_amend': {
         const subId =
           periodId ||
           hmrcResult?.body?.submissionId ||
@@ -122,6 +124,68 @@ export async function performWorkflowReadback(ctx, deps = {}) {
         const r = await api.listBsas({ ...o, taxYear });
         return pack(r, 'bsas_list');
       }
+      case 'bsas_adjust_uk': {
+        if (calculationId && api.retrieveBsasUkProperty) {
+          const r = await api.retrieveBsasUkProperty({
+            ...o,
+            calculationId,
+          });
+          return pack(r, 'bsas_retrieve_uk');
+        }
+        return {
+          attempted: false,
+          note: 'bsas_adjust_uk needs calculationId for UK retrieve',
+        };
+      }
+      case 'bsas_adjust_fp': {
+        if (calculationId && api.retrieveBsasForeignProperty) {
+          const r = await api.retrieveBsasForeignProperty({
+            ...o,
+            calculationId,
+          });
+          return pack(r, 'bsas_retrieve_foreign');
+        }
+        return {
+          attempted: false,
+          note: 'bsas_adjust_fp needs calculationId for foreign retrieve',
+        };
+      }
+      case 'periods_of_account':
+      case 'periods_of_account_put': {
+        const bid = bidSe || bidUk || bidFp || body?.businessId;
+        if (!bid) {
+          return {
+            attempted: false,
+            note: 'periods_of_account readback needs businessId',
+          };
+        }
+        if (workflow === 'periods_of_account') {
+          return {
+            attempted: false,
+            note: 'periods_of_account response is already the retrieve',
+          };
+        }
+        const r = await api.retrievePeriodsOfAccount({
+          ...o,
+          businessId: bid,
+          taxYear,
+        });
+        return pack(r, 'bd_periods_of_account');
+      }
+      case 'losses': {
+        if (api.listBroughtForwardLosses) {
+          const r = await api.listBroughtForwardLosses({
+            ...o,
+            taxYearBroughtForwardFrom: taxYear,
+            businessId: bidSe,
+          });
+          return pack(r, 'losses_bf_list');
+        }
+        return {
+          attempted: false,
+          note: 'losses: list retrieve not available',
+        };
+      }
       case 'bsas_list':
         return {
           attempted: false,
@@ -136,11 +200,9 @@ export async function performWorkflowReadback(ctx, deps = {}) {
       case 'uk_annual':
       case 'fp_annual':
       case 'other_income':
-      case 'losses':
-        // No dedicated retrieve wired for these annual PUT/POST creates in this product path
         return {
           attempted: false,
-          note: `${workflow}: no HMRC retrieve endpoint called after write in this product version`,
+          note: `${workflow}: no HMRC retrieve endpoint called after write — request/response stored on receipt`,
         };
       default:
         return {
