@@ -147,7 +147,7 @@ function showError(msg) {
 }
 
 async function runWorkflow(name) {
-  const body = { workflow: name, ...ids() };
+  const body = { workflow: name, ...ids(), ...workflowPayload(name) };
   try {
     const res = await api('/api/workflows/run', {
       method: 'POST',
@@ -162,6 +162,54 @@ async function runWorkflow(name) {
     showResult(data);
   } catch (e) {
     showError(e.message || String(e));
+  }
+}
+
+function money(id) {
+  const value = Number(document.getElementById(id)?.value || 0);
+  return Number.isFinite(value) ? value : 0;
+}
+
+function workflowPayload(name) {
+  if (name === 'se_annual') {
+    return { body: { allowances: { annualInvestmentAllowance: money('eoy-se-aia'), otherCapitalAllowance: money('eoy-se-other-allowance') }, adjustments: { includedNonTaxableProfits: money('eoy-se-nontaxable'), basisAdjustment: money('eoy-se-basis') } } };
+  }
+  if (name === 'uk_annual') {
+    return { body: { ukOtherProperty: { adjustments: { privateUseAdjustment: money('eoy-uk-private'), balancingCharge: money('eoy-uk-balancing') }, allowances: { annualInvestmentAllowance: money('eoy-uk-aia'), otherCapitalAllowance: money('eoy-uk-other-allowance') } } } };
+  }
+  if (name === 'fp_annual') {
+    const countries = (eoyCase?.sources || []).filter((source) => source.type === 'foreign_property');
+    return { body: { foreignProperty: countries.map((source) => ({ countryCode: source.countryCode || 'ESP', adjustments: { privateUseAdjustment: money(`eoy-fp-private-${source.id}`), balancingCharge: money(`eoy-fp-balancing-${source.id}`) }, allowances: { annualInvestmentAllowance: money(`eoy-fp-aia-${source.id}`), otherCapitalAllowance: money(`eoy-fp-other-${source.id}`) } })) } };
+  }
+  if (name === 'losses') {
+    return { body: { businessId: ids().businessIdSe, typeOfLoss: 'self-employment', lossAmount: money('eoy-loss'), taxYearBroughtForwardFrom: ids().taxYear } };
+  }
+  return {};
+}
+
+function field(id, label, hint = '') {
+  return `<label>${label}<span class="money-input"><span>£</span><input id="${id}" type="number" min="0" step="0.01" value="0"></span>${hint ? `<small>${hint}</small>` : ''}</label>`;
+}
+
+function renderEditor(stageId) {
+  const root = document.getElementById('eoy-editor');
+  if (!root) return;
+  if (stageId === 'se_adjustments') {
+    root.innerHTML = `<div class="eoy-form"><h4>Self-employment annual adjustments</h4><div class="detail-grid">${field('eoy-se-aia','Annual investment allowance')}${field('eoy-se-other-allowance','Other capital allowance')}${field('eoy-se-nontaxable','Included non-taxable profits')}${field('eoy-se-basis','Basis adjustment')}</div><p class="help-tip">These are annual adjustments, not quarterly income and expenses. Enter only amounts supported by your records.</p></div>`;
+  } else if (stageId === 'uk_adjustments') {
+    const uk = (eoyCase?.sources || []).find((source) => source.type === 'uk_property');
+    root.innerHTML = `<div class="eoy-form"><h4>UK property annual adjustments</h4>${uk?.joint ? `<p class="help-tip">Jointly owned source · saved ownership share ${esc(uk.ownershipShare || 50)}%. Check that uploaded records already represent the reportable share.</p>` : ''}<div class="detail-grid">${field('eoy-uk-private','Private-use adjustment')}${field('eoy-uk-balancing','Balancing charge')}${field('eoy-uk-aia','Annual investment allowance')}${field('eoy-uk-other-allowance','Other capital allowance')}</div></div>`;
+  } else if (stageId === 'foreign_adjustments') {
+    const foreign = (eoyCase?.sources || []).filter((source) => source.type === 'foreign_property');
+    root.innerHTML = foreign.length ? `<div class="eoy-form"><h4>Foreign property annual adjustments</h4><p class="help-tip">Enter GBP values only. Keep evidence of the exchange-rate method with your digital records.</p>${foreign.map((source) => `<section class="foreign-adjustment"><h5>${esc(source.nickname || source.label)} · ${esc(source.countryCode || 'Country not set')}</h5><div class="detail-grid">${field(`eoy-fp-private-${source.id}`,'Private-use adjustment')}${field(`eoy-fp-balancing-${source.id}`,'Balancing charge')}${field(`eoy-fp-aia-${source.id}`,'Annual investment allowance')}${field(`eoy-fp-other-${source.id}`,'Other capital allowance')}</div></section>`).join('')}</div>` : '<p class="help-tip">No foreign-property sources are configured. Add them in Settings before continuing.</p>';
+  } else if (stageId === 'other_income_losses') {
+    root.innerHTML = `<div class="eoy-form"><h4>Losses and other income</h4><div class="detail-grid">${field('eoy-loss','Brought-forward self-employment loss','Use only a loss supported by earlier records.')}</div></div>`;
+  } else if (stageId === 'calculation') {
+    root.innerHTML = '<div class="eoy-form"><h4>HMRC calculation</h4><p class="help-tip">The product requests a calculation from HMRC. It does not invent or locally calculate your final tax bill.</p></div>';
+  } else if (stageId === 'final_declaration') {
+    root.innerHTML = '<div class="eoy-form declaration-box"><h4>Review before finalising</h4><label><input type="checkbox" id="eoy-declaration"> I confirm I have reviewed the figures and understand that finalising may create a submission to HMRC when live mode is explicitly enabled.</label><p class="muted">The current connection mode remains visible at the top of this page.</p></div>';
+  } else {
+    root.innerHTML = '';
   }
 }
 
@@ -208,7 +256,13 @@ function renderStageActions(stageId) {
       btn.className = a.primary ? 'btn btn-primary' : 'btn btn-ghost';
       btn.setAttribute('data-wf', a.wf);
       btn.textContent = a.label;
-      btn.addEventListener('click', () => runWorkflow(a.wf));
+      btn.addEventListener('click', () => {
+        if (a.wf === 'final_calc' && !document.getElementById('eoy-declaration')?.checked) {
+          showError('Confirm the final declaration review before continuing.');
+          return;
+        }
+        runWorkflow(a.wf);
+      });
       box.appendChild(btn);
     }
   }
@@ -234,6 +288,7 @@ function renderCase() {
   }
   renderProgress();
   renderStageActions(eoyCase.stageId);
+  renderEditor(eoyCase.stageId);
 
   const sources = eoyCase.sources || [];
   const list = document.getElementById('source-list');

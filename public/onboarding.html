@@ -3,65 +3,75 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Get set up — Spreadsheet Tax</title>
-  <meta name="theme-color" content="#f4f6f9" />
+  <title>Set up your tax account — Spreadsheet Tax</title>
+  <meta name="theme-color" content="#ffffff" />
   <link rel="stylesheet" href="/css/site.css" />
 </head>
-<body class="theme-light app-body app-simple">
-  <header class="site-header">
-    <div class="wrap header-inner">
-      <a class="logo" href="/home"><span class="logo-mark">ST</span> Spreadsheet Tax</a>
-      <nav>
-        <a href="/home">Home</a>
-        <a href="/connect-hmrc">Connect HMRC</a>
-      </nav>
-    </div>
-  </header>
-  <main class="wrap app-main">
-    <h1>Set up</h1>
-    <p class="lead">Three decisions: who manages tax, which income sources, which tax year. Then go to quarterly upload.</p>
-    <p id="err" class="error" hidden></p>
+<body class="theme-light app-body cc-page">
+  <button class="cc-menu-toggle" id="cc-menu-toggle" type="button" aria-controls="cc-sidebar" aria-expanded="false">Menu</button>
+  <aside class="cc-sidebar" id="cc-sidebar">
+    <a class="cc-brand" href="/home"><span class="logo-mark">ST</span><span><strong>Spreadsheet Tax</strong><small>Making Tax Digital</small></span></a>
+    <nav class="cc-nav" aria-label="Tax account">
+      <a href="/home">Home</a><a href="/app?flow=quarterly">Quarterly updates</a><a href="/year-end">Tax return</a><a href="/records">Records</a><a href="/history">Messages</a><a href="/account">Settings</a>
+    </nav>
+    <div class="cc-connection"><span class="cc-status-dot" aria-hidden="true"></span><div><small>HMRC connection</small><strong id="setup-mode">Checking mode…</strong><span>MTD for Income Tax</span></div></div>
+  </aside>
 
-    <section class="panel" data-step="1">
-      <h2>1. Who manages the tax?</h2>
-      <div class="sample-grid">
-        <button type="button" class="sample-btn manage-btn" data-mode="self"><strong>I do it myself</strong><span>Personal taxpayer app</span></button>
-        <button type="button" class="sample-btn manage-btn" data-mode="accountant"><strong>My accountant does it</strong><span>They will invite you to the portal</span></button>
-        <button type="button" class="sample-btn manage-btn" data-mode="together"><strong>We work together</strong><span>You upload; they review</span></button>
+  <main class="cc-main setup-shell">
+    <header class="setup-header">
+      <div><a class="setup-back" id="setup-back" href="/home">Back to home</a><h1 id="setup-title">Welcome to Spreadsheet Tax</h1><p id="setup-subtitle">Set up the income sources you need to report.</p></div>
+      <div class="cc-tax-year"><strong>Tax year 2026–27</strong><span>6 April 2026 to 5 April 2027</span></div>
+    </header>
+
+    <ol class="setup-progress" aria-label="Setup progress">
+      <li class="active" data-progress="1"><span>1</span>Welcome</li><li data-progress="2"><span>2</span>Sources</li><li data-progress="3"><span>3</span>Details</li><li data-progress="4"><span>4</span>Review</li>
+    </ol>
+    <p id="err" class="error" role="alert" hidden></p>
+
+    <section class="setup-step" data-step="1">
+      <div class="setup-callout">
+        <h2>Practise safely before sending anything</h2>
+        <p>This account can be used in preview or HMRC sandbox mode. The current mode is always shown before a submission.</p>
+        <div class="mode-compare">
+          <div><strong>Preview or sandbox</strong><ul><li>Use fictional or sandbox test data</li><li>No production submission</li><li>Check the complete workflow</li></ul></div>
+          <div><strong>Production access</strong><ul><li>Requires HMRC production approval</li><li>Uses your real HMRC authorisation</li><li>Only enabled after explicit configuration</li></ul></div>
+        </div>
       </div>
+      <fieldset class="setup-fieldset"><legend>Who will manage this account?</legend><div class="choice-grid">
+        <label><input type="radio" name="manageMode" value="self" checked><span><strong>I do it myself</strong><small>I prepare and review my updates.</small></span></label>
+        <label><input type="radio" name="manageMode" value="together"><span><strong>We work together</strong><small>I prepare records; my accountant can review.</small></span></label>
+        <label><input type="radio" name="manageMode" value="accountant"><span><strong>My accountant manages it</strong><small>I provide records through the portal.</small></span></label>
+      </div></fieldset>
     </section>
 
-    <section class="panel" data-step="2">
-      <h2>2. Income sources</h2>
-      <p class="muted">Add what you report. Optional: <a href="/connect-hmrc">connect HMRC</a> then refresh sources.</p>
-      <button type="button" class="btn btn-ghost btn-sm" id="load-hmrc-sources">Load from HMRC (if connected)</button>
-      <p class="muted" id="hmrc-note"></p>
+    <section class="setup-step" data-step="2" hidden>
+      <h2>Choose your income sources</h2><p class="muted">Choose every source you expect to report. You can add more foreign properties separately.</p>
+      <div class="source-picker">
+        <button type="button" data-add-type="self_employment"><strong>Self-employment</strong><span>Sole trader business or profession</span><b>Add source</b></button>
+        <button type="button" data-add-type="uk_property"><strong>UK property</strong><span>Residential property income in the UK</span><b>Add source</b></button>
+        <button type="button" data-add-type="foreign_property"><strong>Foreign property</strong><span>Property income outside the UK</span><b>Add source</b></button>
+      </div>
+      <div class="setup-inline"><button class="btn btn-ghost" type="button" id="load-hmrc-sources">Load businesses from HMRC</button><span id="hmrc-note" class="muted">Available after a real HMRC OAuth connection.</span></div>
+      <div id="chosen-sources" class="chosen-sources" aria-live="polite"></div>
     </section>
 
-    <section class="panel" data-step="3">
-      <h2>3. Confirm sources</h2>
-      <div id="sources-editor"></div>
-      <button type="button" class="btn btn-ghost" id="add-se">+ Self-employment</button>
-      <button type="button" class="btn btn-ghost" id="add-uk">+ UK property</button>
-      <button type="button" class="btn btn-ghost" id="add-fp">+ Foreign property</button>
+    <section class="setup-step" data-step="3" hidden>
+      <h2>Tell us about each source</h2><p class="muted">These details keep records and submissions clearly separated.</p>
+      <div id="source-details"></div>
     </section>
 
-    <section class="panel" data-step="4">
-      <h2>4. Tax year &amp; period type</h2>
-      <p class="muted">After the first HMRC update for a year, period type usually cannot change for that year.</p>
-      <label><input type="radio" name="periodType" value="standard" checked /> Standard (6 April – 5 April)</label><br />
-      <label><input type="radio" name="periodType" value="calendar" /> Calendar (1 April – 31 March)</label>
-      <label style="display:block;margin-top:0.75rem">Tax year
-        <input type="text" id="tax-year" value="2024-25" />
-      </label>
+    <section class="setup-step" data-step="4" hidden>
+      <h2>Review your setup</h2><p class="muted">Nothing is submitted by completing setup.</p>
+      <div id="setup-review" class="review-list"></div>
+      <fieldset class="setup-fieldset"><legend>Reporting period</legend><div class="choice-grid compact">
+        <label><input type="radio" name="periodType" value="standard" checked><span><strong>Standard tax-year quarters</strong><small>6 April to 5 April</small></span></label>
+        <label><input type="radio" name="periodType" value="calendar"><span><strong>Calendar quarters</strong><small>1 April to 31 March</small></span></label>
+      </div></fieldset>
     </section>
 
-    <div class="action-bar">
-      <button type="button" class="btn btn-primary btn-lg" id="save-setup">Save and continue</button>
-      <a class="btn btn-ghost" href="/app?flow=quarterly">Skip to quarterly</a>
-      <a class="btn btn-ghost" href="/download/template">Template</a>
-    </div>
+    <footer class="setup-actions"><button type="button" class="btn btn-ghost" id="prev-step" hidden>Back</button><span></span><button type="button" class="btn btn-primary btn-lg" id="next-step">Continue</button><button type="button" class="btn btn-primary btn-lg" id="save-setup" hidden>Save setup and go home</button></footer>
   </main>
+  <dialog id="remove-source-dialog" class="confirm-dialog"><form method="dialog"><h2>Remove this source?</h2><p id="remove-source-copy">This removes it from your account setup. Existing submission receipts are kept.</p><div class="setup-actions"><button value="cancel" class="btn btn-ghost">Cancel</button><button value="confirm" class="btn btn-danger">Remove source</button></div></form></dialog>
   <script src="/js/onboarding.js"></script>
 </body>
 </html>

@@ -81,7 +81,10 @@ describe('taxpayer journey pages', () => {
       assert.equal(res.status, 200, p);
     }
     assert.match((await request('GET', '/home')).body, /next task|Income sources/i);
-    assert.match((await request('GET', '/onboarding')).body, /Who manages the tax/i);
+    assert.match(
+      (await request('GET', '/onboarding')).body,
+      /Who will manage this account/i
+    );
   });
 });
 

@@ -119,6 +119,7 @@ export function setIncomeSources(userId, sources) {
   const database = getDb();
   const now = new Date().toISOString();
   database.prepare(`DELETE FROM income_sources WHERE user_id = ?`).run(userId);
+  const usedIds = new Set();
   const ins = database.prepare(
     `INSERT INTO income_sources (
       id, user_id, type, business_id, label, nickname, country_code, joint, ownership_share,
@@ -128,8 +129,14 @@ export function setIncomeSources(userId, sources) {
   for (const s of sources || []) {
     const type = s.type || 'self_employment';
     if (!SOURCE_TYPES.includes(type)) continue;
+    let sourceId = String(s.id || '').trim() || newId();
+    const occupied = database
+      .prepare(`SELECT user_id FROM income_sources WHERE id = ?`)
+      .get(sourceId);
+    if (occupied || usedIds.has(sourceId)) sourceId = newId();
+    usedIds.add(sourceId);
     ins.run(
-      s.id || newId(),
+      sourceId,
       userId,
       type,
       s.businessId || null,

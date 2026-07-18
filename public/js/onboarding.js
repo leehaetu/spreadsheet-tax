@@ -1,181 +1,35 @@
-/** Onboarding: manage mode, HMRC sources, period type */
-
 let sources = [];
-let manageMode = 'self';
+let step = 1;
+let removeIndex = null;
+let profileMeta = {};
 
-async function api(url, opts = {}) {
-  const res = await fetch(url, {
-    headers: { 'Content-Type': 'application/json', ...(opts.headers || {}) },
-    ...opts,
-  });
-  const data = await res.json().catch(() => ({}));
-  return { res, data };
-}
+const countries = [['ESP','Spain'],['FRA','France'],['PRT','Portugal'],['ITA','Italy'],['DEU','Germany'],['IRL','Ireland'],['USA','United States'],['AUS','Australia'],['NZL','New Zealand'],['CAN','Canada'],['OTHER','Another country']];
+const labels = { self_employment: 'Self-employment', uk_property: 'UK property', foreign_property: 'Foreign property' };
 
-function showErr(msg) {
-  const el = document.getElementById('err');
-  if (!el) return;
-  el.textContent = msg || '';
-  el.hidden = !msg;
-}
+function esc(value) { return String(value ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'); }
+async function api(url, options={}) { const res = await fetch(url,{headers:{'Content-Type':'application/json',...(options.headers||{})},...options}); return {res,data:await res.json().catch(()=>({}))}; }
+function showError(message='') { const el=document.getElementById('err'); el.textContent=message; el.hidden=!message; if(message) el.scrollIntoView({behavior:'smooth',block:'center'}); }
+function newSource(type) { const ordinal=sources.filter(s=>s.type===type).length+1; return {id:crypto.randomUUID(),type,label:labels[type],nickname:type==='self_employment'?'My trade':type==='uk_property'?(ordinal===1?'UK rental':`UK rental ${ordinal}`):`Foreign property ${ordinal}`,countryCode:type==='foreign_property'?'ESP':null,joint:false,ownershipShare:100,details:{accountingPeriod:'6 April to 5 April',trade:'',startDate:'',address:'',currency:type==='foreign_property'?'EUR':'GBP',exchangeRateMethod:'HMRC monthly average rate'}}; }
+function setStep(next) { step=Math.max(1,Math.min(4,next)); document.querySelectorAll('.setup-step').forEach(el=>el.hidden=Number(el.dataset.step)!==step); document.querySelectorAll('[data-progress]').forEach(el=>{el.classList.toggle('active',Number(el.dataset.progress)===step);el.classList.toggle('done',Number(el.dataset.progress)<step)}); document.getElementById('prev-step').hidden=step===1; document.getElementById('next-step').hidden=step===4; document.getElementById('save-setup').hidden=step!==4; const titles=['','Welcome to Spreadsheet Tax','Choose your income sources','Add your source details','Review your setup']; document.getElementById('setup-title').textContent=titles[step]; if(step===2) renderChosen(); if(step===3) renderDetails(); if(step===4) renderReview(); showError(''); window.scrollTo({top:0,behavior:'smooth'}); }
+function renderChosen() { const root=document.getElementById('chosen-sources'); root.innerHTML=sources.length?sources.map((s,i)=>`<div class="chosen-source"><span class="source-avatar">${s.type==='self_employment'?'SE':s.type==='uk_property'?'UK':esc(s.countryCode||'FP')}</span><span><strong>${esc(s.nickname)}</strong><small>${labels[s.type]}${s.countryCode?` · ${esc(s.countryCode)}`:''}</small></span><button type="button" data-edit-source="${i}">Edit</button><button type="button" data-remove-source="${i}">Remove</button></div>`).join(''):'<div class="empty-setup"><strong>No income sources selected</strong><span>Add at least one source to continue.</span></div>'; bindSourceButtons(); }
+function bindSourceButtons(){ document.querySelectorAll('[data-remove-source]').forEach(btn=>btn.onclick=()=>{removeIndex=Number(btn.dataset.removeSource);document.getElementById('remove-source-copy').textContent=`Remove “${sources[removeIndex].nickname}”? Existing submission receipts are kept.`;document.getElementById('remove-source-dialog').showModal()}); document.querySelectorAll('[data-edit-source]').forEach(btn=>btn.onclick=()=>setStep(3)); }
+function countryOptions(selected){return countries.map(([code,name])=>`<option value="${code}" ${selected===code?'selected':''}>${name}</option>`).join('')}
+function renderDetails(){ const root=document.getElementById('source-details'); root.innerHTML=sources.map((s,i)=>`<section class="source-detail" data-source-index="${i}"><header><span class="source-avatar">${s.type==='self_employment'?'SE':s.type==='uk_property'?'UK':esc(s.countryCode||'FP')}</span><div><h3>${labels[s.type]}</h3><p>${esc(s.nickname)}</p></div></header><div class="detail-grid">
+      <label>Display name<input data-field="nickname" value="${esc(s.nickname)}" required></label>
+      ${s.type==='self_employment'?`<label>Trade or profession<input data-detail="trade" value="${esc(s.details.trade)}" placeholder="For example, graphic design" required></label><label>Business start date<input type="date" data-detail="startDate" value="${esc(s.details.startDate)}"></label><label>Accounting period<select data-detail="accountingPeriod"><option>6 April to 5 April</option><option>1 April to 31 March</option></select></label>`:''}
+      ${s.type==='uk_property'?`<label class="span-2">Property address<input data-detail="address" value="${esc(s.details.address)}" placeholder="Full UK property address" required></label><label class="switch-label"><input type="checkbox" data-field="joint" ${s.joint?'checked':''}>Jointly owned property</label><label>Your ownership percentage<input type="number" min="1" max="100" data-field="ownershipShare" value="${esc(s.ownershipShare)}"></label>`:''}
+      ${s.type==='foreign_property'?`<label>Country<select data-field="countryCode">${countryOptions(s.countryCode)}</select></label><label>Your ownership percentage<input type="number" min="1" max="100" data-field="ownershipShare" value="${esc(s.ownershipShare)}"></label><label class="span-2">Property address<input data-detail="address" value="${esc(s.details.address)}" placeholder="Full overseas property address" required></label><label>Records currency<select data-detail="currency"><option ${s.details.currency==='EUR'?'selected':''}>EUR</option><option ${s.details.currency==='USD'?'selected':''}>USD</option><option ${s.details.currency==='GBP'?'selected':''}>GBP</option><option>Other</option></select></label><label>Exchange-rate method<select data-detail="exchangeRateMethod"><option>HMRC monthly average rate</option><option>HMRC annual average rate</option><option>Transaction-date rate with evidence</option></select></label>`:''}
+    </div></section>`).join('')||'<div class="empty-setup"><strong>Add an income source first</strong><button class="btn btn-primary" type="button" id="back-to-sources">Choose sources</button></div>'; root.querySelector('#back-to-sources')?.addEventListener('click',()=>setStep(2)); root.querySelectorAll('[data-source-index]').forEach(section=>{const s=sources[Number(section.dataset.sourceIndex)];section.querySelectorAll('[data-field]').forEach(el=>el.onchange=()=>{s[el.dataset.field]=el.type==='checkbox'?el.checked:el.type==='number'?Number(el.value):el.value});section.querySelectorAll('[data-detail]').forEach(el=>el.onchange=()=>s.details[el.dataset.detail]=el.value)}); }
+function renderReview(){ const root=document.getElementById('setup-review'); root.innerHTML=sources.map((s,i)=>`<div class="review-source"><span class="source-avatar">${s.type==='self_employment'?'SE':s.type==='uk_property'?'UK':esc(s.countryCode||'FP')}</span><div><strong>${esc(s.nickname)}</strong><span>${labels[s.type]}${s.countryCode?` · ${esc(countries.find(c=>c[0]===s.countryCode)?.[1]||s.countryCode)}`:''}</span><small>${esc(s.details.address||s.details.trade||s.details.accountingPeriod||'Ready to use')}</small></div><button type="button" data-review-edit="${i}">Edit</button></div>`).join(''); root.querySelectorAll('[data-review-edit]').forEach(btn=>btn.onclick=()=>setStep(3)); }
+function validateStep(){ if(step===2&&!sources.length){showError('Add at least one income source to continue.');return false} if(step===3){const invalid=[...document.querySelectorAll('#source-details [required]')].find(el=>!el.value.trim());if(invalid){invalid.focus();showError('Complete the highlighted source details before continuing.');return false}} return true; }
 
-function renderSources() {
-  const root = document.getElementById('sources-editor');
-  if (!root) return;
-  if (!sources.length) {
-    root.innerHTML =
-      '<p class="muted">No sources yet. Load from HMRC or add manually.</p>';
-    return;
-  }
-  root.innerHTML = sources
-    .map(
-      (s, i) => `
-    <div class="form-row" data-i="${i}" style="border-bottom:1px solid var(--border);padding:0.5rem 0">
-      <label>Type
-        <select data-field="type">
-          <option value="self_employment" ${s.type === 'self_employment' ? 'selected' : ''}>Self-employment</option>
-          <option value="uk_property" ${s.type === 'uk_property' ? 'selected' : ''}>UK property</option>
-          <option value="foreign_property" ${s.type === 'foreign_property' ? 'selected' : ''}>Foreign property</option>
-        </select>
-      </label>
-      <label>Nickname
-        <input data-field="nickname" value="${escapeAttr(s.nickname || s.label || '')}" placeholder="e.g. Leeds flat" />
-      </label>
-      <label>Business ID (from HMRC)
-        <input data-field="businessId" value="${escapeAttr(s.businessId || '')}" placeholder="Optional if connected" />
-      </label>
-      <label>Country (foreign)
-        <input data-field="countryCode" value="${escapeAttr(s.countryCode || '')}" placeholder="ESP" maxlength="3" />
-      </label>
-      <button type="button" class="btn btn-ghost btn-sm" data-remove="${i}">Remove</button>
-    </div>`
-    )
-    .join('');
-  root.querySelectorAll('[data-field]').forEach((el) => {
-    el.addEventListener('change', () => {
-      const row = el.closest('[data-i]');
-      const i = Number(row.getAttribute('data-i'));
-      const field = el.getAttribute('data-field');
-      sources[i][field] = el.value;
-      if (field === 'nickname') sources[i].label = el.value;
-    });
-  });
-  root.querySelectorAll('[data-remove]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      sources.splice(Number(btn.getAttribute('data-remove')), 1);
-      renderSources();
-    });
-  });
-}
+document.querySelectorAll('[data-add-type]').forEach(btn=>btn.addEventListener('click',()=>{sources.push(newSource(btn.dataset.addType));renderChosen()}));
+document.getElementById('next-step').addEventListener('click',()=>{if(validateStep())setStep(step+1)});
+document.getElementById('prev-step').addEventListener('click',()=>setStep(step-1));
+document.getElementById('setup-back').addEventListener('click',e=>{if(step>1){e.preventDefault();setStep(step-1)}});
+document.getElementById('remove-source-dialog').addEventListener('close',e=>{if(e.target.returnValue==='confirm'&&removeIndex!==null){sources.splice(removeIndex,1);removeIndex=null;renderChosen()}});
+document.getElementById('load-hmrc-sources').addEventListener('click',async()=>{showError('');const {res,data}=await api('/api/me/income-sources/from-hmrc',{method:'POST',body:'{}'});if(!res.ok){showError(data.error||'HMRC businesses could not be loaded.');return}sources=(data.sources||[]).map(s=>({...newSource(s.type),...s,details:{}}));renderChosen();document.getElementById('hmrc-note').textContent=`Loaded ${sources.length} businesses. Check each one before saving.`});
+document.getElementById('save-setup').addEventListener('click',async()=>{showError('');const manageMode=document.querySelector('[name="manageMode"]:checked')?.value||'self';const periodType=document.querySelector('[name="periodType"]:checked')?.value||'standard';const sourceDetails=Object.fromEntries(sources.map(s=>[s.id,s.details]));const profile=await api('/api/me/taxpayer-profile',{method:'PUT',body:JSON.stringify({manageMode,periodType,taxYear:'2026-27',onboardingComplete:true,meta:{...profileMeta,sourceDetails}})});if(!profile.res.ok){showError(profile.data.error||'Profile could not be saved.');return}const saved=await api('/api/me/income-sources',{method:'PUT',body:JSON.stringify({sources})});if(!saved.res.ok){showError(saved.data.error||'Income sources could not be saved.');return}location.href='/home'});
+document.getElementById('cc-menu-toggle').addEventListener('click',()=>{const side=document.getElementById('cc-sidebar');const open=side.classList.toggle('open');document.getElementById('cc-menu-toggle').setAttribute('aria-expanded',String(open))});
 
-function escapeAttr(s) {
-  return String(s).replace(/"/g, '&quot;');
-}
-
-document.querySelectorAll('.manage-btn').forEach((btn) => {
-  btn.addEventListener('click', () => {
-    manageMode = btn.getAttribute('data-mode') || 'self';
-    document.querySelectorAll('.manage-btn').forEach((b) =>
-      b.classList.remove('tag', 'green')
-    );
-    btn.classList.add('tag', 'green');
-  });
-});
-
-document.getElementById('add-se')?.addEventListener('click', () => {
-  sources.push({
-    type: 'self_employment',
-    label: 'Self-employment',
-    nickname: 'My trade',
-  });
-  renderSources();
-});
-document.getElementById('add-uk')?.addEventListener('click', () => {
-  sources.push({
-    type: 'uk_property',
-    label: 'UK property',
-    nickname: 'UK rental',
-  });
-  renderSources();
-});
-document.getElementById('add-fp')?.addEventListener('click', () => {
-  sources.push({
-    type: 'foreign_property',
-    label: 'Foreign property',
-    nickname: 'Overseas property',
-    countryCode: 'ESP',
-  });
-  renderSources();
-});
-
-document.getElementById('load-hmrc-sources')?.addEventListener('click', async () => {
-  showErr('');
-  const note = document.getElementById('hmrc-note');
-  const { res, data } = await api('/api/me/income-sources/from-hmrc', {
-    method: 'POST',
-    body: JSON.stringify({}),
-  });
-  if (!res.ok) {
-    showErr(data.error || 'Could not load from HMRC — connect OAuth or add manually.');
-    if (note) note.textContent = data.error || '';
-    return;
-  }
-  sources = data.sources || [];
-  renderSources();
-  if (note) {
-    note.textContent = `Loaded ${sources.length} source(s) from HMRC (confirm nicknames).`;
-  }
-});
-
-document.getElementById('save-setup')?.addEventListener('click', async () => {
-  showErr('');
-  const periodType =
-    document.querySelector('input[name="periodType"]:checked')?.value ||
-    'standard';
-  const taxYear = document.getElementById('tax-year')?.value || '2024-25';
-  const profile = await api('/api/me/taxpayer-profile', {
-    method: 'PUT',
-    body: JSON.stringify({
-      manageMode,
-      periodType,
-      taxYear,
-      onboardingComplete: true,
-    }),
-  });
-  if (!profile.res.ok) {
-    showErr(profile.data.error || 'Profile save failed');
-    return;
-  }
-  // collect sources from DOM state
-  const save = await api('/api/me/income-sources', {
-    method: 'PUT',
-    body: JSON.stringify({ sources }),
-  });
-  if (!save.res.ok) {
-    showErr(save.data.error || 'Sources save failed');
-    return;
-  }
-  location.href = '/home';
-});
-
-(async function init() {
-  const { res, data } = await api('/api/me/income-sources');
-  if (res.ok && data.sources?.length) {
-    sources = data.sources;
-    renderSources();
-  }
-  const p = await api('/api/me/taxpayer-profile');
-  if (p.res.ok && p.data.profile) {
-    manageMode = p.data.profile.manageMode || 'self';
-    const ty = document.getElementById('tax-year');
-    if (ty && p.data.profile.taxYear) ty.value = p.data.profile.taxYear;
-    document
-      .querySelectorAll(`input[name="periodType"][value="${p.data.profile.periodType}"]`)
-      .forEach((el) => {
-        el.checked = true;
-      });
-    document
-      .querySelector(`.manage-btn[data-mode="${manageMode}"]`)
-      ?.classList.add('tag', 'green');
-  }
-})();
+(async()=>{const [sourceRes,profileRes,statusRes]=await Promise.all([api('/api/me/income-sources'),api('/api/me/taxpayer-profile'),api('/api/status')]);if(sourceRes.res.status===401){location.href='/signin?next=/onboarding';return}if(profileRes.data.profile){const p=profileRes.data.profile;profileMeta=p.meta||{};document.querySelector(`[name="manageMode"][value="${p.manageMode}"]`)?.click();document.querySelector(`[name="periodType"][value="${p.periodType}"]`)?.click()}if(sourceRes.data.sources?.length){sources=sourceRes.data.sources.map(s=>({...s,details:profileMeta.sourceDetails?.[s.id]||{accountingPeriod:'6 April to 5 April',trade:'',startDate:'',address:'',currency:s.type==='foreign_property'?'EUR':'GBP',exchangeRateMethod:'HMRC monthly average rate'}}))}const st=statusRes.data||{};document.getElementById('setup-mode').textContent=st.hmrcMode==='live'?'Production HMRC configured':st.oauthMock===false?'HMRC sandbox configured':'Preview mode';setStep(1)})();

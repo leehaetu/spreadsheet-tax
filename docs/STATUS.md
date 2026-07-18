@@ -1,9 +1,10 @@
 # Project status
 
 **Last updated:** 2026-07-18  
-**App version:** **1.26.1**  
+**App version:** **1.27.0**  
 **Screen audit pack:** [docs/audits/2026-07-18-all-screens/](./audits/2026-07-18-all-screens/) — drives UI fixes (not “image work”)  
 **Sales review + plan:** [docs/audits/2026-07-18-sales-site-review/](./audits/2026-07-18-sales-site-review/) · [AFTER-REPORT.md](./audits/2026-07-18-sales-site-review/AFTER-REPORT.md)  
+**Taxpayer overhaul gaps:** [TAXPAYER-OVERHAUL-BACKEND-GAP-REPORT.md](./TAXPAYER-OVERHAUL-BACKEND-GAP-REPORT.md)  
 **Protocol:** [AGENT-TRUTH-PROTOCOL.md](./AGENT-TRUTH-PROTOCOL.md)  
 **Capacity gate:** [CAPACITY-REQUIREMENTS.md](./CAPACITY-REQUIREMENTS.md) — **NOT MET**  
 **Release gates:** [RELEASE-GATES.md](./RELEASE-GATES.md) — **OPEN**  
@@ -11,7 +12,47 @@
 
 ---
 
-## Truth status (2026-07-18) — v1.26.1 sales wave complete (after pack)
+## Truth status (2026-07-18) — v1.27.0 taxpayer overhaul checkpoint 1
+
+### Implemented in checkpoint 1 (not the completed overhaul; not pilot-ready)
+
+- Multi-step `/onboarding`: manage mode, SE/UK/multi-foreign sources, details, review, save [UNIT_TESTED + e2e]
+- Quarterly source picker on `/app` (`quarterly-sources.js`) [UNIT_TESTED + e2e]
+- Year-end stage forms for SE/UK/foreign annual adjustments + final declaration checkbox gate [UNIT_TESTED + e2e]
+- History: filter, summary counts, recovery cards, draft delete [UNIT_TESTED + e2e]
+- Gap report: [TAXPAYER-OVERHAUL-BACKEND-GAP-REPORT.md](./TAXPAYER-OVERHAUL-BACKEND-GAP-REPORT.md)
+- **Does not** close capacity, release gates, HMRC Recognised, production, pen-test, tax sign-off
+
+```text
+BLOCKERS:
+- Capacity 200 practices / 800k customers NOT MET
+- Release gates OPEN (tax review, DR restore, pen-test, full a11y, real billing)
+- HMRC Recognised: No
+- Production HMRC access unproven
+- Currency conversion engine not implemented (method stored only)
+- Full annual field matrix / official final-declaration wording incomplete
+- Card payments / real email / MFA hard-require env gates unchanged
+
+PROVEN:
+- `npm test`: 223/223 passing [UNIT_TESTED]
+- `npx playwright test tests/e2e/taxpayer-overhaul.spec.js`: 4/4 passing, including multi-source setup and quarterly preview receipt [CUSTOMER_WORKFLOW]
+- Cross-user source-ID collision now regenerates the conflicting ID instead of returning a database 500 [UNIT_TESTED]
+- Sales after pack scores still on disk from 1.26.1 [CUSTOMER_WORKFLOW]
+- Income sources multi-foreign save/list API [UNIT_TESTED]
+- Preview/double submit path still the default [UNIT_TESTED]
+
+UNPROVEN:
+- Full unaided production host journey
+- 800k capacity load / isolation / recovery
+- Independent pen-test and tax-domain sign-off
+- Live Stripe + real email delivery
+- Human moderated S7 interviews
+- Sandbox HTTP re-run of every new annual form field
+- Full visual/browser QA against all three approved boards
+
+EXTERNAL:
+- HMRC Production credentials / recognition listing
+```
 
 ### Shipped in 1.26.1 (close remaining plan items)
 

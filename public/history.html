@@ -1,129 +1,24 @@
 <!DOCTYPE html>
 <html lang="en-GB">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>History — Spreadsheet Tax</title>
-  <link rel="stylesheet" href="/css/site.css" />
-</head>
-<body class="app-body">
-  <header class="site-header">
-    <div class="wrap header-inner">
-      <a class="logo" href="/"><span class="logo-mark">ST</span> Spreadsheet Tax</a>
-      <nav>
-        <a href="/home">Home</a>
-        <a href="/app?flow=quarterly">Quarterly</a>
-        <a href="/history" class="active">Receipts</a>
-        <a href="/account">Settings</a>
-      </nav>
-    </div>
-  </header>
-  <main class="wrap app-main">
-    <h1>Drafts &amp; receipts</h1>
-    <p class="muted">
-      Each submission attempt stores mode (preview / sandbox / live), outcome, and a downloadable receipt when available.
-      Ongoing books stay in your spreadsheet. Not HMRC-recognised software.
-    </p>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Submission history — Spreadsheet Tax</title><link rel="stylesheet" href="/css/site.css"></head>
+<body class="theme-light app-body cc-page">
+  <button class="cc-menu-toggle" id="cc-menu-toggle" type="button" aria-controls="cc-sidebar" aria-expanded="false">Menu</button>
+  <aside class="cc-sidebar" id="cc-sidebar">
+    <a class="cc-brand" href="/home"><span class="logo-mark">ST</span><span><strong>Spreadsheet Tax</strong><small>Making Tax Digital</small></span></a>
+    <nav class="cc-nav"><a href="/home">Home</a><a href="/app?flow=quarterly">Quarterly updates</a><a href="/year-end">Tax return</a><a href="/records">Records</a><a class="active" href="/history">Messages</a><a href="/account">Settings</a></nav>
+    <div class="cc-connection"><span class="cc-status-dot"></span><div><small>HMRC connection</small><strong id="history-mode">Checking mode…</strong><span>MTD for Income Tax</span></div></div>
+  </aside>
+  <main class="cc-main history-shell">
+    <header class="setup-header"><div><h1>Submission history</h1><p>Drafts, attempts, receipts and evidence for your tax account.</p></div><div class="cc-tax-year"><strong>Tax year 2026–27</strong><span>6 April 2026 to 5 April 2027</span></div></header>
     <p id="gate" class="error" hidden></p>
-    <section class="panel">
-      <h2>Drafts</h2>
-      <p id="drafts-empty" class="empty-state" hidden><strong>No drafts yet</strong>Import a spreadsheet from the app.</p>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>File</th><th>State</th><th>When</th><th></th></tr></thead>
-          <tbody id="drafts"></tbody>
-        </table>
-      </div>
-    </section>
-    <section class="panel">
-      <h2>Submissions</h2>
-      <p class="muted"><a class="btn btn-ghost btn-sm" href="/api/me/submissions/export">Export submissions CSV</a></p>
-      <p id="subs-empty" class="empty-state" hidden><strong>No submissions yet</strong>Complete a quarterly update after review.</p>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Attempt</th><th>Mode</th><th>OK</th><th>When</th><th></th></tr></thead>
-          <tbody id="subs"></tbody>
-        </table>
-      </div>
-    </section>
+    <section class="history-summary" aria-label="Submission summary"><div><strong id="history-total">—</strong><span>Total attempts</span></div><div><strong id="history-success">—</strong><span>Successful or previewed</span></div><div><strong id="history-action">—</strong><span>Need attention</span></div></section>
+    <section class="history-section"><div class="history-toolbar"><div><h2>Submission timeline</h2><p>Every attempt keeps its actual mode and outcome.</p></div><label>Status<select id="history-filter"><option value="all">All statuses</option><option value="ok">Successful / preview</option><option value="failed">Failed</option><option value="draft">Drafts</option></select></label><a class="btn btn-ghost btn-sm" href="/api/me/submissions/export">Export CSV</a></div><div id="history-list" class="history-list"><p class="muted">Loading history…</p></div></section>
+    <section class="recovery-section"><h2>When something needs attention</h2><div class="recovery-grid">
+      <article><strong>HMRC authorisation expired</strong><p>Reconnect before trying an HMRC-backed action again.</p><a href="/connect-hmrc">Manage connection</a></article>
+      <article><strong>Upload validation failed</strong><p>Return to the draft, fix highlighted records and approve the new figures.</p><a href="/records">View drafts</a></article>
+      <article><strong>HMRC temporarily unavailable</strong><p>Keep the draft and retry later. A failed HTTP response is never shown as submitted.</p><a href="/app?flow=quarterly">Return to update</a></article>
+    </div></section>
   </main>
-  <script>
-    function esc(s) {
-      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
-    }
-    async function load() {
-      const me = await fetch('/api/auth/me').then((r) => r.json());
-      if (!me.user) {
-        document.getElementById('gate').hidden = false;
-        document.getElementById('gate').innerHTML = '<a href="/signin?next=/history">Sign in</a> to view history.';
-        return;
-      }
-      const drafts = await fetch('/api/drafts').then((r) => r.json());
-      const dbody = document.getElementById('drafts');
-      dbody.innerHTML = '';
-      const dlist = drafts.drafts || [];
-      document.getElementById('drafts-empty').hidden = dlist.length > 0;
-      for (const d of dlist) {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${esc(d.filename)}</td><td>${esc(d.state)}</td><td>${esc(d.createdAt)}</td>
-          <td>
-            <a class="btn btn-primary btn-sm" href="/app?draftId=${esc(d.id)}">Open</a>
-            <button type="button" class="btn btn-ghost btn-sm ren-draft" data-id="${esc(d.id)}" data-name="${esc(d.filename)}">Rename</button>
-            <button type="button" class="btn btn-ghost btn-sm del-draft" data-id="${esc(d.id)}">Delete</button>
-          </td>`;
-        dbody.appendChild(tr);
-      }
-      dbody.querySelectorAll('.ren-draft').forEach((btn) => {
-        btn.addEventListener('click', async () => {
-          const id = btn.getAttribute('data-id');
-          const current = btn.getAttribute('data-name') || '';
-          const filename = window.prompt('Draft name', current);
-          if (!filename) return;
-          const res = await fetch(`/api/drafts/${encodeURIComponent(id)}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ filename }),
-          });
-          if (!res.ok) {
-            const data = await res.json();
-            alert(data.error || 'Rename failed');
-            return;
-          }
-          load();
-        });
-      });
-      dbody.querySelectorAll('.del-draft').forEach((btn) => {
-        btn.addEventListener('click', async () => {
-          if (!confirm('Delete this draft?')) return;
-          const id = btn.getAttribute('data-id');
-          const res = await fetch(`/api/drafts/${encodeURIComponent(id)}`, {
-            method: 'DELETE',
-          });
-          if (!res.ok) {
-            const data = await res.json();
-            alert(data.error || 'Delete failed');
-            return;
-          }
-          load();
-        });
-      });
-      const subs = await fetch('/api/me/submissions').then((r) => r.json());
-      const sbody = document.getElementById('subs');
-      sbody.innerHTML = '';
-      const slist = subs.submissions || [];
-      document.getElementById('subs-empty').hidden = slist.length > 0;
-      for (const s of slist) {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `<td><code>${esc(s.id.slice(0, 8))}…</code></td><td>${esc(s.mode)}</td>
-          <td>${s.ok ? 'Yes' : 'No'}</td><td>${esc(s.createdAt)}</td>
-          <td>
-            <a class="btn btn-ghost btn-sm" href="/api/receipts/${esc(s.id)}">View</a>
-            <a class="btn btn-ghost btn-sm" href="/api/receipts/${esc(s.id)}?download=1">Download</a>
-          </td>`;
-        sbody.appendChild(tr);
-      }
-    }
-    load();
-  </script>
-</body>
-</html>
+  <dialog id="delete-draft-dialog" class="confirm-dialog"><form method="dialog"><h2>Delete this draft?</h2><p>The draft and its unsent working data will be removed. Submission receipts are not deleted.</p><div class="setup-actions"><button class="btn btn-ghost" value="cancel">Cancel</button><button class="btn btn-danger" value="confirm">Delete draft</button></div></form></dialog>
+  <script src="/js/history.js"></script>
+</body></html>
