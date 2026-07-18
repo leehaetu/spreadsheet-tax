@@ -1,0 +1,1678 @@
+[
+  {
+    "slug": "01-home-sales",
+    "path": "/",
+    "viewport": "desktop",
+    "status": 200,
+    "file": "01-home-sales-desktop-full.png",
+    "height": 2094,
+    "stages": [
+      "top",
+      "mid",
+      "bottom"
+    ],
+    "metrics": {
+      "title": "Spreadsheet Tax — quarterly tax updates from your spreadsheet",
+      "scrollHeight": 2094,
+      "bodyBg": "rgb(244, 246, 249)",
+      "bodyColor": "rgb(15, 23, 42)",
+      "fontFamily": "\"Segoe UI\", system-ui, -apple-system, \"system-ui\", sans-serif",
+      "headings": [
+        "Quarterly updates from the spreadsheet you already use",
+        "Who it’s for",
+        "Why people use Spreadsheet Tax",
+        "Ready to try it?"
+      ],
+      "ctas": [
+        "Sign in",
+        "Get started free",
+        "Get started free",
+        "Download free template",
+        "Create free account",
+        "Get started free",
+        "How it works"
+      ],
+      "nav": [
+        "Self-employed",
+        "Landlords",
+        "Accountants",
+        "How it works",
+        "Pricing",
+        "Sign in",
+        "Get started free"
+      ],
+      "minFont": 11.84,
+      "smallTextCount": 1,
+      "sampleTexts": [
+        "A@17.92px rgb(15, 23, 42) ST Spreadsheet Tax",
+        "SPAN@13.6px rgb(255, 255, 255) ST",
+        "A@14.88px rgb(51, 65, 85) Self-employed",
+        "A@14.88px rgb(51, 65, 85) Landlords",
+        "A@14.88px rgb(51, 65, 85) Accountants",
+        "A@14.88px rgb(51, 65, 85) How it works",
+        "A@14.88px rgb(51, 65, 85) Pricing",
+        "A@13.6px rgb(51, 65, 85) Sign in",
+        "A@13.6px rgb(51, 65, 85) Get started free",
+        "P@11.84px rgb(13, 148, 136) MAKING TAX DIGITAL FOR INCOME TAX",
+        "H1@44px rgb(15, 23, 42) Quarterly updates from the spreadsheet you already use",
+        "P@17.92px rgb(100, 116, 139) Built for trades, landlords, and the bookkeepers who support"
+      ]
+    }
+  },
+  {
+    "slug": "02-self-employed",
+    "path": "/self-employed",
+    "viewport": "desktop",
+    "status": 200,
+    "file": "02-self-employed-desktop-full.png",
+    "height": 1024,
+    "stages": [
+      "top"
+    ],
+    "metrics": {
+      "title": "Self-employed quarterly updates — Spreadsheet Tax",
+      "scrollHeight": 1024,
+      "bodyBg": "rgb(244, 246, 249)",
+      "bodyColor": "rgb(15, 23, 42)",
+      "fontFamily": "\"Segoe UI\", system-ui, -apple-system, \"system-ui\", sans-serif",
+      "headings": [
+        "Your trade spreadsheet, ready for each quarter",
+        "What you can include",
+        "Simple steps"
+      ],
+      "ctas": [
+        "Get started free",
+        "Get started free",
+        "Download free template",
+        "Create free account",
+        "How it works"
+      ],
+      "nav": [
+        "Landlords",
+        "Pricing",
+        "Get started free"
+      ],
+      "minFont": 11.84,
+      "smallTextCount": 1,
+      "sampleTexts": [
+        "A@17.92px rgb(15, 23, 42) ST Spreadsheet Tax",
+        "SPAN@13.6px rgb(255, 255, 255) ST",
+        "A@14.88px rgb(51, 65, 85) Landlords",
+        "A@14.88px rgb(51, 65, 85) Pricing",
+        "A@13.6px rgb(51, 65, 85) Get started free",
+        "P@11.84px rgb(13, 148, 136) SELF-EMPLOYED & SOLE TRADERS",
+        "H1@44px rgb(15, 23, 42) Your trade spreadsheet, ready for each quarter",
+        "P@17.92px rgb(100, 116, 139) Upload your income and expenses, check the totals in plain E",
+        "A@16.32px rgb(255, 255, 255) Get started free",
+        "A@16.32px rgb(51, 65, 85) Download free template",
+        "H2@24px rgb(15, 23, 42) What you can include",
+        "LI@16px rgb(51, 65, 85) Sales, takings and other business income"
+      ]
+    }
+  },
+  {
+    "slug": "03-landlords",
+    "path": "/landlords",
+    "viewport": "desktop",
+    "status": 200,
+    "file": "03-landlords-desktop-full.png",
+    "height": 1034,
+    "stages": [
+      "top"
+    ],
+    "metrics": {
+      "title": "Landlord quarterly updates — Spreadsheet Tax",
+      "scrollHeight": 1034,
+      "bodyBg": "rgb(244, 246, 249)",
+      "bodyColor": "rgb(15, 23, 42)",
+      "fontFamily": "\"Segoe UI\", system-ui, -apple-system, \"system-ui\", sans-serif",
+      "headings": [
+        "Rental figures reviewed before every quarterly send",
+        "Designed for property periods",
+        "What you’ll need"
+      ],
+      "ctas": [
+        "Get started free",
+        "Get started free",
+        "Download free template",
+        "Create free account",
+        "How it works"
+      ],
+      "nav": [
+        "Self-employed",
+        "Pricing",
+        "Get started free"
+      ],
+      "minFont": 11.84,
+      "smallTextCount": 1,
+      "sampleTexts": [
+        "A@17.92px rgb(15, 23, 42) ST Spreadsheet Tax",
+        "SPAN@13.6px rgb(255, 255, 255) ST",
+        "A@14.88px rgb(51, 65, 85) Self-employed",
+        "A@14.88px rgb(51, 65, 85) Pricing",
+        "A@13.6px rgb(51, 65, 85) Get started free",
+        "P@11.84px rgb(13, 148, 136) UK & OVERSEAS LANDLORDS",
+        "H1@44px rgb(15, 23, 42) Rental figures reviewed before every quarterly send",
+        "P@17.92px rgb(100, 116, 139) Bring in rental income and allowable costs from your spreads",
+        "A@16.32px rgb(255, 255, 255) Get started free",
+        "A@16.32px rgb(51, 65, 85) Download free template",
+        "H2@24px rgb(15, 23, 42) Designed for property periods",
+        "LI@16px rgb(51, 65, 85) UK rental income and costs"
+      ]
+    }
+  },
+  {
+    "slug": "04-professionals",
+    "path": "/professionals",
+    "viewport": "desktop",
+    "status": 200,
+    "file": "04-professionals-desktop-full.png",
+    "height": 953,
+    "stages": [
+      "top"
+    ],
+    "metrics": {
+      "title": "For bookkeepers and accountants — Spreadsheet Tax",
+      "scrollHeight": 953,
+      "bodyBg": "rgb(244, 246, 249)",
+      "bodyColor": "rgb(15, 23, 42)",
+      "fontFamily": "\"Segoe UI\", system-ui, -apple-system, \"system-ui\", sans-serif",
+      "headings": [
+        "Bring spreadsheet clients into one clear workflow",
+        "What you get",
+        "Start with a free account"
+      ],
+      "ctas": [
+        "Get started free",
+        "Get started free",
+        "Sign in to practice workspace",
+        "Create free account",
+        "For larger firms"
+      ],
+      "nav": [
+        "Firms",
+        "Pricing",
+        "Get started free"
+      ],
+      "minFont": 11.84,
+      "smallTextCount": 1,
+      "sampleTexts": [
+        "A@17.92px rgb(15, 23, 42) ST Spreadsheet Tax",
+        "SPAN@13.6px rgb(255, 255, 255) ST",
+        "A@14.88px rgb(51, 65, 85) Firms",
+        "A@14.88px rgb(51, 65, 85) Pricing",
+        "A@13.6px rgb(51, 65, 85) Get started free",
+        "P@11.84px rgb(13, 148, 136) BOOKKEEPERS & ACCOUNTANTS",
+        "H1@44px rgb(15, 23, 42) Bring spreadsheet clients into one clear workflow",
+        "P@17.92px rgb(100, 116, 139) Track each client’s quarterly file from records received thr",
+        "A@16.32px rgb(255, 255, 255) Get started free",
+        "A@16.32px rgb(51, 65, 85) Sign in to practice workspace",
+        "H2@24px rgb(15, 23, 42) What you get",
+        "LI@16px rgb(51, 65, 85) Client list and deadline status"
+      ]
+    }
+  },
+  {
+    "slug": "05-firms",
+    "path": "/firms",
+    "viewport": "desktop",
+    "status": 200,
+    "file": "05-firms-desktop-full.png",
+    "height": 1034,
+    "stages": [
+      "top"
+    ],
+    "metrics": {
+      "title": "For accountancy firms — Spreadsheet Tax",
+      "scrollHeight": 1034,
+      "bodyBg": "rgb(244, 246, 249)",
+      "bodyColor": "rgb(15, 23, 42)",
+      "fontFamily": "\"Segoe UI\", system-ui, -apple-system, \"system-ui\", sans-serif",
+      "headings": [
+        "One practice view of spreadsheet-based MTD clients",
+        "Built for firm delivery",
+        "Talk about a firm arrangement"
+      ],
+      "ctas": [
+        "Get started free",
+        "Open practice workspace",
+        "Licensing options",
+        "Create free account",
+        "Read licensing"
+      ],
+      "nav": [
+        "Professionals",
+        "Licensing",
+        "Get started free"
+      ],
+      "minFont": 11.84,
+      "smallTextCount": 1,
+      "sampleTexts": [
+        "A@17.92px rgb(15, 23, 42) ST Spreadsheet Tax",
+        "SPAN@13.6px rgb(255, 255, 255) ST",
+        "A@14.88px rgb(51, 65, 85) Professionals",
+        "A@14.88px rgb(51, 65, 85) Licensing",
+        "A@13.6px rgb(51, 65, 85) Get started free",
+        "P@11.84px rgb(13, 148, 136) ACCOUNTANCY FIRMS",
+        "H1@44px rgb(15, 23, 42) One practice view of spreadsheet-based MTD clients",
+        "P@17.92px rgb(100, 116, 139) Give partners and teams a shared workspace for client books,",
+        "A@16.32px rgb(255, 255, 255) Open practice workspace",
+        "A@16.32px rgb(51, 65, 85) Licensing options",
+        "H2@24px rgb(15, 23, 42) Built for firm delivery",
+        "LI@16px rgb(51, 65, 85) Firm-scoped client portfolios"
+      ]
+    }
+  },
+  {
+    "slug": "06-how-it-works",
+    "path": "/how-it-works",
+    "viewport": "desktop",
+    "status": 200,
+    "file": "06-how-it-works-desktop-full.png",
+    "height": 1021,
+    "stages": [
+      "top"
+    ],
+    "metrics": {
+      "title": "How it works — Spreadsheet Tax",
+      "scrollHeight": 1021,
+      "bodyBg": "rgb(244, 246, 249)",
+      "bodyColor": "rgb(15, 23, 42)",
+      "fontFamily": "\"Segoe UI\", system-ui, -apple-system, \"system-ui\", sans-serif",
+      "headings": [
+        "How it works",
+        "Before you begin"
+      ],
+      "ctas": [
+        "Get started free",
+        "Create free account",
+        "Get free template"
+      ],
+      "nav": [
+        "Pricing",
+        "Get started free"
+      ],
+      "minFont": 11.84,
+      "smallTextCount": 1,
+      "sampleTexts": [
+        "A@17.92px rgb(15, 23, 42) ST Spreadsheet Tax",
+        "SPAN@13.6px rgb(255, 255, 255) ST",
+        "A@14.88px rgb(51, 65, 85) Pricing",
+        "A@13.6px rgb(51, 65, 85) Get started free",
+        "P@11.84px rgb(13, 148, 136) SIMPLE PROCESS",
+        "H1@32px rgb(15, 23, 42) How it works",
+        "P@17.92px rgb(100, 116, 139) Four clear steps from your spreadsheet to your quarterly upd",
+        "H3@17.28px rgb(15, 23, 42) Upload",
+        "P@15.2px rgb(100, 116, 139) Bring in your Excel or CSV period file, or start from our fr",
+        "H3@17.28px rgb(15, 23, 42) Check",
+        "P@15.2px rgb(100, 116, 139) See this quarter’s totals and year-to-date figures laid out ",
+        "H3@17.28px rgb(15, 23, 42) Approve"
+      ]
+    }
+  },
+  {
+    "slug": "07-pricing",
+    "path": "/pricing",
+    "viewport": "desktop",
+    "status": 200,
+    "file": "07-pricing-desktop-full.png",
+    "height": 938,
+    "stages": [
+      "top"
+    ],
+    "metrics": {
+      "title": "Pricing — Spreadsheet Tax",
+      "scrollHeight": 938,
+      "bodyBg": "rgb(244, 246, 249)",
+      "bodyColor": "rgb(15, 23, 42)",
+      "fontFamily": "\"Segoe UI\", system-ui, -apple-system, \"system-ui\", sans-serif",
+      "headings": [
+        "Simple to start"
+      ],
+      "ctas": [
+        "Get started free",
+        "Create free account",
+        "For accountants"
+      ],
+      "nav": [
+        "Self-employed",
+        "Landlords",
+        "Accountants",
+        "Get started free"
+      ],
+      "minFont": 11.84,
+      "smallTextCount": 1,
+      "sampleTexts": [
+        "A@17.92px rgb(15, 23, 42) ST Spreadsheet Tax",
+        "SPAN@13.6px rgb(255, 255, 255) ST",
+        "A@14.88px rgb(51, 65, 85) Self-employed",
+        "A@14.88px rgb(51, 65, 85) Landlords",
+        "A@14.88px rgb(51, 65, 85) Accountants",
+        "A@13.6px rgb(51, 65, 85) Get started free",
+        "P@11.84px rgb(13, 148, 136) PRICING",
+        "H1@32px rgb(15, 23, 42) Simple to start",
+        "P@17.92px rgb(100, 116, 139) Create a free account and use Spreadsheet Tax for your quart",
+        "H3@19.2px rgb(15, 23, 42) Personal",
+        "P@14.72px rgb(100, 116, 139) Upload your spreadsheet, review figures, approve, and connec",
+        "A@15.2px rgb(255, 255, 255) Create free account"
+      ]
+    }
+  },
+  {
+    "slug": "08-templates",
+    "path": "/templates",
+    "viewport": "desktop",
+    "status": 200,
+    "file": "08-templates-desktop-full.png",
+    "height": 958,
+    "stages": [
+      "top"
+    ],
+    "metrics": {
+      "title": "Free template — Spreadsheet Tax",
+      "scrollHeight": 958,
+      "bodyBg": "rgb(244, 246, 249)",
+      "bodyColor": "rgb(15, 23, 42)",
+      "fontFamily": "\"Segoe UI\", system-ui, -apple-system, \"system-ui\", sans-serif",
+      "headings": [
+        "Quarterly spreadsheet template",
+        "Get the template",
+        "What happens next"
+      ],
+      "ctas": [
+        "Get started free",
+        "Download free template",
+        "Create free account"
+      ],
+      "nav": [
+        "How it works",
+        "Get started free"
+      ],
+      "minFont": 11.84,
+      "smallTextCount": 1,
+      "sampleTexts": [
+        "A@17.92px rgb(15, 23, 42) ST Spreadsheet Tax",
+        "SPAN@13.6px rgb(255, 255, 255) ST",
+        "A@14.88px rgb(51, 65, 85) How it works",
+        "A@13.6px rgb(51, 65, 85) Get started free",
+        "P@11.84px rgb(13, 148, 136) FREE DOWNLOAD",
+        "H1@32px rgb(15, 23, 42) Quarterly spreadsheet template",
+        "P@17.92px rgb(100, 116, 139) A simple period summary for self-employment, UK property and",
+        "H2@19.2px rgb(15, 23, 42) Get the template",
+        "P@16px rgb(15, 23, 42) Use one quarter at a time and keep the section headings. Put",
+        "A@16.32px rgb(255, 255, 255) Download free template",
+        "A@15.2px rgb(51, 65, 85) Create free account",
+        "H2@19.2px rgb(15, 23, 42) What happens next"
+      ]
+    }
+  },
+  {
+    "slug": "09-security",
+    "path": "/security",
+    "viewport": "desktop",
+    "status": 200,
+    "file": "09-security-desktop-full.png",
+    "height": 1644,
+    "stages": [
+      "top",
+      "mid",
+      "bottom"
+    ],
+    "metrics": {
+      "title": "Security & privacy — Spreadsheet Tax",
+      "scrollHeight": 1644,
+      "bodyBg": "rgb(244, 246, 249)",
+      "bodyColor": "rgb(15, 23, 42)",
+      "fontFamily": "\"Segoe UI\", system-ui, -apple-system, \"system-ui\", sans-serif",
+      "headings": [
+        "Security & HMRC status",
+        "HMRC recognition",
+        "Your spreadsheet",
+        "Your account",
+        "What you send to HMRC",
+        "Uploading files",
+        "Privacy"
+      ],
+      "ctas": [
+        "Get started free"
+      ],
+      "nav": [
+        "Privacy",
+        "Get started free"
+      ],
+      "minFont": 11.84,
+      "smallTextCount": 1,
+      "sampleTexts": [
+        "A@17.92px rgb(15, 23, 42) ST Spreadsheet Tax",
+        "SPAN@13.6px rgb(255, 255, 255) ST",
+        "A@14.88px rgb(51, 65, 85) Privacy",
+        "A@13.6px rgb(51, 65, 85) Get started free",
+        "P@11.84px rgb(13, 148, 136) TRUST",
+        "H1@32px rgb(15, 23, 42) Security & HMRC status",
+        "P@17.92px rgb(100, 116, 139) Straight answers about your data and how we work with HMRC.",
+        "H2@19.2px rgb(15, 23, 42) HMRC recognition",
+        "P@16px rgb(15, 23, 42) Spreadsheet Tax is independent software and is not currently",
+        "H2@19.2px rgb(15, 23, 42) Your spreadsheet",
+        "P@16px rgb(15, 23, 42) You keep your day-to-day books in your own file. When you up",
+        "H2@19.2px rgb(15, 23, 42) Your account"
+      ]
+    }
+  },
+  {
+    "slug": "10-help",
+    "path": "/help",
+    "viewport": "desktop",
+    "status": 200,
+    "file": "10-help-desktop-full.png",
+    "height": 1075,
+    "stages": [
+      "top"
+    ],
+    "metrics": {
+      "title": "Help — Spreadsheet Tax",
+      "scrollHeight": 1075,
+      "bodyBg": "rgb(244, 246, 249)",
+      "bodyColor": "rgb(15, 23, 42)",
+      "fontFamily": "\"Segoe UI\", system-ui, -apple-system, \"system-ui\", sans-serif",
+      "headings": [
+        "Help"
+      ],
+      "ctas": [
+        "Get started free"
+      ],
+      "nav": [
+        "Sign in",
+        "Get started free"
+      ],
+      "minFont": 12.8,
+      "smallTextCount": 0,
+      "sampleTexts": [
+        "A@17.92px rgb(15, 23, 42) ST Spreadsheet Tax",
+        "SPAN@13.6px rgb(255, 255, 255) ST",
+        "A@14.88px rgb(51, 65, 85) Sign in",
+        "A@13.6px rgb(51, 65, 85) Get started free",
+        "H1@32px rgb(15, 23, 42) Help",
+        "P@17.92px rgb(100, 116, 139) Common questions, organised by what you are trying to do.",
+        "H3@17.28px rgb(15, 23, 42) Getting started",
+        "LI@16px rgb(51, 65, 85) Create a free account",
+        "A@16px rgb(11, 107, 203) Create a free account",
+        "LI@16px rgb(51, 65, 85) Download the free template",
+        "A@16px rgb(11, 107, 203) Download the free template",
+        "LI@16px rgb(51, 65, 85) See how the process works"
+      ]
+    }
+  },
+  {
+    "slug": "11-license",
+    "path": "/license",
+    "viewport": "desktop",
+    "status": 200,
+    "file": "11-license-desktop-full.png",
+    "height": 1217,
+    "stages": [
+      "top",
+      "mid",
+      "bottom"
+    ],
+    "metrics": {
+      "title": "Licensing — Spreadsheet Tax",
+      "scrollHeight": 1217,
+      "bodyBg": "rgb(244, 246, 249)",
+      "bodyColor": "rgb(15, 23, 42)",
+      "fontFamily": "\"Segoe UI\", system-ui, -apple-system, \"system-ui\", sans-serif",
+      "headings": [
+        "How licensing works",
+        "Free personal use",
+        "Practices and firms",
+        "Ownership"
+      ],
+      "ctas": [
+        "Get started free",
+        "Create free account",
+        "Terms of use"
+      ],
+      "nav": [
+        "Firms",
+        "Pricing",
+        "Get started free"
+      ],
+      "minFont": 11.84,
+      "smallTextCount": 1,
+      "sampleTexts": [
+        "A@17.92px rgb(15, 23, 42) ST Spreadsheet Tax",
+        "SPAN@13.6px rgb(255, 255, 255) ST",
+        "A@14.88px rgb(51, 65, 85) Firms",
+        "A@14.88px rgb(51, 65, 85) Pricing",
+        "A@13.6px rgb(51, 65, 85) Get started free",
+        "P@11.84px rgb(13, 148, 136) LICENSING",
+        "H1@32px rgb(15, 23, 42) How licensing works",
+        "P@17.92px rgb(100, 116, 139) Clear options for individuals and practices.",
+        "H2@19.2px rgb(15, 23, 42) Free personal use",
+        "LI@16px rgb(51, 65, 85) Create a free account",
+        "LI@16px rgb(51, 65, 85) Run your quarterly spreadsheet checks and updates",
+        "LI@16px rgb(51, 65, 85) Download the free template"
+      ]
+    }
+  },
+  {
+    "slug": "12-legal",
+    "path": "/legal",
+    "viewport": "desktop",
+    "status": 200,
+    "file": "12-legal-desktop-full.png",
+    "height": 1029,
+    "stages": [
+      "top"
+    ],
+    "metrics": {
+      "title": "Legal — Spreadsheet Tax",
+      "scrollHeight": 1029,
+      "bodyBg": "rgb(244, 246, 249)",
+      "bodyColor": "rgb(15, 23, 42)",
+      "fontFamily": "\"Segoe UI\", system-ui, -apple-system, \"system-ui\", sans-serif",
+      "headings": [
+        "Legal",
+        "Intellectual property"
+      ],
+      "ctas": [],
+      "nav": [
+        "Home"
+      ],
+      "minFont": 12.8,
+      "smallTextCount": 0,
+      "sampleTexts": [
+        "A@17.92px rgb(15, 23, 42) ST Spreadsheet Tax",
+        "SPAN@13.6px rgb(255, 255, 255) ST",
+        "A@14.88px rgb(51, 65, 85) Home",
+        "H1@32px rgb(15, 23, 42) Legal",
+        "P@17.92px rgb(100, 116, 139) Single place for customer legal and status documents.",
+        "H3@17.28px rgb(15, 23, 42) Terms of use",
+        "A@17.28px rgb(11, 107, 203) Terms of use",
+        "P@15.2px rgb(100, 116, 139) Account, acceptable use, liability, law.",
+        "H3@17.28px rgb(15, 23, 42) Privacy notice",
+        "A@17.28px rgb(11, 107, 203) Privacy notice",
+        "P@15.2px rgb(100, 116, 139) What we process and why (draft structure).",
+        "H3@17.28px rgb(15, 23, 42) Security & HMRC"
+      ]
+    }
+  },
+  {
+    "slug": "13-privacy",
+    "path": "/privacy",
+    "viewport": "desktop",
+    "status": 200,
+    "file": "13-privacy-desktop-full.png",
+    "height": 2170,
+    "stages": [
+      "top",
+      "mid",
+      "bottom"
+    ],
+    "metrics": {
+      "title": "Privacy notice — Spreadsheet Tax",
+      "scrollHeight": 2170,
+      "bodyBg": "rgb(244, 246, 249)",
+      "bodyColor": "rgb(15, 23, 42)",
+      "fontFamily": "\"Segoe UI\", system-ui, -apple-system, \"system-ui\", sans-serif",
+      "headings": [
+        "Privacy notice",
+        "1. Controller",
+        "2. What we process",
+        "3. Why",
+        "4. Sharing",
+        "5. Retention",
+        "6. Your rights",
+        "7. Contact"
+      ],
+      "ctas": [],
+      "nav": [
+        "Terms",
+        "Security"
+      ],
+      "minFont": 11.84,
+      "smallTextCount": 1,
+      "sampleTexts": [
+        "A@17.92px rgb(15, 23, 42) ST Spreadsheet Tax",
+        "SPAN@13.6px rgb(255, 255, 255) ST",
+        "A@14.88px rgb(51, 65, 85) Terms",
+        "A@14.88px rgb(51, 65, 85) Security",
+        "P@11.84px rgb(13, 148, 136) LEGAL",
+        "H1@32px rgb(15, 23, 42) Privacy notice",
+        "P@16px rgb(100, 116, 139) This notice explains how Spreadsheet Tax uses personal infor",
+        "LI@16px rgb(15, 23, 42) Controller",
+        "A@14.88px rgb(51, 65, 85) Controller",
+        "LI@16px rgb(15, 23, 42) What we process",
+        "A@14.88px rgb(51, 65, 85) What we process",
+        "LI@16px rgb(15, 23, 42) Why"
+      ]
+    }
+  },
+  {
+    "slug": "14-terms",
+    "path": "/terms",
+    "viewport": "desktop",
+    "status": 200,
+    "file": "14-terms-desktop-full.png",
+    "height": 1877,
+    "stages": [
+      "top",
+      "mid",
+      "bottom"
+    ],
+    "metrics": {
+      "title": "Terms of use — Spreadsheet Tax",
+      "scrollHeight": 1877,
+      "bodyBg": "rgb(244, 246, 249)",
+      "bodyColor": "rgb(15, 23, 42)",
+      "fontFamily": "\"Segoe UI\", system-ui, -apple-system, \"system-ui\", sans-serif",
+      "headings": [
+        "Terms of use",
+        "1. Service",
+        "2. Your responsibilities",
+        "3. Accounts",
+        "4. Payments",
+        "5. Acceptable use",
+        "6. Intellectual property",
+        "7. Liability",
+        "8. Law"
+      ],
+      "ctas": [],
+      "nav": [
+        "Privacy",
+        "Legal"
+      ],
+      "minFont": 11.84,
+      "smallTextCount": 1,
+      "sampleTexts": [
+        "A@17.92px rgb(15, 23, 42) ST Spreadsheet Tax",
+        "SPAN@13.6px rgb(255, 255, 255) ST",
+        "A@14.88px rgb(51, 65, 85) Privacy",
+        "A@14.88px rgb(51, 65, 85) Legal",
+        "P@11.84px rgb(13, 148, 136) LEGAL",
+        "H1@32px rgb(15, 23, 42) Terms of use",
+        "P@16px rgb(100, 116, 139) Summary: free account software in active development. You ow",
+        "H2@19.2px rgb(15, 23, 42) 1. Service",
+        "P@16px rgb(15, 23, 42) Spreadsheet Tax helps you prepare and send Making Tax Digita",
+        "H2@19.2px rgb(15, 23, 42) 2. Your responsibilities",
+        "LI@16px rgb(51, 65, 85) Accuracy of figures you approve",
+        "LI@16px rgb(51, 65, 85) Authority to file for any client (practice use)"
+      ]
+    }
+  },
+  {
+    "slug": "15-signin",
+    "path": "/signin",
+    "viewport": "desktop",
+    "status": 200,
+    "file": "15-signin-desktop-full.png",
+    "height": 900,
+    "stages": [
+      "top"
+    ],
+    "metrics": {
+      "title": "Sign in — Spreadsheet Tax",
+      "scrollHeight": 900,
+      "bodyBg": "rgb(244, 246, 249)",
+      "bodyColor": "rgb(15, 23, 42)",
+      "fontFamily": "\"Segoe UI\", system-ui, -apple-system, \"system-ui\", sans-serif",
+      "headings": [
+        "Sign in"
+      ],
+      "ctas": [
+        "Sign in"
+      ],
+      "nav": [
+        "Create account",
+        "Marketing site"
+      ],
+      "minFont": 12.8,
+      "smallTextCount": 0,
+      "sampleTexts": [
+        "A@17.92px rgb(15, 23, 42) ST Spreadsheet Tax",
+        "SPAN@13.6px rgb(255, 255, 255) ST",
+        "A@14.88px rgb(51, 65, 85) Create account",
+        "A@14.88px rgb(51, 65, 85) Marketing site",
+        "H1@32px rgb(15, 23, 42) Sign in",
+        "P@16px rgb(100, 116, 139) Sign in to open your tax home, quarterly update, and receipt",
+        "LABEL@13.6px rgb(100, 116, 139) Email",
+        "LABEL@13.6px rgb(100, 116, 139) Password",
+        "LABEL@13.6px rgb(100, 116, 139) Authenticator code (if enabled)",
+        "BUTTON@15.2px rgb(255, 255, 255) Sign in",
+        "P@16px rgb(100, 116, 139) Forgot password? · No account? Register",
+        "A@16px rgb(11, 107, 203) Forgot password?"
+      ]
+    }
+  },
+  {
+    "slug": "16-register",
+    "path": "/register",
+    "viewport": "desktop",
+    "status": 200,
+    "file": "16-register-desktop-full.png",
+    "height": 919,
+    "stages": [
+      "top"
+    ],
+    "metrics": {
+      "title": "Create account — Spreadsheet Tax",
+      "scrollHeight": 919,
+      "bodyBg": "rgb(244, 246, 249)",
+      "bodyColor": "rgb(15, 23, 42)",
+      "fontFamily": "\"Segoe UI\", system-ui, -apple-system, \"system-ui\", sans-serif",
+      "headings": [
+        "Create account"
+      ],
+      "ctas": [
+        "Create account"
+      ],
+      "nav": [
+        "Sign in",
+        "Marketing site"
+      ],
+      "minFont": 12.8,
+      "smallTextCount": 0,
+      "sampleTexts": [
+        "A@17.92px rgb(15, 23, 42) ST Spreadsheet Tax",
+        "SPAN@13.6px rgb(255, 255, 255) ST",
+        "A@14.88px rgb(51, 65, 85) Sign in",
+        "A@14.88px rgb(51, 65, 85) Marketing site",
+        "H1@32px rgb(15, 23, 42) Create account",
+        "P@16px rgb(100, 116, 139) Create an account for spreadsheet checks, quarterly updates,",
+        "LABEL@13.6px rgb(100, 116, 139) Name",
+        "LABEL@13.6px rgb(100, 116, 139) Email",
+        "LABEL@13.6px rgb(100, 116, 139) Password (min 8)",
+        "LABEL@16px rgb(100, 116, 139) I agree to the Terms and Privacy notice, and I understand Sp",
+        "SPAN@16px rgb(100, 116, 139) I agree to the Terms and Privacy notice, and I understand Sp",
+        "A@16px rgb(11, 107, 203) Terms"
+      ]
+    }
+  },
+  {
+    "slug": "17-forgot-password",
+    "path": "/forgot-password",
+    "viewport": "desktop",
+    "status": 200,
+    "file": "17-forgot-password-desktop-full.png",
+    "height": 900,
+    "stages": [
+      "top"
+    ],
+    "metrics": {
+      "title": "Forgot password — Spreadsheet Tax",
+      "scrollHeight": 900,
+      "bodyBg": "rgb(11, 18, 32)",
+      "bodyColor": "rgb(240, 245, 251)",
+      "fontFamily": "\"Segoe UI\", system-ui, -apple-system, \"system-ui\", sans-serif",
+      "headings": [
+        "Forgot password"
+      ],
+      "ctas": [
+        "Send reset link"
+      ],
+      "nav": [
+        "Sign in"
+      ],
+      "minFont": 12.8,
+      "smallTextCount": 0,
+      "sampleTexts": [
+        "A@17.92px rgb(240, 245, 251) ST Spreadsheet Tax",
+        "SPAN@13.6px rgb(255, 255, 255) ST",
+        "A@14.88px rgb(143, 163, 188) Sign in",
+        "H1@32px rgb(240, 245, 251) Forgot password",
+        "P@16px rgb(143, 163, 188) If an account exists for that email, we will send a reset li",
+        "LABEL@13.6px rgb(143, 163, 188) Email",
+        "BUTTON@15.2px rgb(4, 16, 24) Send reset link",
+        "P@12.8px rgb(100, 116, 139) Spreadsheet Tax is independent software for Making Tax Digit",
+        "A@12.8px rgb(59, 158, 255) Security & privacy",
+        "A@12.8px rgb(59, 158, 255) For HMRC review"
+      ]
+    }
+  },
+  {
+    "slug": "01-home-sales",
+    "path": "/",
+    "viewport": "mobile",
+    "status": 200,
+    "file": "01-home-sales-mobile-full.png",
+    "height": 3637,
+    "stages": [
+      "top",
+      "mid",
+      "bottom"
+    ],
+    "metrics": {
+      "title": "Spreadsheet Tax — quarterly tax updates from your spreadsheet",
+      "scrollHeight": 3637,
+      "bodyBg": "rgb(244, 246, 249)",
+      "bodyColor": "rgb(15, 23, 42)",
+      "fontFamily": "\"Segoe UI\", system-ui, -apple-system, \"system-ui\", sans-serif",
+      "headings": [
+        "Quarterly updates from the spreadsheet you already use",
+        "Who it’s for",
+        "Why people use Spreadsheet Tax",
+        "Ready to try it?"
+      ],
+      "ctas": [
+        "Sign in",
+        "Get started free",
+        "Get started free",
+        "Download free template",
+        "Create free account",
+        "Get started free",
+        "How it works"
+      ],
+      "nav": [
+        "Self-employed",
+        "Landlords",
+        "Accountants",
+        "How it works",
+        "Pricing",
+        "Sign in",
+        "Get started free"
+      ],
+      "minFont": 11.84,
+      "smallTextCount": 1,
+      "sampleTexts": [
+        "A@17.92px rgb(15, 23, 42) ST Spreadsheet Tax",
+        "SPAN@13.6px rgb(255, 255, 255) ST",
+        "A@13.6px rgb(51, 65, 85) Self-employed",
+        "A@13.6px rgb(51, 65, 85) Landlords",
+        "A@13.6px rgb(51, 65, 85) Accountants",
+        "A@13.6px rgb(51, 65, 85) How it works",
+        "A@13.6px rgb(51, 65, 85) Pricing",
+        "A@13.6px rgb(51, 65, 85) Sign in",
+        "A@13.6px rgb(51, 65, 85) Get started free",
+        "P@11.84px rgb(13, 148, 136) MAKING TAX DIGITAL FOR INCOME TAX",
+        "H1@30.4px rgb(15, 23, 42) Quarterly updates from the spreadsheet you already use",
+        "P@17.92px rgb(100, 116, 139) Built for trades, landlords, and the bookkeepers who support"
+      ]
+    }
+  },
+  {
+    "slug": "02-self-employed",
+    "path": "/self-employed",
+    "viewport": "mobile",
+    "status": 200,
+    "file": "02-self-employed-mobile-full.png",
+    "height": 1676,
+    "stages": [
+      "top",
+      "mid",
+      "bottom"
+    ],
+    "metrics": {
+      "title": "Self-employed quarterly updates — Spreadsheet Tax",
+      "scrollHeight": 1676,
+      "bodyBg": "rgb(244, 246, 249)",
+      "bodyColor": "rgb(15, 23, 42)",
+      "fontFamily": "\"Segoe UI\", system-ui, -apple-system, \"system-ui\", sans-serif",
+      "headings": [
+        "Your trade spreadsheet, ready for each quarter",
+        "What you can include",
+        "Simple steps"
+      ],
+      "ctas": [
+        "Get started free",
+        "Get started free",
+        "Download free template",
+        "Create free account",
+        "How it works"
+      ],
+      "nav": [
+        "Landlords",
+        "Pricing",
+        "Get started free"
+      ],
+      "minFont": 11.84,
+      "smallTextCount": 1,
+      "sampleTexts": [
+        "A@17.92px rgb(15, 23, 42) ST Spreadsheet Tax",
+        "SPAN@13.6px rgb(255, 255, 255) ST",
+        "A@13.6px rgb(51, 65, 85) Landlords",
+        "A@13.6px rgb(51, 65, 85) Pricing",
+        "A@13.6px rgb(51, 65, 85) Get started free",
+        "P@11.84px rgb(13, 148, 136) SELF-EMPLOYED & SOLE TRADERS",
+        "H1@30.4px rgb(15, 23, 42) Your trade spreadsheet, ready for each quarter",
+        "P@17.92px rgb(100, 116, 139) Upload your income and expenses, check the totals in plain E",
+        "A@16.32px rgb(255, 255, 255) Get started free",
+        "A@16.32px rgb(51, 65, 85) Download free template",
+        "H2@24px rgb(15, 23, 42) What you can include",
+        "LI@16px rgb(51, 65, 85) Sales, takings and other business income"
+      ]
+    }
+  },
+  {
+    "slug": "03-landlords",
+    "path": "/landlords",
+    "viewport": "mobile",
+    "status": 200,
+    "file": "03-landlords-mobile-full.png",
+    "height": 1620,
+    "stages": [
+      "top",
+      "mid",
+      "bottom"
+    ],
+    "metrics": {
+      "title": "Landlord quarterly updates — Spreadsheet Tax",
+      "scrollHeight": 1620,
+      "bodyBg": "rgb(244, 246, 249)",
+      "bodyColor": "rgb(15, 23, 42)",
+      "fontFamily": "\"Segoe UI\", system-ui, -apple-system, \"system-ui\", sans-serif",
+      "headings": [
+        "Rental figures reviewed before every quarterly send",
+        "Designed for property periods",
+        "What you’ll need"
+      ],
+      "ctas": [
+        "Get started free",
+        "Get started free",
+        "Download free template",
+        "Create free account",
+        "How it works"
+      ],
+      "nav": [
+        "Self-employed",
+        "Pricing",
+        "Get started free"
+      ],
+      "minFont": 11.84,
+      "smallTextCount": 1,
+      "sampleTexts": [
+        "A@17.92px rgb(15, 23, 42) ST Spreadsheet Tax",
+        "SPAN@13.6px rgb(255, 255, 255) ST",
+        "A@13.6px rgb(51, 65, 85) Self-employed",
+        "A@13.6px rgb(51, 65, 85) Pricing",
+        "A@13.6px rgb(51, 65, 85) Get started free",
+        "P@11.84px rgb(13, 148, 136) UK & OVERSEAS LANDLORDS",
+        "H1@30.4px rgb(15, 23, 42) Rental figures reviewed before every quarterly send",
+        "P@17.92px rgb(100, 116, 139) Bring in rental income and allowable costs from your spreads",
+        "A@16.32px rgb(255, 255, 255) Get started free",
+        "A@16.32px rgb(51, 65, 85) Download free template",
+        "H2@24px rgb(15, 23, 42) Designed for property periods",
+        "LI@16px rgb(51, 65, 85) UK rental income and costs"
+      ]
+    }
+  },
+  {
+    "slug": "04-professionals",
+    "path": "/professionals",
+    "viewport": "mobile",
+    "status": 200,
+    "file": "04-professionals-mobile-full.png",
+    "height": 1555,
+    "stages": [
+      "top",
+      "mid",
+      "bottom"
+    ],
+    "metrics": {
+      "title": "For bookkeepers and accountants — Spreadsheet Tax",
+      "scrollHeight": 1555,
+      "bodyBg": "rgb(244, 246, 249)",
+      "bodyColor": "rgb(15, 23, 42)",
+      "fontFamily": "\"Segoe UI\", system-ui, -apple-system, \"system-ui\", sans-serif",
+      "headings": [
+        "Bring spreadsheet clients into one clear workflow",
+        "What you get",
+        "Start with a free account"
+      ],
+      "ctas": [
+        "Get started free",
+        "Get started free",
+        "Sign in to practice workspace",
+        "Create free account",
+        "For larger firms"
+      ],
+      "nav": [
+        "Firms",
+        "Pricing",
+        "Get started free"
+      ],
+      "minFont": 11.84,
+      "smallTextCount": 1,
+      "sampleTexts": [
+        "A@17.92px rgb(15, 23, 42) ST Spreadsheet Tax",
+        "SPAN@13.6px rgb(255, 255, 255) ST",
+        "A@13.6px rgb(51, 65, 85) Firms",
+        "A@13.6px rgb(51, 65, 85) Pricing",
+        "A@13.6px rgb(51, 65, 85) Get started free",
+        "P@11.84px rgb(13, 148, 136) BOOKKEEPERS & ACCOUNTANTS",
+        "H1@30.4px rgb(15, 23, 42) Bring spreadsheet clients into one clear workflow",
+        "P@17.92px rgb(100, 116, 139) Track each client’s quarterly file from records received thr",
+        "A@16.32px rgb(255, 255, 255) Get started free",
+        "A@16.32px rgb(51, 65, 85) Sign in to practice workspace",
+        "H2@24px rgb(15, 23, 42) What you get",
+        "LI@16px rgb(51, 65, 85) Client list and deadline status"
+      ]
+    }
+  },
+  {
+    "slug": "05-firms",
+    "path": "/firms",
+    "viewport": "mobile",
+    "status": 200,
+    "file": "05-firms-mobile-full.png",
+    "height": 1542,
+    "stages": [
+      "top",
+      "mid",
+      "bottom"
+    ],
+    "metrics": {
+      "title": "For accountancy firms — Spreadsheet Tax",
+      "scrollHeight": 1542,
+      "bodyBg": "rgb(244, 246, 249)",
+      "bodyColor": "rgb(15, 23, 42)",
+      "fontFamily": "\"Segoe UI\", system-ui, -apple-system, \"system-ui\", sans-serif",
+      "headings": [
+        "One practice view of spreadsheet-based MTD clients",
+        "Built for firm delivery",
+        "Talk about a firm arrangement"
+      ],
+      "ctas": [
+        "Get started free",
+        "Open practice workspace",
+        "Licensing options",
+        "Create free account",
+        "Read licensing"
+      ],
+      "nav": [
+        "Professionals",
+        "Licensing",
+        "Get started free"
+      ],
+      "minFont": 11.84,
+      "smallTextCount": 1,
+      "sampleTexts": [
+        "A@17.92px rgb(15, 23, 42) ST Spreadsheet Tax",
+        "SPAN@13.6px rgb(255, 255, 255) ST",
+        "A@13.6px rgb(51, 65, 85) Professionals",
+        "A@13.6px rgb(51, 65, 85) Licensing",
+        "A@13.6px rgb(51, 65, 85) Get started free",
+        "P@11.84px rgb(13, 148, 136) ACCOUNTANCY FIRMS",
+        "H1@30.4px rgb(15, 23, 42) One practice view of spreadsheet-based MTD clients",
+        "P@17.92px rgb(100, 116, 139) Give partners and teams a shared workspace for client books,",
+        "A@16.32px rgb(255, 255, 255) Open practice workspace",
+        "A@16.32px rgb(51, 65, 85) Licensing options",
+        "H2@24px rgb(15, 23, 42) Built for firm delivery",
+        "LI@16px rgb(51, 65, 85) Firm-scoped client portfolios"
+      ]
+    }
+  },
+  {
+    "slug": "06-how-it-works",
+    "path": "/how-it-works",
+    "viewport": "mobile",
+    "status": 200,
+    "file": "06-how-it-works-mobile-full.png",
+    "height": 1817,
+    "stages": [
+      "top",
+      "mid",
+      "bottom"
+    ],
+    "metrics": {
+      "title": "How it works — Spreadsheet Tax",
+      "scrollHeight": 1817,
+      "bodyBg": "rgb(244, 246, 249)",
+      "bodyColor": "rgb(15, 23, 42)",
+      "fontFamily": "\"Segoe UI\", system-ui, -apple-system, \"system-ui\", sans-serif",
+      "headings": [
+        "How it works",
+        "Before you begin"
+      ],
+      "ctas": [
+        "Get started free",
+        "Create free account",
+        "Get free template"
+      ],
+      "nav": [
+        "Pricing",
+        "Get started free"
+      ],
+      "minFont": 11.84,
+      "smallTextCount": 1,
+      "sampleTexts": [
+        "A@17.92px rgb(15, 23, 42) ST Spreadsheet Tax",
+        "SPAN@13.6px rgb(255, 255, 255) ST",
+        "A@13.6px rgb(51, 65, 85) Pricing",
+        "A@13.6px rgb(51, 65, 85) Get started free",
+        "P@11.84px rgb(13, 148, 136) SIMPLE PROCESS",
+        "H1@32px rgb(15, 23, 42) How it works",
+        "P@17.92px rgb(100, 116, 139) Four clear steps from your spreadsheet to your quarterly upd",
+        "H3@17.28px rgb(15, 23, 42) Upload",
+        "P@15.2px rgb(100, 116, 139) Bring in your Excel or CSV period file, or start from our fr",
+        "H3@17.28px rgb(15, 23, 42) Check",
+        "P@15.2px rgb(100, 116, 139) See this quarter’s totals and year-to-date figures laid out ",
+        "H3@17.28px rgb(15, 23, 42) Approve"
+      ]
+    }
+  },
+  {
+    "slug": "07-pricing",
+    "path": "/pricing",
+    "viewport": "mobile",
+    "status": 200,
+    "file": "07-pricing-mobile-full.png",
+    "height": 1420,
+    "stages": [
+      "top",
+      "mid",
+      "bottom"
+    ],
+    "metrics": {
+      "title": "Pricing — Spreadsheet Tax",
+      "scrollHeight": 1420,
+      "bodyBg": "rgb(244, 246, 249)",
+      "bodyColor": "rgb(15, 23, 42)",
+      "fontFamily": "\"Segoe UI\", system-ui, -apple-system, \"system-ui\", sans-serif",
+      "headings": [
+        "Simple to start"
+      ],
+      "ctas": [
+        "Get started free",
+        "Create free account",
+        "For accountants"
+      ],
+      "nav": [
+        "Self-employed",
+        "Landlords",
+        "Accountants",
+        "Get started free"
+      ],
+      "minFont": 11.84,
+      "smallTextCount": 1,
+      "sampleTexts": [
+        "A@17.92px rgb(15, 23, 42) ST Spreadsheet Tax",
+        "SPAN@13.6px rgb(255, 255, 255) ST",
+        "A@13.6px rgb(51, 65, 85) Self-employed",
+        "A@13.6px rgb(51, 65, 85) Landlords",
+        "A@13.6px rgb(51, 65, 85) Accountants",
+        "A@13.6px rgb(51, 65, 85) Get started free",
+        "P@11.84px rgb(13, 148, 136) PRICING",
+        "H1@32px rgb(15, 23, 42) Simple to start",
+        "P@17.92px rgb(100, 116, 139) Create a free account and use Spreadsheet Tax for your quart",
+        "H3@19.2px rgb(15, 23, 42) Personal",
+        "P@14.72px rgb(100, 116, 139) Upload your spreadsheet, review figures, approve, and connec",
+        "A@15.2px rgb(255, 255, 255) Create free account"
+      ]
+    }
+  },
+  {
+    "slug": "08-templates",
+    "path": "/templates",
+    "viewport": "mobile",
+    "status": 200,
+    "file": "08-templates-mobile-full.png",
+    "height": 1246,
+    "stages": [
+      "top",
+      "mid",
+      "bottom"
+    ],
+    "metrics": {
+      "title": "Free template — Spreadsheet Tax",
+      "scrollHeight": 1246,
+      "bodyBg": "rgb(244, 246, 249)",
+      "bodyColor": "rgb(15, 23, 42)",
+      "fontFamily": "\"Segoe UI\", system-ui, -apple-system, \"system-ui\", sans-serif",
+      "headings": [
+        "Quarterly spreadsheet template",
+        "Get the template",
+        "What happens next"
+      ],
+      "ctas": [
+        "Get started free",
+        "Download free template",
+        "Create free account"
+      ],
+      "nav": [
+        "How it works",
+        "Get started free"
+      ],
+      "minFont": 11.84,
+      "smallTextCount": 1,
+      "sampleTexts": [
+        "A@17.92px rgb(15, 23, 42) ST Spreadsheet Tax",
+        "SPAN@13.6px rgb(255, 255, 255) ST",
+        "A@13.6px rgb(51, 65, 85) How it works",
+        "A@13.6px rgb(51, 65, 85) Get started free",
+        "P@11.84px rgb(13, 148, 136) FREE DOWNLOAD",
+        "H1@32px rgb(15, 23, 42) Quarterly spreadsheet template",
+        "P@17.92px rgb(100, 116, 139) A simple period summary for self-employment, UK property and",
+        "H2@19.2px rgb(15, 23, 42) Get the template",
+        "P@16px rgb(15, 23, 42) Use one quarter at a time and keep the section headings. Put",
+        "A@16.32px rgb(255, 255, 255) Download free template",
+        "A@15.2px rgb(51, 65, 85) Create free account",
+        "H2@19.2px rgb(15, 23, 42) What happens next"
+      ]
+    }
+  },
+  {
+    "slug": "09-security",
+    "path": "/security",
+    "viewport": "mobile",
+    "status": 200,
+    "file": "09-security-mobile-full.png",
+    "height": 2072,
+    "stages": [
+      "top",
+      "mid",
+      "bottom"
+    ],
+    "metrics": {
+      "title": "Security & privacy — Spreadsheet Tax",
+      "scrollHeight": 2072,
+      "bodyBg": "rgb(244, 246, 249)",
+      "bodyColor": "rgb(15, 23, 42)",
+      "fontFamily": "\"Segoe UI\", system-ui, -apple-system, \"system-ui\", sans-serif",
+      "headings": [
+        "Security & HMRC status",
+        "HMRC recognition",
+        "Your spreadsheet",
+        "Your account",
+        "What you send to HMRC",
+        "Uploading files",
+        "Privacy"
+      ],
+      "ctas": [
+        "Get started free"
+      ],
+      "nav": [
+        "Privacy",
+        "Get started free"
+      ],
+      "minFont": 11.84,
+      "smallTextCount": 1,
+      "sampleTexts": [
+        "A@17.92px rgb(15, 23, 42) ST Spreadsheet Tax",
+        "SPAN@13.6px rgb(255, 255, 255) ST",
+        "A@13.6px rgb(51, 65, 85) Privacy",
+        "A@13.6px rgb(51, 65, 85) Get started free",
+        "P@11.84px rgb(13, 148, 136) TRUST",
+        "H1@32px rgb(15, 23, 42) Security & HMRC status",
+        "P@17.92px rgb(100, 116, 139) Straight answers about your data and how we work with HMRC.",
+        "H2@19.2px rgb(15, 23, 42) HMRC recognition",
+        "P@16px rgb(15, 23, 42) Spreadsheet Tax is independent software and is not currently",
+        "H2@19.2px rgb(15, 23, 42) Your spreadsheet",
+        "P@16px rgb(15, 23, 42) You keep your day-to-day books in your own file. When you up",
+        "H2@19.2px rgb(15, 23, 42) Your account"
+      ]
+    }
+  },
+  {
+    "slug": "10-help",
+    "path": "/help",
+    "viewport": "mobile",
+    "status": 200,
+    "file": "10-help-mobile-full.png",
+    "height": 1991,
+    "stages": [
+      "top",
+      "mid",
+      "bottom"
+    ],
+    "metrics": {
+      "title": "Help — Spreadsheet Tax",
+      "scrollHeight": 1991,
+      "bodyBg": "rgb(244, 246, 249)",
+      "bodyColor": "rgb(15, 23, 42)",
+      "fontFamily": "\"Segoe UI\", system-ui, -apple-system, \"system-ui\", sans-serif",
+      "headings": [
+        "Help"
+      ],
+      "ctas": [
+        "Get started free"
+      ],
+      "nav": [
+        "Sign in",
+        "Get started free"
+      ],
+      "minFont": 12.8,
+      "smallTextCount": 0,
+      "sampleTexts": [
+        "A@17.92px rgb(15, 23, 42) ST Spreadsheet Tax",
+        "SPAN@13.6px rgb(255, 255, 255) ST",
+        "A@13.6px rgb(51, 65, 85) Sign in",
+        "A@13.6px rgb(51, 65, 85) Get started free",
+        "H1@32px rgb(15, 23, 42) Help",
+        "P@17.92px rgb(100, 116, 139) Common questions, organised by what you are trying to do.",
+        "H3@17.28px rgb(15, 23, 42) Getting started",
+        "LI@16px rgb(51, 65, 85) Create a free account",
+        "A@16px rgb(11, 107, 203) Create a free account",
+        "LI@16px rgb(51, 65, 85) Download the free template",
+        "A@16px rgb(11, 107, 203) Download the free template",
+        "LI@16px rgb(51, 65, 85) See how the process works"
+      ]
+    }
+  },
+  {
+    "slug": "11-license",
+    "path": "/license",
+    "viewport": "mobile",
+    "status": 200,
+    "file": "11-license-mobile-full.png",
+    "height": 1517,
+    "stages": [
+      "top",
+      "mid",
+      "bottom"
+    ],
+    "metrics": {
+      "title": "Licensing — Spreadsheet Tax",
+      "scrollHeight": 1517,
+      "bodyBg": "rgb(244, 246, 249)",
+      "bodyColor": "rgb(15, 23, 42)",
+      "fontFamily": "\"Segoe UI\", system-ui, -apple-system, \"system-ui\", sans-serif",
+      "headings": [
+        "How licensing works",
+        "Free personal use",
+        "Practices and firms",
+        "Ownership"
+      ],
+      "ctas": [
+        "Get started free",
+        "Create free account",
+        "Terms of use"
+      ],
+      "nav": [
+        "Firms",
+        "Pricing",
+        "Get started free"
+      ],
+      "minFont": 11.84,
+      "smallTextCount": 1,
+      "sampleTexts": [
+        "A@17.92px rgb(15, 23, 42) ST Spreadsheet Tax",
+        "SPAN@13.6px rgb(255, 255, 255) ST",
+        "A@13.6px rgb(51, 65, 85) Firms",
+        "A@13.6px rgb(51, 65, 85) Pricing",
+        "A@13.6px rgb(51, 65, 85) Get started free",
+        "P@11.84px rgb(13, 148, 136) LICENSING",
+        "H1@32px rgb(15, 23, 42) How licensing works",
+        "P@17.92px rgb(100, 116, 139) Clear options for individuals and practices.",
+        "H2@19.2px rgb(15, 23, 42) Free personal use",
+        "LI@16px rgb(51, 65, 85) Create a free account",
+        "LI@16px rgb(51, 65, 85) Run your quarterly spreadsheet checks and updates",
+        "LI@16px rgb(51, 65, 85) Download the free template"
+      ]
+    }
+  },
+  {
+    "slug": "12-legal",
+    "path": "/legal",
+    "viewport": "mobile",
+    "status": 200,
+    "file": "12-legal-mobile-full.png",
+    "height": 1405,
+    "stages": [
+      "top",
+      "mid",
+      "bottom"
+    ],
+    "metrics": {
+      "title": "Legal — Spreadsheet Tax",
+      "scrollHeight": 1405,
+      "bodyBg": "rgb(244, 246, 249)",
+      "bodyColor": "rgb(15, 23, 42)",
+      "fontFamily": "\"Segoe UI\", system-ui, -apple-system, \"system-ui\", sans-serif",
+      "headings": [
+        "Legal",
+        "Intellectual property"
+      ],
+      "ctas": [],
+      "nav": [
+        "Home"
+      ],
+      "minFont": 12.8,
+      "smallTextCount": 0,
+      "sampleTexts": [
+        "A@17.92px rgb(15, 23, 42) ST Spreadsheet Tax",
+        "SPAN@13.6px rgb(255, 255, 255) ST",
+        "A@13.6px rgb(51, 65, 85) Home",
+        "H1@32px rgb(15, 23, 42) Legal",
+        "P@17.92px rgb(100, 116, 139) Single place for customer legal and status documents.",
+        "H3@17.28px rgb(15, 23, 42) Terms of use",
+        "A@17.28px rgb(11, 107, 203) Terms of use",
+        "P@15.2px rgb(100, 116, 139) Account, acceptable use, liability, law.",
+        "H3@17.28px rgb(15, 23, 42) Privacy notice",
+        "A@17.28px rgb(11, 107, 203) Privacy notice",
+        "P@15.2px rgb(100, 116, 139) What we process and why (draft structure).",
+        "H3@17.28px rgb(15, 23, 42) Security & HMRC"
+      ]
+    }
+  },
+  {
+    "slug": "13-privacy",
+    "path": "/privacy",
+    "viewport": "mobile",
+    "status": 200,
+    "file": "13-privacy-mobile-full.png",
+    "height": 2678,
+    "stages": [
+      "top",
+      "mid",
+      "bottom"
+    ],
+    "metrics": {
+      "title": "Privacy notice — Spreadsheet Tax",
+      "scrollHeight": 2678,
+      "bodyBg": "rgb(244, 246, 249)",
+      "bodyColor": "rgb(15, 23, 42)",
+      "fontFamily": "\"Segoe UI\", system-ui, -apple-system, \"system-ui\", sans-serif",
+      "headings": [
+        "Privacy notice",
+        "1. Controller",
+        "2. What we process",
+        "3. Why",
+        "4. Sharing",
+        "5. Retention",
+        "6. Your rights",
+        "7. Contact"
+      ],
+      "ctas": [],
+      "nav": [
+        "Terms",
+        "Security"
+      ],
+      "minFont": 11.84,
+      "smallTextCount": 1,
+      "sampleTexts": [
+        "A@17.92px rgb(15, 23, 42) ST Spreadsheet Tax",
+        "SPAN@13.6px rgb(255, 255, 255) ST",
+        "A@13.6px rgb(51, 65, 85) Terms",
+        "A@13.6px rgb(51, 65, 85) Security",
+        "P@11.84px rgb(13, 148, 136) LEGAL",
+        "H1@32px rgb(15, 23, 42) Privacy notice",
+        "P@16px rgb(100, 116, 139) This notice explains how Spreadsheet Tax uses personal infor",
+        "LI@16px rgb(15, 23, 42) Controller",
+        "A@13.6px rgb(51, 65, 85) Controller",
+        "LI@16px rgb(15, 23, 42) What we process",
+        "A@13.6px rgb(51, 65, 85) What we process",
+        "LI@16px rgb(15, 23, 42) Why"
+      ]
+    }
+  },
+  {
+    "slug": "14-terms",
+    "path": "/terms",
+    "viewport": "mobile",
+    "status": 200,
+    "file": "14-terms-mobile-full.png",
+    "height": 2336,
+    "stages": [
+      "top",
+      "mid",
+      "bottom"
+    ],
+    "metrics": {
+      "title": "Terms of use — Spreadsheet Tax",
+      "scrollHeight": 2336,
+      "bodyBg": "rgb(244, 246, 249)",
+      "bodyColor": "rgb(15, 23, 42)",
+      "fontFamily": "\"Segoe UI\", system-ui, -apple-system, \"system-ui\", sans-serif",
+      "headings": [
+        "Terms of use",
+        "1. Service",
+        "2. Your responsibilities",
+        "3. Accounts",
+        "4. Payments",
+        "5. Acceptable use",
+        "6. Intellectual property",
+        "7. Liability",
+        "8. Law"
+      ],
+      "ctas": [],
+      "nav": [
+        "Privacy",
+        "Legal"
+      ],
+      "minFont": 11.84,
+      "smallTextCount": 1,
+      "sampleTexts": [
+        "A@17.92px rgb(15, 23, 42) ST Spreadsheet Tax",
+        "SPAN@13.6px rgb(255, 255, 255) ST",
+        "A@13.6px rgb(51, 65, 85) Privacy",
+        "A@13.6px rgb(51, 65, 85) Legal",
+        "P@11.84px rgb(13, 148, 136) LEGAL",
+        "H1@32px rgb(15, 23, 42) Terms of use",
+        "P@16px rgb(100, 116, 139) Summary: free account software in active development. You ow",
+        "H2@19.2px rgb(15, 23, 42) 1. Service",
+        "P@16px rgb(15, 23, 42) Spreadsheet Tax helps you prepare and send Making Tax Digita",
+        "H2@19.2px rgb(15, 23, 42) 2. Your responsibilities",
+        "LI@16px rgb(51, 65, 85) Accuracy of figures you approve",
+        "LI@16px rgb(51, 65, 85) Authority to file for any client (practice use)"
+      ]
+    }
+  },
+  {
+    "slug": "15-signin",
+    "path": "/signin",
+    "viewport": "mobile",
+    "status": 200,
+    "file": "15-signin-mobile-full.png",
+    "height": 968,
+    "stages": [
+      "top"
+    ],
+    "metrics": {
+      "title": "Sign in — Spreadsheet Tax",
+      "scrollHeight": 968,
+      "bodyBg": "rgb(244, 246, 249)",
+      "bodyColor": "rgb(15, 23, 42)",
+      "fontFamily": "\"Segoe UI\", system-ui, -apple-system, \"system-ui\", sans-serif",
+      "headings": [
+        "Sign in"
+      ],
+      "ctas": [
+        "Sign in"
+      ],
+      "nav": [
+        "Create account",
+        "Marketing site"
+      ],
+      "minFont": 12.8,
+      "smallTextCount": 0,
+      "sampleTexts": [
+        "A@17.92px rgb(15, 23, 42) ST Spreadsheet Tax",
+        "SPAN@13.6px rgb(255, 255, 255) ST",
+        "A@13.6px rgb(51, 65, 85) Create account",
+        "A@13.6px rgb(51, 65, 85) Marketing site",
+        "H1@32px rgb(15, 23, 42) Sign in",
+        "P@16px rgb(100, 116, 139) Sign in to open your tax home, quarterly update, and receipt",
+        "LABEL@13.6px rgb(100, 116, 139) Email",
+        "LABEL@13.6px rgb(100, 116, 139) Password",
+        "LABEL@13.6px rgb(100, 116, 139) Authenticator code (if enabled)",
+        "BUTTON@15.2px rgb(255, 255, 255) Sign in",
+        "P@16px rgb(100, 116, 139) Forgot password? · No account? Register",
+        "A@16px rgb(11, 107, 203) Forgot password?"
+      ]
+    }
+  },
+  {
+    "slug": "16-register",
+    "path": "/register",
+    "viewport": "mobile",
+    "status": 200,
+    "file": "16-register-mobile-full.png",
+    "height": 1065,
+    "stages": [
+      "top"
+    ],
+    "metrics": {
+      "title": "Create account — Spreadsheet Tax",
+      "scrollHeight": 1065,
+      "bodyBg": "rgb(244, 246, 249)",
+      "bodyColor": "rgb(15, 23, 42)",
+      "fontFamily": "\"Segoe UI\", system-ui, -apple-system, \"system-ui\", sans-serif",
+      "headings": [
+        "Create account"
+      ],
+      "ctas": [
+        "Create account"
+      ],
+      "nav": [
+        "Sign in",
+        "Marketing site"
+      ],
+      "minFont": 12.8,
+      "smallTextCount": 0,
+      "sampleTexts": [
+        "A@17.92px rgb(15, 23, 42) ST Spreadsheet Tax",
+        "SPAN@13.6px rgb(255, 255, 255) ST",
+        "A@13.6px rgb(51, 65, 85) Sign in",
+        "A@13.6px rgb(51, 65, 85) Marketing site",
+        "H1@32px rgb(15, 23, 42) Create account",
+        "P@16px rgb(100, 116, 139) Create an account for spreadsheet checks, quarterly updates,",
+        "LABEL@13.6px rgb(100, 116, 139) Name",
+        "LABEL@13.6px rgb(100, 116, 139) Email",
+        "LABEL@13.6px rgb(100, 116, 139) Password (min 8)",
+        "LABEL@16px rgb(100, 116, 139) I agree to the Terms and Privacy notice, and I understand Sp",
+        "SPAN@16px rgb(100, 116, 139) I agree to the Terms and Privacy notice, and I understand Sp",
+        "A@16px rgb(11, 107, 203) Terms"
+      ]
+    }
+  },
+  {
+    "slug": "17-forgot-password",
+    "path": "/forgot-password",
+    "viewport": "mobile",
+    "status": 200,
+    "file": "17-forgot-password-mobile-full.png",
+    "height": 844,
+    "stages": [
+      "top"
+    ],
+    "metrics": {
+      "title": "Forgot password — Spreadsheet Tax",
+      "scrollHeight": 844,
+      "bodyBg": "rgb(11, 18, 32)",
+      "bodyColor": "rgb(240, 245, 251)",
+      "fontFamily": "\"Segoe UI\", system-ui, -apple-system, \"system-ui\", sans-serif",
+      "headings": [
+        "Forgot password"
+      ],
+      "ctas": [
+        "Send reset link"
+      ],
+      "nav": [
+        "Sign in"
+      ],
+      "minFont": 12.8,
+      "smallTextCount": 0,
+      "sampleTexts": [
+        "A@17.92px rgb(240, 245, 251) ST Spreadsheet Tax",
+        "SPAN@13.6px rgb(255, 255, 255) ST",
+        "A@13.6px rgb(143, 163, 188) Sign in",
+        "H1@32px rgb(240, 245, 251) Forgot password",
+        "P@16px rgb(143, 163, 188) If an account exists for that email, we will send a reset li",
+        "LABEL@13.6px rgb(143, 163, 188) Email",
+        "BUTTON@15.2px rgb(4, 16, 24) Send reset link",
+        "P@12.8px rgb(100, 116, 139) Spreadsheet Tax is independent software for Making Tax Digit",
+        "A@12.8px rgb(59, 158, 255) Security & privacy",
+        "A@12.8px rgb(59, 158, 255) For HMRC review"
+      ]
+    }
+  }
+]
