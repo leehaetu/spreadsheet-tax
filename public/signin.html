@@ -7,38 +7,34 @@
   <meta name="description" content="Sign in to your Spreadsheet Tax account." />
   <link rel="stylesheet" href="/css/site.css" />
 </head>
-<body class="theme-light app-simple">
-  <header class="site-header">
-    <div class="wrap header-inner">
-      <a class="logo" href="/"><span class="logo-mark">ST</span> Spreadsheet Tax</a>
-      <nav>
-        <a class="btn btn-primary btn-sm" href="/register" data-cta="get-started-free">Get started free</a>
-      </nav>
-    </div>
-  </header>
-  <main class="wrap app-main" style="max-width:480px">
-    <h1>Sign in</h1>
-    <p class="muted">Welcome back. Sign in to continue your quarterly updates and account settings.</p>
-    <form id="login-form" class="panel">
+<body class="theme-light auth-product-shell">
+  <aside class="auth-sidebar" aria-label="Spreadsheet Tax">
+    <a class="cc-brand" href="/"><span class="logo-mark">ST</span><span><strong>Spreadsheet Tax</strong><small>Making Tax Digital</small></span></a>
+    <nav class="cc-nav" aria-label="Product preview"><span>Home</span><span>Quarterly updates</span><span>Tax return</span><span>Records</span><span>Messages</span><span>Settings</span></nav>
+    <div class="auth-connection"><span class="cc-status-dot" aria-hidden="true"></span><div><small>HMRC connection</small><strong>Connect after sign in</strong><span>MTD for Income Tax</span></div></div>
+  </aside>
+  <main class="auth-main" id="main">
+    <div class="auth-card-wrap">
+      <form id="login-form" class="panel auth-card">
+      <h1>Sign in</h1>
+      <p class="muted">Access your Spreadsheet Tax account.</p>
       <div class="form-row">
         <label>Email <input type="email" id="email" required autocomplete="username" /></label>
       </div>
       <div class="form-row">
-        <label>Password <input type="password" id="password" required autocomplete="current-password" /></label>
+        <label><span class="auth-label-row"><span>Password</span><a href="/forgot-password">Forgot password?</a></span><input type="password" id="password" required autocomplete="current-password" /></label>
       </div>
       <div class="form-row" id="mfa-row" hidden style="display:none">
         <label>Authenticator code (if enabled)
           <input type="text" id="mfa" inputmode="numeric" autocomplete="one-time-code" maxlength="8" />
         </label>
       </div>
-      <button type="submit" class="btn btn-primary" data-cta="sign-in-submit">Sign in</button>
+      <label class="auth-remember"><input type="checkbox" name="remember"> Keep me signed in on this device</label>
+      <button type="submit" class="btn btn-primary btn-block" data-cta="sign-in-submit">Sign in</button>
       <p id="err" class="error" hidden></p>
     </form>
-    <p class="muted">
-      <a href="/forgot-password">Forgot password?</a>
-      · New here?
-      <a href="/register" data-cta="get-started-free">Get started free</a>
-    </p>
+    <section class="auth-security"><strong>We take your security seriously</strong><p>We use established security controls to protect your account. We will never ask for your password or one-time passcodes by email.</p><a href="/security">Learn how we keep your data safe</a></section>
+    </div>
   </main>
   <script>
     document.getElementById('login-form').addEventListener('submit', async (e) => {
@@ -69,7 +65,12 @@
         err.hidden = false;
         return;
       }
-      const next = new URLSearchParams(location.search).get('next') || '/home';
+      // Open-redirect safe: only same-origin relative paths
+      const raw = new URLSearchParams(location.search).get('next') || '/home';
+      let next = '/home';
+      if (raw.startsWith('/') && !raw.startsWith('//') && !raw.includes('://')) {
+        next = raw;
+      }
       location.href = next;
     });
   </script>

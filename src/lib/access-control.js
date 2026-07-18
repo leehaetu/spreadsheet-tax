@@ -116,17 +116,15 @@ export function assertDraftAccess(draft, user, opts = {}) {
     return null;
   }
 
-  // Anonymous draft (no user_id): only usable without claiming another account's session
-  // Signed-in user may claim anonymous draft they just created in same browser only if
-  // we allow preview; for submit we require ownership match OR still anonymous path.
-  // Cross-user attack: User B with draft created by User A is blocked when draft.userId set.
-  // Anonymous drafts: any caller who knows UUID can use for preview historically —
-  // tighten: if a different signed-in user, deny; if signed out, allow (preview only path).
-  if (user && draft.userId && draft.userId !== user.id) {
-    return { error: 'Not allowed to use this draft.', status: 403 };
+  // Anonymous draft (no user_id): must not be world-readable/writable by UUID guess.
+  // Require sign-in; caller may then bind/use the draft under their session.
+  if (!draft.userId) {
+    if (!user) {
+      return { error: 'Sign in required for this draft.', status: 401 };
+    }
+    return null;
   }
-  // When draft is anonymous and user is signed in, bind on first submit by allowing once
-  // but never allow if another user already owns it (handled above).
+
   return null;
 }
 

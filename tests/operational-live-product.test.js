@@ -413,14 +413,15 @@ describe('product workflows cover SE UK foreign', () => {
 });
 
 describe('HTTP health and submit integrity', () => {
-  it('health reports capacityGateMet false and version', async () => {
+  it('health reports version without leaking capacity inventory', async () => {
     const res = await request('GET', '/health');
     assert.equal(res.status, 200);
     const j = JSON.parse(res.body);
-    assert.equal(j.capacityGateMet, false);
     assert.ok(j.version);
-    assert.ok(j.dbMode === 'sqlite' || j.dbMode === 'postgres');
-    assert.ok(j.operationalStore || j.capacityNote);
+    assert.equal(j.ok, true);
+    // Slim public health — no row counts / capacity inventory
+    assert.equal(j.clientRows, undefined);
+    assert.equal(j.capacityGateMet, undefined);
   });
 
   it('preview submit with approval yields evidence; without fails', async () => {

@@ -306,13 +306,24 @@ export function parseCookies(req) {
   return out;
 }
 
+function cookieSecureFlag() {
+  // Prefer Secure on production / Railway HTTPS; allow local http without Secure
+  if (process.env.COOKIE_SECURE === '0') return '';
+  if (process.env.COOKIE_SECURE === '1') return '; Secure';
+  if (process.env.NODE_ENV === 'production') return '; Secure';
+  if (process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_PROJECT_ID) {
+    return '; Secure';
+  }
+  return '';
+}
+
 export function sessionCookieHeader(sessionId, expiresAt) {
-  const secure = process.env.COOKIE_SECURE === '1' ? '; Secure' : '';
+  const secure = cookieSecureFlag();
   return `${SESSION_COOKIE}=${encodeURIComponent(sessionId)}; Path=/; HttpOnly; SameSite=Lax; Expires=${expiresAt.toUTCString()}${secure}`;
 }
 
 export function clearSessionCookieHeader() {
-  const secure = process.env.COOKIE_SECURE === '1' ? '; Secure' : '';
+  const secure = cookieSecureFlag();
   return `${SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secure}`;
 }
 

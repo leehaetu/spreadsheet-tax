@@ -89,12 +89,32 @@ describe('Gate 0 submit safety', () => {
   });
 
   it('submit uses double mode even if env token present', async () => {
+    const email = `gate0-${Date.now()}@example.com`;
+    const reg = await request(
+      'POST',
+      '/api/auth/register',
+      JSON.stringify({ email, password: 'Gate0Pass123!', name: 'Gate0' })
+    );
+    assert.ok([200, 201].includes(reg.status), reg.body);
+    const cookie = Array.isArray(reg.headers['set-cookie'])
+      ? reg.headers['set-cookie'].map((c) => c.split(';')[0]).join('; ')
+      : String(reg.headers['set-cookie'] || '')
+          .split(',')
+          .map((c) => c.split(';')[0].trim())
+          .join('; ');
+    const csrfRes = await request('GET', '/api/csrf', null, { Cookie: cookie });
+    const csrf = JSON.parse(csrfRes.body).csrfToken;
+    const auth = {
+      Cookie: cookie,
+      ...(csrf ? { 'X-CSRF-Token': csrf } : {}),
+    };
     const sample = await request(
       'POST',
       '/api/import/sample',
-      JSON.stringify({ sample: 'self_employment' })
+      JSON.stringify({ sample: 'self_employment' }),
+      auth
     );
-    assert.equal(sample.status, 200);
+    assert.equal(sample.status, 200, sample.body);
     const imported = JSON.parse(sample.body);
     assert.ok(imported.draftId, 'import must return draftId');
     const submitBody = JSON.stringify({
@@ -104,7 +124,7 @@ describe('Gate 0 submit safety', () => {
       taxYear: '2024-25',
       businessIdSe: 'XAIS12345678901',
     });
-    const res = await request('POST', '/api/submit', submitBody);
+    const res = await request('POST', '/api/submit', submitBody, auth);
     assert.equal(res.status, 200);
     const json = JSON.parse(res.body);
     assert.equal(json.mode, 'double');

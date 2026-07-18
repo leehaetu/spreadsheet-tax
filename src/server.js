@@ -390,6 +390,7 @@ if (process.env.SKIP_DB_SEED !== '1') {
 }
 
 const app = express();
+app.disable('x-powered-by');
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 },
@@ -401,6 +402,25 @@ const upload = multer({
 
 app.use(express.json({ limit: '2mb' }));
 app.use(apiRateLimitMiddleware());
+// Hardening headers for every response
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader(
+    'Permissions-Policy',
+    'camera=(), microphone=(), geolocation=(), payment=()'
+  );
+  // HSTS when request is HTTPS (Railway terminates TLS)
+  const proto = String(req.headers['x-forwarded-proto'] || req.protocol || '');
+  if (proto === 'https' || process.env.COOKIE_SECURE === '1') {
+    res.setHeader(
+      'Strict-Transport-Security',
+      'max-age=31536000; includeSubDomains'
+    );
+  }
+  next();
+});
 // Attach tenant firm set + Postgres RLS session vars when authenticated
 app.use(async (req, _res, next) => {
   try {
@@ -958,6 +978,8 @@ function sendImportResult(req, res, result, filename) {
  * Customer uploads use isolated Excel path (magic bytes + worker + quarantine).
  */
 app.post('/api/import', (req, res) => {
+  const user = requireUser(req, res);
+  if (!user) return;
   upload.single('file')(req, res, async (err) => {
     if (err) {
       return res.status(400).json({ error: err.message || 'Upload failed' });
@@ -968,16 +990,13 @@ app.post('/api/import', (req, res) => {
           .status(400)
           .json({ error: 'No file uploaded. Use form field "file".' });
       }
-      const user = getSessionUser(getSessionIdFromRequest(req));
       const useWorker = process.env.USE_EXCEL_WORKER !== '0';
-      const previousCheck = user
-        ? getPreviousSpreadsheetCheck(user.id)
-        : null;
+      const previousCheck = getPreviousSpreadsheetCheck(user.id);
       const result = useWorker
         ? await processLocalFileIsolated(
             req.file.buffer,
             req.file.originalname,
-            { userId: user?.id || null, previousCheck }
+            { userId: user.id, previousCheck }
           )
         : processLocalFile(req.file.buffer, req.file.originalname, {
             previousCheck,
@@ -993,9 +1012,11 @@ app.post('/api/import', (req, res) => {
 });
 
 /**
- * Load a built-in sample period file so customers can try the flow without preparing a spreadsheet first.
+ * Load a built-in sample period file (signed-in only — no anonymous draft UUID surface).
  */
 app.post('/api/import/sample', (req, res) => {
+  const user = requireUser(req, res);
+  if (!user) return;
   try {
     const kind =
       typeof req.body?.sample === 'string' ? req.body.sample : 'combined';
@@ -1092,6 +1113,9 @@ function clientIp(req) {
 
 app.post('/api/submit', async (req, res) => {
   try {
+    const user = requireUser(req, res);
+    if (!user) return;
+
     const {
       draftId,
       payloads: clientPayloads,
@@ -1110,8 +1134,6 @@ app.post('/api/submit', async (req, res) => {
     if (!(await rateLimitAsync(`submit:${ip}`, 30, 60_000))) {
       return res.status(429).json({ error: 'Too many submit attempts. Try again shortly.' });
     }
-
-    const user = getSessionUser(getSessionIdFromRequest(req));
 
     if (idempotencyKey) {
       const prior = getIdempotentResponse(String(idempotencyKey), {
@@ -1559,11 +1581,9 @@ app.post('/api/auth/forgot-password', async (req, res) => {
   }
   res.json({
     ok: true,
-    // Do not reveal whether the account exists; do reveal that email is stubbed when not delivered
-    message: delivered
-      ? 'If an account exists for that email, a reset link has been sent.'
-      : 'If an account exists for that email, a reset token was created. Email delivery is not configured on this server (check server logs in demo).',
-    emailDelivered: delivered,
+    // Do not reveal whether the account exists or email delivery mode
+    message:
+      'If an account exists for that email, password reset instructions will be available when email delivery is configured.',
   });
 });
 
@@ -1731,10 +1751,11 @@ app.get('/api/hmrc/status', (req, res) => {
 });
 
 /**
- * Sandbox connectivity check (application credentials + Hello World).
- * Does not require a signed-in user tax token. Does not submit tax data.
+ * Sandbox connectivity check (operator only).
+ * Never public — leaks credential presence, redirect URI, and sandbox test identifiers.
  */
 app.get('/api/hmrc/sandbox-check', async (req, res) => {
+  if (!requireJobsSecret(req, res)) return;
   try {
     const result = await pingHmrcHelloApplication();
     const ready = await sandboxReadiness();
@@ -1751,7 +1772,6 @@ app.get('/api/hmrc/sandbox-check', async (req, res) => {
             userId: process.env.HMRC_SANDBOX_TEST_USER_ID,
             nino: process.env.HMRC_SANDBOX_TEST_NINO || null,
             mtdItId: process.env.HMRC_SANDBOX_TEST_MTD_IT_ID || null,
-            // password never returned from this public endpoint
             passwordStored: Boolean(process.env.HMRC_SANDBOX_TEST_USER_PASSWORD),
           }
         : null,
@@ -2962,7 +2982,8 @@ app.get('/api/drafts', (req, res) => {
 });
 
 app.get('/api/drafts/:draftId', (req, res) => {
-  const user = getSessionUser(getSessionIdFromRequest(req));
+  const user = requireUser(req, res);
+  if (!user) return;
   const loaded = loadDraftForUser(req.params.draftId, user);
   if (loaded.error || !loaded.draft) {
     return res
