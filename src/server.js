@@ -170,13 +170,19 @@ import {
   PRACTICE_CLIENT_STATES,
   defaultTaxYear,
 } from './lib/taxpayer-journey.js';
+import {
+  saveSpreadsheetReview,
+  getPreviousSpreadsheetCheck,
+  addCellComment,
+  listCellComments,
+} from './lib/spreadsheet-review-store.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, '..');
 const publicDir = path.join(root, 'public');
 const templatesDir = path.join(root, 'templates');
 const testSpreadsheetsDir = path.join(root, 'test-spreadsheets');
-const APP_VERSION = '1.18.0';
+const APP_VERSION = '1.19.0';
 
 /**
  * Serve HTML with site-chrome (HMRC recognition banner/footer) injected once.
@@ -610,8 +616,22 @@ function sendImportResult(req, res, result, filename) {
         fileSha256: result.fileSha256 || null,
         fileKind: result.fileKind || null,
         objectKey: result.quarantine?.storageKey || null,
+        reuploadDiff: Boolean(result.spreadsheetCheck?.reuploadDiff?.hasChanges),
       },
     });
+    if (user && result.spreadsheetCheck) {
+      try {
+        saveSpreadsheetReview({
+          userId: user.id,
+          draftId: draft.id,
+          fileSha256: result.fileSha256 || result.spreadsheetCheck.fileSha256,
+          check: result.spreadsheetCheck,
+          approved: false,
+        });
+      } catch (e) {
+        console.warn('spreadsheet review persist failed', e);
+      }
+    }
   } catch (e) {
     console.warn('Draft persist failed (import still returned):', e);
   }
@@ -656,13 +676,18 @@ app.post('/api/import', (req, res) => {
       }
       const user = getSessionUser(getSessionIdFromRequest(req));
       const useWorker = process.env.USE_EXCEL_WORKER !== '0';
+      const previousCheck = user
+        ? getPreviousSpreadsheetCheck(user.id)
+        : null;
       const result = useWorker
         ? await processLocalFileIsolated(
             req.file.buffer,
             req.file.originalname,
-            { userId: user?.id || null }
+            { userId: user?.id || null, previousCheck }
           )
-        : processLocalFile(req.file.buffer, req.file.originalname);
+        : processLocalFile(req.file.buffer, req.file.originalname, {
+            previousCheck,
+          });
       return sendImportResult(req, res, result, req.file.originalname);
     } catch (e) {
       console.error(e);
@@ -2160,6 +2185,86 @@ app.post('/api/me/nil-update', (req, res) => {
 
 app.get('/api/practice/workflow-states', (_req, res) => {
   res.json({ ok: true, states: PRACTICE_CLIENT_STATES });
+});
+
+/** Preparer/reviewer comments on a cell or range */
+app.get('/api/me/drafts/:draftId/cell-comments', (req, res) => {
+  const user = requireUser(req, res);
+  if (!user) return;
+  const loaded = loadDraftForUser(req.params.draftId, user);
+  if (loaded.error) {
+    return res.status(loaded.status || 404).json({ error: loaded.error });
+  }
+  res.json({ ok: true, comments: listCellComments(req.params.draftId) });
+});
+
+app.post('/api/me/drafts/:draftId/cell-comments', (req, res) => {
+  const user = requireUser(req, res);
+  if (!user) return;
+  const loaded = loadDraftForUser(req.params.draftId, user);
+  if (loaded.error) {
+    return res.status(loaded.status || 404).json({ error: loaded.error });
+  }
+  const result = addCellComment({
+    userId: user.id,
+    draftId: req.params.draftId,
+    cellRef: String(req.body?.cellRef || ''),
+    sheet: req.body?.sheet,
+    rangeRef: req.body?.rangeRef,
+    body: String(req.body?.body || ''),
+    authorRole: String(req.body?.authorRole || 'preparer'),
+  });
+  if (result.error) {
+    return res.status(result.status || 400).json({ error: result.error });
+  }
+  writeAudit({
+    userId: user.id,
+    action: 'cell_comment_added',
+    entityType: 'draft',
+    entityId: req.params.draftId,
+    meta: { cellRef: req.body?.cellRef },
+  });
+  res.status(201).json(result);
+});
+
+app.post('/api/me/drafts/:draftId/approve-spreadsheet', (req, res) => {
+  const user = requireUser(req, res);
+  if (!user) return;
+  const loaded = loadDraftForUser(req.params.draftId, user);
+  if (loaded.error || !loaded.draft) {
+    return res
+      .status(loaded.status || 404)
+      .json({ error: loaded.error || 'Draft not found' });
+  }
+  if (loaded.draft.spreadsheetCheck?.approvalInvalidated) {
+    return res.status(409).json({
+      error:
+        'Spreadsheet changed since last review — re-check cells before approving.',
+    });
+  }
+  // Store approval flag on a new review row
+  const check = req.body?.spreadsheetCheck || null;
+  if (check) {
+    saveSpreadsheetReview({
+      userId: user.id,
+      draftId: loaded.draft.id,
+      fileSha256: check.fileSha256,
+      check,
+      approved: true,
+    });
+  }
+  writeAudit({
+    userId: user.id,
+    action: 'spreadsheet_cells_approved',
+    entityType: 'draft',
+    entityId: loaded.draft.id,
+  });
+  res.json({
+    ok: true,
+    approvedAt: new Date().toISOString(),
+    wording:
+      'I have checked the spreadsheet cells and mappings shown above. The cumulative figures displayed are the figures I authorise Spreadsheet Tax to send to HMRC.',
+  });
 });
 
 /** Attach import to client (practice) */

@@ -253,35 +253,95 @@ function handleImportSuccess(data) {
 }
 
 /**
- * "Check your spreadsheet" — sanitised cell↔HMRC category proof (not raw Excel).
+ * "Check your spreadsheet" — multi-sheet sanitised grid + map proof.
  * @param {object|null} model
  */
 function renderSpreadsheetCheck(model) {
   const panel = document.getElementById('spreadsheet-check-panel');
   if (!panel) return;
-  if (!model || !(model.gridRows || []).length) {
+  if (!model || (!(model.gridRows || []).length && !(model.sheets || []).length)) {
     panel.hidden = true;
     return;
   }
   panel.hidden = false;
+  lastSpreadsheetCheck = model;
+
   const note = document.getElementById('ss-security-note');
   if (note) note.textContent = model.securityNote || '';
+
+  const legend = document.getElementById('ss-legend');
+  if (legend) {
+    legend.innerHTML = (model.legend || [])
+      .map(
+        (l) =>
+          `<span style="display:inline-block;margin-right:0.75rem"><span style="display:inline-block;width:0.7rem;height:0.7rem;border-radius:2px;background:${esc(
+            l.color || '#ccc'
+          )}"></span> ${esc(l.label)}</span>`
+      )
+      .join('');
+  }
+
+  const diffBox = document.getElementById('ss-reupload-diff');
+  if (diffBox) {
+    const d = model.reuploadDiff;
+    if (d?.hasChanges) {
+      diffBox.hidden = false;
+      let html = `<strong>Replacement file differs from previous upload</strong> — previous approvals are invalidated.<br/>`;
+      html += `<div class="table-wrap"><table class="data-table"><thead><tr><th>Change</th><th>Previous file</th><th>Replacement</th></tr></thead><tbody>`;
+      for (const c of d.categoryChanges || []) {
+        html += `<tr><td>${esc(c.label)}</td><td>${
+          c.previous == null ? '—' : esc(formatMoney(c.previous))
+        }</td><td>${
+          c.replacement == null ? '—' : esc(formatMoney(c.replacement))
+        }</td></tr>`;
+      }
+      html += `</tbody></table></div>`;
+      html += `<span class="muted">Cells added: ${d.cellsAdded || 0} · removed: ${
+        d.cellsRemoved || 0
+      }</span>`;
+      diffBox.innerHTML = html;
+      const approve = document.getElementById('approve-cells');
+      if (approve) {
+        approve.checked = false;
+        const submitBtn = document.getElementById('submit-btn');
+        if (submitBtn) submitBtn.disabled = true;
+      }
+    } else {
+      diffBox.hidden = true;
+    }
+  }
+
   const meta = document.getElementById('ss-meta');
   if (meta) {
     meta.textContent = [
       model.filename ? `File: ${model.filename}` : null,
       model.fileSha256 ? `Hash: ${model.fileSha256.slice(0, 12)}…` : null,
       model.mappingVersion ? `Mapping: ${model.mappingVersion}` : null,
-      `${model.gridRows.length} mapped cells`,
+      `${(model.gridRows || []).length} mapped cells`,
+      model.sheets ? `${model.sheets.length} sheet(s)` : null,
     ]
       .filter(Boolean)
       .join(' · ');
   }
 
+  const sheetSel = document.getElementById('ss-sheet');
+  if (sheetSel) {
+    sheetSel.innerHTML = (model.sheets || [])
+      .map((s, i) => `<option value="${i}">${esc(s.name)} (${s.rowCount} rows)</option>`)
+      .join('');
+  }
+  const outlineSel = document.getElementById('ss-outline');
+  if (outlineSel) {
+    outlineSel.innerHTML =
+      '<option value="">All sources</option>' +
+      (model.outline || [])
+        .map((o) => `<option value="${esc(o.id)}">${esc(o.label)}</option>`)
+        .join('');
+  }
   const sel = document.getElementById('ss-category');
   if (sel) {
     sel.innerHTML =
-      '<option value="">All included cells</option>' +
+      '<option value="">All mapped cells</option>' +
       (model.categories || [])
         .map(
           (c) =>
@@ -292,37 +352,110 @@ function renderSpreadsheetCheck(model) {
         .join('');
   }
 
-  const paint = (filterId) => {
+  const paintMapped = (filterId, outlineId) => {
     const body = document.getElementById('ss-grid-body');
     if (!body) return;
     body.innerHTML = '';
     let rows = model.gridRows || [];
     if (filterId) rows = rows.filter((r) => r.categoryId === filterId);
+    if (outlineId && outlineId !== 'unassigned') {
+      if (outlineId.startsWith('foreign_property:')) {
+        const cc = outlineId.split(':')[1];
+        rows = rows.filter((r) => r.country === cc);
+      } else {
+        rows = rows.filter((r) => r.section === outlineId);
+      }
+    }
     for (const r of rows) {
       const tr = document.createElement('tr');
-      tr.className = 'ss-row';
-      tr.dataset.cellId = r.id;
       tr.style.cursor = 'pointer';
       if (filterId && r.categoryId === filterId) {
         tr.style.background = 'var(--primary-soft, #e8f2ff)';
       }
       const state = r.mapState || 'included';
-      tr.innerHTML = `<td><span class="tag ${
-        state === 'included' ? 'green' : state === 'invalid' ? '' : 'amber'
-      }">${esc(state)}</span></td>
+      tr.innerHTML = `<td><span class="tag ${stateTagClass(state)}">${esc(
+        state
+      )}</span></td>
         <td><code>${esc(r.cell || '—')}</code></td>
         <td>${esc(r.description || '—')}</td>
         <td class="amount-cell">${esc(formatMoney(r.value))}</td>
+        <td><code style="font-size:0.8em">${esc(r.formula || '—')}</code></td>
         <td>${esc(r.hmrcPath || '—')}</td>`;
       tr.addEventListener('click', () => showCellDetail(r, model));
       body.appendChild(tr);
     }
   };
 
-  paint('');
-  sel?.addEventListener('change', () => {
-    const id = sel.value;
-    paint(id);
+  const paintSheet = (sheetIndex) => {
+    const sheets = model.sheets || [];
+    const sheet = sheets[sheetIndex] || sheets[0];
+    const head = document.getElementById('ss-sheet-head');
+    const body = document.getElementById('ss-sheet-body');
+    if (!head || !body || !sheet) return;
+    const headers = sheet.headers || [];
+    head.innerHTML =
+      `<tr><th>#</th>` +
+      headers.map((h) => `<th>${esc(h)}</th>`).join('') +
+      `</tr>`;
+    body.innerHTML = '';
+    // Virtual window: first N rows (scroll loads more via same model)
+    const windowSize = model.virtualisation?.rowWindow || 40;
+    const rows = (sheet.rows || []).slice(0, windowSize);
+    for (const row of rows) {
+      const tr = document.createElement('tr');
+      let tds = `<td>${esc(String(row.row))}</td>`;
+      for (const h of headers) {
+        const cell = row.cells?.[h];
+        const bg = stateBg(cell?.mapState);
+        const title = cell
+          ? `${cell.mapState || ''}: ${cell.reason || ''}`
+          : '';
+        tds += `<td style="background:${bg};cursor:pointer" title="${esc(
+          title
+        )}" data-cell="${esc(cell?.cell || '')}">${esc(
+          cell?.value ?? ''
+        )}${
+          cell?.formula
+            ? `<br/><code style="font-size:0.7em">${esc(cell.formula)}</code>`
+            : ''
+        }</td>`;
+      }
+      tr.innerHTML = tds;
+      tr.querySelectorAll('[data-cell]').forEach((td) => {
+        td.addEventListener('click', () => {
+          const ref = td.getAttribute('data-cell');
+          const mapped = (model.gridRows || []).find((g) => g.cell === ref);
+          if (mapped) showCellDetail(mapped, model);
+          else {
+            showCellDetail(
+              {
+                cell: ref,
+                value: td.textContent,
+                description: '—',
+                hmrcPath: 'Unassigned / structural',
+                reason: 'Not mapped to HMRC',
+                mapState: 'unassigned',
+              },
+              model
+            );
+          }
+        });
+      });
+      body.appendChild(tr);
+    }
+    if ((sheet.rows || []).length > windowSize) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td colspan="${headers.length + 1}" class="muted">Showing first ${windowSize} of ${sheet.rows.length} rows (virtualised).</td>`;
+      body.appendChild(tr);
+    }
+  };
+
+  paintMapped('', '');
+  paintSheet(0);
+
+  const onFilter = () => {
+    paintMapped(sel?.value || '', outlineSel?.value || '');
+    const id = sel?.value;
     const proof = document.getElementById('ss-total-proof');
     if (!proof) return;
     if (!id) {
@@ -335,20 +468,44 @@ function renderSpreadsheetCheck(model) {
       return;
     }
     proof.hidden = false;
-    proof.innerHTML = `<strong>${esc(cat.label)}</strong> sent to HMRC category total:
-      <strong>${esc(formatMoney(cat.total))}</strong><br/>
+    proof.innerHTML = `<strong>${esc(cat.label)}</strong><br/>
+      Total for this HMRC category: <strong>${esc(formatMoney(cat.total))}</strong><br/>
       ${cat.cellCount} spreadsheet cell${cat.cellCount === 1 ? '' : 's'} contribute.
-      Select a row below for cell-level proof.`;
-  });
-
+      <button type="button" class="btn btn-ghost btn-sm" id="ss-jump-cells">Jump to cells</button>`;
+    document.getElementById('ss-jump-cells')?.addEventListener('click', () => {
+      document.getElementById('ss-grid')?.scrollIntoView({ behavior: 'smooth' });
+    });
+  };
+  sel?.addEventListener('change', onFilter);
+  outlineSel?.addEventListener('change', onFilter);
+  sheetSel?.addEventListener('change', () =>
+    paintSheet(Number(sheetSel.value) || 0)
+  );
   document.getElementById('ss-show-cells')?.addEventListener('click', () => {
-    const id = sel?.value;
-    if (id) paint(id);
+    onFilter();
     document.getElementById('ss-grid')?.scrollIntoView({
       behavior: 'smooth',
       block: 'nearest',
     });
   });
+
+  if (lastDraftId) loadCellComments(lastDraftId);
+}
+
+function stateTagClass(state) {
+  if (state === 'included') return 'green';
+  if (state === 'invalid') return '';
+  if (state === 'duplicate') return 'amber';
+  return 'amber';
+}
+
+function stateBg(state) {
+  if (state === 'included') return 'rgba(22,163,74,0.15)';
+  if (state === 'needs_review') return 'rgba(217,119,6,0.18)';
+  if (state === 'invalid') return 'rgba(220,38,38,0.15)';
+  if (state === 'duplicate') return 'rgba(124,58,237,0.12)';
+  if (state === 'ignored') return 'rgba(100,116,139,0.12)';
+  return 'transparent';
 }
 
 /**
@@ -357,17 +514,83 @@ function renderSpreadsheetCheck(model) {
  */
 function showCellDetail(r, model) {
   const box = document.getElementById('ss-cell-detail');
-  if (!box) return;
+  const body = document.getElementById('ss-cell-detail-body');
+  if (!box || !body) return;
   box.hidden = false;
-  box.innerHTML = `
+  box.dataset.cellRef = r.cell || '';
+  let fx = '';
+  if (r.fx || r.section === 'foreign_property') {
+    const f = r.fx || {};
+    fx = `<br/><strong>FX:</strong> ${esc(
+      f.note ||
+        'If not GBP, provide rate + date — never invent exchange rates.'
+    )}`;
+  }
+  body.innerHTML = `
     <strong>Cell:</strong> <code>${esc(r.cell || '—')}</code><br/>
-    <strong>Value:</strong> ${esc(formatMoney(r.value))}<br/>
+    <strong>State:</strong> ${esc(r.mapState || '—')}<br/>
+    <strong>Value:</strong> ${esc(
+      typeof r.value === 'number' ? formatMoney(r.value) : String(r.value ?? '—')
+    )}
+    ${
+      r.formula
+        ? `<br/><strong>Formula:</strong> <code>${esc(
+            r.formula
+          )}</code> <span class="muted">(cached value — not recalculated here)</span>`
+        : ''
+    }<br/>
     <strong>Description:</strong> ${esc(r.description || '—')}<br/>
     <strong>Included in:</strong> ${esc(r.hmrcPath || '—')}<br/>
-    <strong>Reason:</strong> ${esc(r.reason || 'Mapped by column/field rules')}<br/>
+    <strong>Reason:</strong> ${esc(r.reason || '—')}${fx}<br/>
     <span class="muted">${esc(model.securityNote || '')}</span>
   `;
 }
+
+async function loadCellComments(draftId) {
+  const ul = document.getElementById('ss-comments');
+  if (!ul) return;
+  try {
+    const res = await apiFetch(
+      `/api/me/drafts/${encodeURIComponent(draftId)}/cell-comments`
+    );
+    if (!res.ok) {
+      ul.innerHTML = '';
+      return;
+    }
+    const data = await res.json();
+    ul.innerHTML = (data.comments || [])
+      .map(
+        (c) =>
+          `<li><code>${esc(c.cellRef)}</code> · ${esc(c.authorRole)}: ${esc(
+            c.body
+          )}</li>`
+      )
+      .join('');
+  } catch {
+    ul.innerHTML = '';
+  }
+}
+
+document.getElementById('ss-comment-save')?.addEventListener('click', async () => {
+  if (!lastDraftId) return;
+  const box = document.getElementById('ss-cell-detail');
+  const cellRef = box?.dataset?.cellRef;
+  const body = document.getElementById('ss-comment-body')?.value || '';
+  if (!cellRef || !body.trim()) return;
+  const res = await apiFetch(
+    `/api/me/drafts/${encodeURIComponent(lastDraftId)}/cell-comments`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cellRef, body, authorRole: 'preparer' }),
+    }
+  );
+  if (res.ok) {
+    const ta = document.getElementById('ss-comment-body');
+    if (ta) ta.value = '';
+    loadCellComments(lastDraftId);
+  }
+});
 
 /**
  * HMRC cumulative review: this quarter vs previously recorded vs year-to-date.

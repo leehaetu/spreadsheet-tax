@@ -17,13 +17,13 @@ import { buildSpreadsheetCheckModel } from './spreadsheet-view.js';
  * @param {Buffer | string} input
  * @param {string} [filename]
  */
-export function processLocalFile(input, filename = 'upload.csv') {
+export function processLocalFile(input, filename = 'upload.csv', opts = {}) {
   const rows =
     typeof input === 'string'
       ? parseCsvText(input)
       : parseFileBuffer(input, filename);
 
-  return finishPipeline(rows, filename);
+  return finishPipeline(rows, filename, opts);
 }
 
 /**
@@ -42,7 +42,10 @@ export async function processLocalFileIsolated(
     filename,
     opts
   );
-  const result = finishPipeline(rows, filename, { fileSha256: sha256 });
+  const result = finishPipeline(rows, filename, {
+    fileSha256: sha256,
+    previousCheck: opts.previousCheck || null,
+  });
   return {
     ...result,
     quarantine,
@@ -54,17 +57,24 @@ export async function processLocalFileIsolated(
 /**
  * @param {Record<string, string>[]} rows
  * @param {string} filename
+ * @param {{ fileSha256?: string|null, previousCheck?: object|null }} [extra]
  */
 function finishPipeline(rows, filename, extra = {}) {
   const mapped = mapRowsToPeriod(rows);
   const payloads = buildQuarterlyPayloads(mapped);
   const summary = buildCustomerSummary(mapped, payloads);
   const validation = validateImport(mapped, payloads);
-  const spreadsheetCheck = buildSpreadsheetCheckModel(mapped, payloads, {
-    filename,
-    fileSha256: extra.fileSha256 || null,
-    mappingVersion: 'v1-deterministic',
-  });
+  const spreadsheetCheck = buildSpreadsheetCheckModel(
+    mapped,
+    payloads,
+    rows,
+    {
+      filename,
+      fileSha256: extra.fileSha256 || null,
+      mappingVersion: 'v1-deterministic',
+      previousCheck: extra.previousCheck || null,
+    }
+  );
 
   return {
     rowCount: rows.length,
@@ -74,5 +84,6 @@ function finishPipeline(rows, filename, extra = {}) {
     validation,
     filename,
     spreadsheetCheck,
+    rawRowCount: rows.length,
   };
 }

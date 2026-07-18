@@ -334,8 +334,18 @@ export function mapRowsToPeriod(rows) {
     if (money === undefined) continue;
 
     // Prefer value/amount/total column for cell letter
-    const valueKey = row.value != null ? 'value' : row.amount != null ? 'amount' : 'total';
+    const valueKey =
+      row.value != null && row.value !== ''
+        ? 'value'
+        : row.amount != null && row.amount !== ''
+          ? 'amount'
+          : 'total';
     const colLetter = row[`_col_${valueKey}`] || row[`_col_field`] || null;
+    const formula =
+      row[`_formula_${valueKey}`] ||
+      row._formula_value ||
+      row._formula_amount ||
+      null;
     applyFigure(
       section,
       sourceField,
@@ -348,7 +358,7 @@ export function mapRowsToPeriod(rows) {
       ukTrace,
       foreignByCountry,
       allTraces,
-      { sheet, row: rowNum, col: colLetter }
+      { sheet, row: rowNum, col: colLetter, formula }
     );
   }
 
@@ -416,8 +426,11 @@ function applyFigure(
     row: row || undefined,
     col: col || undefined,
     cell: cell || undefined,
+    formula: loc.formula || undefined,
     mapState: 'included',
-    reason: `Column “${sourceField}” mapped to ${canonical}`,
+    reason: loc.formula
+      ? `Formula ${loc.formula} (cached value) mapped to ${canonical}`
+      : `Column “${sourceField}” mapped to ${canonical}`,
   };
 
   if (section === 'self_employment') {

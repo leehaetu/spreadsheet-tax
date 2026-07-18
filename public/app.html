@@ -125,27 +125,54 @@
       <div class="panel" id="spreadsheet-check-panel" style="margin:0.75rem 0;padding:0.75rem" hidden>
         <h3 style="margin-top:0;font-size:1.1rem">Check your spreadsheet</h3>
         <p class="muted" id="ss-security-note" style="margin-top:0"></p>
-        <div class="form-row" style="align-items:end">
+        <div id="ss-reupload-diff" class="help-tip" hidden style="border-left:3px solid var(--warn,#d97706)"></div>
+        <div id="ss-legend" class="muted" style="font-size:0.85rem;margin:0.5rem 0"></div>
+        <div class="form-row" style="align-items:end;flex-wrap:wrap">
+          <label>Sheet
+            <select id="ss-sheet"></select>
+          </label>
+          <label>Income source
+            <select id="ss-outline"></select>
+          </label>
           <label>HMRC category
             <select id="ss-category"></select>
           </label>
           <button type="button" class="btn btn-ghost btn-sm" id="ss-show-cells">Show contributing cells</button>
         </div>
         <div id="ss-total-proof" class="help-tip" hidden></div>
-        <div id="ss-cell-detail" class="panel" style="margin:0.5rem 0;padding:0.65rem" hidden></div>
-        <div class="table-wrap" style="max-height:280px;overflow:auto">
-          <table class="data-table" id="ss-grid">
-            <thead>
-              <tr>
-                <th>State</th>
-                <th>Cell</th>
-                <th>Description</th>
-                <th>Value</th>
-                <th>Included in</th>
-              </tr>
-            </thead>
-            <tbody id="ss-grid-body"></tbody>
-          </table>
+        <div class="hero-grid" style="gap:0.75rem;align-items:start">
+          <div>
+            <div class="table-wrap" id="ss-virtual" style="max-height:320px;overflow:auto;border:1px solid var(--border,#ddd);border-radius:8px">
+              <table class="data-table" id="ss-sheet-grid">
+                <thead id="ss-sheet-head"></thead>
+                <tbody id="ss-sheet-body"></tbody>
+              </table>
+            </div>
+            <div class="table-wrap" style="max-height:200px;overflow:auto;margin-top:0.5rem">
+              <table class="data-table" id="ss-grid">
+                <thead>
+                  <tr>
+                    <th>State</th>
+                    <th>Cell</th>
+                    <th>Description</th>
+                    <th>Value</th>
+                    <th>Formula</th>
+                    <th>Included in</th>
+                  </tr>
+                </thead>
+                <tbody id="ss-grid-body"></tbody>
+              </table>
+            </div>
+          </div>
+          <div id="ss-cell-detail" class="panel" style="margin:0;padding:0.75rem;min-width:220px" hidden>
+            <strong>Cell detail</strong>
+            <div id="ss-cell-detail-body" class="muted" style="margin-top:0.5rem"></div>
+            <label style="display:block;margin-top:0.75rem">Comment (preparer / review)
+              <textarea id="ss-comment-body" rows="2" style="width:100%" placeholder="Ask a question about this cell…"></textarea>
+            </label>
+            <button type="button" class="btn btn-ghost btn-sm" id="ss-comment-save">Attach comment</button>
+            <ul id="ss-comments" class="result-list" style="margin-top:0.5rem"></ul>
+          </div>
         </div>
         <p class="muted" id="ss-meta" style="font-size:0.85rem"></p>
       </div>

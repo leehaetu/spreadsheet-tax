@@ -316,6 +316,30 @@ function migrate(database) {
     );
     CREATE INDEX IF NOT EXISTS idx_income_sources_user ON income_sources(user_id);
     CREATE INDEX IF NOT EXISTS idx_period_snap_user ON period_snapshots(user_id, tax_year);
+
+    CREATE TABLE IF NOT EXISTS spreadsheet_reviews (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      draft_id TEXT,
+      file_sha256 TEXT,
+      check_json TEXT NOT NULL,
+      approved INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS cell_comments (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      draft_id TEXT,
+      firm_id TEXT,
+      cell_ref TEXT NOT NULL,
+      sheet TEXT,
+      range_ref TEXT,
+      body TEXT NOT NULL,
+      author_role TEXT,
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_ss_reviews_user ON spreadsheet_reviews(user_id, created_at);
+    CREATE INDEX IF NOT EXISTS idx_cell_comments_draft ON cell_comments(draft_id);
   `);
 
   // Scale indexes for large firm books (hundreds of thousands of clients)

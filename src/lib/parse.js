@@ -192,8 +192,48 @@ function sanitizeRow(row) {
  * @returns {Record<string, string>[]}
  */
 function sheetToRows(sheet) {
-  // raw:true keeps ISO date strings and numbers as typed; we stringify ourselves
-  // so xlsx does not reformat 2024-04-06 into locale short dates.
+  // Prefer cell objects so we can capture formula text (f) + cached value (v)
+  // without executing macros or external links.
+  const ref = sheet['!ref'];
+  if (ref) {
+    try {
+      const range = XLSX.utils.decode_range(ref);
+      const headers = [];
+      for (let c = range.s.c; c <= range.e.c; c++) {
+        const addr = XLSX.utils.encode_cell({ r: range.s.r, c });
+        const cell = sheet[addr];
+        headers.push(normalizeHeader(cell?.v ?? colLetters(c - range.s.c)));
+      }
+      /** @type {Record<string, string>[]} */
+      const rows = [];
+      for (let r = range.s.r + 1; r <= range.e.r; r++) {
+        /** @type {Record<string, string>} */
+        const obj = {
+          _sheet: '',
+          _row: String(r + 1),
+        };
+        let empty = true;
+        headers.forEach((h, idx) => {
+          if (!h) return;
+          const c = range.s.c + idx;
+          const addr = XLSX.utils.encode_cell({ r, c });
+          const cell = sheet[addr];
+          const val = cellToString(cell?.v);
+          if (val) empty = false;
+          obj[h] = val;
+          obj[`_col_${h}`] = colLetters(idx);
+          if (cell?.f) {
+            obj[`_formula_${h}`] = String(cell.f);
+          }
+        });
+        if (!empty) rows.push(obj);
+      }
+      return rows;
+    } catch {
+      /* fall through */
+    }
+  }
+
   const matrix = XLSX.utils.sheet_to_json(sheet, {
     header: 1,
     defval: '',
