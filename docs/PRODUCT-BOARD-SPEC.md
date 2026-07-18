@@ -71,11 +71,14 @@ They do **not** override hard product rules below when the board illustration co
 | Sign-in | **In app** — branded panel, no product nav chrome |
 | Onboarding HMRC-mirror | **In app** — welcome → load/confirm HMRC sources → names → review |
 | Quarterly step cards | **In app** — source → upload → map → figures → send |
-| Year-end checklist by source | **In app** — source board + guided stages; workflow registry wired |
-| In-app Help (`/guide`) | **In app** — HMRC businesses, quarterly, year-end |
+| Year-end checklist + stages | **In app** — exclusive q1–q4 → checklist → stage work → done; HMRC gate |
+| In-app Help (`/guide`) | **In app** — HMRC businesses, quarterly, year-end, Assist |
 | Connect HMRC | **In app** — product shell; operator tools hidden by default |
-| Pixel-perfect board art match | **Not claimed** — structure matches boards; polish continues |
-| Sandbox HTTP E2E for every interaction | **Not complete** — APIs exist; not every control has SANDBOX_HTTP evidence |
+| Automated product checklist | **UNIT_TESTED + Playwright** (`product-finish` unit/e2e) — HMRC connection mocked for UI gates only |
+| History table + recovery cards | **In app** — table timeline; Connected/Not connected only |
+| Home next task by connection state | **In app** — connect → load sources → quarterly |
+| Pixel-perfect board art match | **Not claimed** — structure and hierarchy match boards; not pixel atlas |
+| Sandbox HTTP E2E for every interaction | **Not complete** — Assist generate/ack has SANDBOX_HTTP; not every year-end control |
 
 Update this table when a board frame is fully wired with browser evidence.
 

@@ -130,7 +130,7 @@
           source.nickname || source.label || type
         )}</strong><small>${type}${
           source.countryCode ? ` · ${esc(source.countryCode)}` : ''
-        }</small></span><span class="source-quarter-state">Ready for this quarter</span><b>Continue</b></button>`;
+        }</small></span><span class="source-quarter-state">Ready for this quarter</span><b>Continue <span aria-hidden="true">→</span></b></button>`;
       })
       .join('');
 

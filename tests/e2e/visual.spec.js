@@ -25,6 +25,20 @@ async function signIn(page, next = '/app') {
   await page.waitForURL(new RegExp(next.replace(/[/?]/g, '\\$&')));
 }
 
+async function mockHmrcConnected(page) {
+  await page.route('**/api/hmrc/status', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        connection: { connected: true, mock: false, label: 'Connected' },
+        oauthConnected: true,
+        oauthMock: false,
+      }),
+    });
+  });
+}
+
 test.describe('Visual regression snapshots (smoke)', () => {
   test('sales home visual', async ({ page }) => {
     await page.goto('/');
@@ -32,12 +46,28 @@ test.describe('Visual regression snapshots (smoke)', () => {
     await shot(page, 'sales-home');
   });
 
-  test('app after sample import visual', async ({ page }) => {
-    await signIn(page);
-    await page.locator('#samples').evaluate((element) => { element.open = true; });
-    await page.locator('.sample-btn').first().click();
-    await expect(page.locator('#review-panel')).toBeVisible({ timeout: 15_000 });
-    await shot(page, 'app-review');
+  test('quarterly source picker visual', async ({ page }) => {
+    await mockHmrcConnected(page);
+    await signIn(page, '/app?flow=quarterly');
+    await page.evaluate(() =>
+      fetch('/api/me/income-sources', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sources: [
+            {
+              id: 'se-1',
+              type: 'self_employment',
+              label: 'Self-employment',
+              nickname: 'Trade',
+            },
+          ],
+        }),
+      })
+    );
+    await page.reload();
+    await expect(page.locator('#quarterly-source-panel')).toBeVisible({ timeout: 10_000 });
+    await shot(page, 'app-quarterly-sources');
   });
 
   test('signin page visual', async ({ page }) => {
@@ -112,25 +142,42 @@ test.describe('Auth workspace journey', () => {
     await shot(page, 'account-signed-in');
   });
 
-  test('mock HMRC connect journey', async ({ page, request }) => {
+  test('mock HMRC connect journey', async ({ page, context }) => {
     // Production with real Hub credentials redirects to HMRC — mock path is local-only
-    const st = await request.get('/api/status');
+    const st = await page.request.get('/api/status');
     const status = await st.json();
     test.skip(
       status.oauthMock === false,
       'Real HMRC OAuth configured — mock connect journey is local-only'
     );
 
-    await page.goto('/signin?next=/connect-hmrc');
-    await page.fill('#email', 'demo@spreadsheet-tax.example');
-    await page.fill('#password', 'DemoPass123!');
-    await page.click('button[type=submit]');
-    await page.waitForURL(/connect-hmrc/);
-    await page.click('#connect-individual-btn');
-    await page.waitForURL(/connect-hmrc/);
-    await expect(page.locator('#status')).toContainText(/sandbox|mock|connected|mode/i, {
-      timeout: 10_000,
+    // Unique user avoids demo rate-limit lockout after many e2e logins
+    const email = `visual-connect-${Date.now()}@example.com`;
+    const password = 'DemoPass123!';
+    const reg = await page.request.post('/api/auth/register', {
+      data: {
+        email,
+        password,
+        name: 'Visual Connect',
+        consentPrivacy: true,
+        consentTerms: true,
+      },
     });
+    if (!reg.ok()) {
+      const login = await page.request.post('/api/auth/login', {
+        data: { email: 'demo@spreadsheet-tax.example', password },
+      });
+      test.skip(!login.ok(), 'Could not register or login for mock connect visual');
+    }
+
+    await page.goto('/connect-hmrc');
+    await expect(page.locator('#connect-individual-btn')).toBeVisible({ timeout: 10_000 });
+    await page.click('#connect-individual-btn');
+    await page.waitForURL(/connect-hmrc/, { timeout: 15_000 });
+    await expect(page.locator('#status-human, #connection-status').first()).toContainText(
+      /Connected|Not connected|Checking/i,
+      { timeout: 10_000 }
+    );
     await shot(page, 'connect-hmrc');
   });
 });

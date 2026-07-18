@@ -76,20 +76,23 @@ Same shell on every authenticated page.
 
 ### P7 — Proof
 - [x] Unit tests: `tests/product-finish.test.js`  
-- [ ] Manual checklist in Test Plan (owner browser pass)  
+- [x] Playwright product-finish checklist: `tests/e2e/product-finish.spec.js` (mocked HMRC connection for UI gates only — **not** SANDBOX_HTTP)  
+- [ ] Optional owner browser pass on real sandbox credentials  
 
 ---
 
-## Test plan (owner)
+## Test plan (owner / automated)
 
-1. Sales → Sign in: no dashboard chrome behind form.  
-2. Log in; open Home, Quarterly, Year end, Sources, History, Settings, Help — same shell.  
-3. Grep product UI for sandbox/practice/preview/demo/testing/fictional/sample.  
-4. HMRC disconnected: quarterly **and** year-end blocked.  
-5. No sources: instructions to add in HMRC + refresh; no create.  
-6. Quarterly: source → upload → check → review as separate screens; no jump-scroll; no technical ID primary form.  
-7. Year-end: exclusive Yes/No questions → checklist of applicable steps → work one step at a time.  
-8. Upload clickable; template says download; no grey marketing footer in app.
+| # | Check | Automated |
+|---|--------|-----------|
+| 1 | Sign in: no dashboard chrome | e2e product-finish + unit |
+| 2 | Shell consistent on product pages | e2e product-finish |
+| 3 | No sandbox/preview theatre on product pages | unit product-finish |
+| 4 | HMRC disconnected: quarterly + year-end blocked | e2e product-finish |
+| 5 | Onboarding: load-only, no create | unit + e2e |
+| 6 | Quarterly exclusive steps + upload/template | e2e product-finish + taxpayer-overhaul |
+| 7 | Year-end exclusive questions → checklist → work | e2e product-finish + taxpayer-overhaul |
+| 8 | Template download | e2e smoke |
 
 ---
 
@@ -123,6 +126,8 @@ Same shell on every authenticated page.
 4. Product copy strip + upload wording — done  
 5. Year-end exclusive multi-card guided flow + checklist + work/done — done  
 6. Settings advanced IDs + Assist primary CTA polish — done  
-7. Automated tests — `tests/product-finish.test.js`  
+7. Automated unit + Playwright product-finish checklist — done  
 
-**Honest residual (not claimed complete):** full board pixel-atlas match; capacity 200×800k; pilot/production-ready; HMRC Recognised listing; owner manual browser checklist.
+**Improvements closed in follow-up pass:** history table + recovery honesty; home next-task by connection state; quarterly/year-end tax-year chrome; declaration/adjustments copy; connect-HMRC status without mock theatre.
+
+**Honest residual (outside this plan’s bar):** full board pixel-atlas match; capacity 200×800k; pilot/production-ready; HMRC Recognised listing; real-sandbox owner walkthrough with live credentials.

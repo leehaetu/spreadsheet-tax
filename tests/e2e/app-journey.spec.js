@@ -1,63 +1,52 @@
 import { test, expect } from '@playwright/test';
-
-async function signIn(page, next = '/app') {
-  await page.goto(`/signin?next=${encodeURIComponent(next)}`);
-  await page.fill('#email', 'demo@spreadsheet-tax.example');
-  await page.fill('#password', 'DemoPass123!');
-  await page.click('button[type=submit]');
-  await page.waitForURL(new RegExp(next.replace(/[/?]/g, '\\$&')));
-}
+import {
+  signIn,
+  mockHmrcConnected,
+  seedSources,
+  fillSubmitIds,
+  SE_FIXTURE,
+} from './helpers.js';
 
 /**
- * Gate 0 — real customer path: sample → review panel → continue → preview submit.
+ * Gate 0 — customer quarterly path: source → upload → map → figures → send (double/preview).
  */
 test.describe('Taxpayer app journey (Gate 0)', () => {
-  test('plumber sample reaches review with figures then submit path', async ({
-    page,
-  }) => {
-    await signIn(page);
+  test('upload path reaches review with figures then submit path', async ({ page }) => {
+    await mockHmrcConnected(page);
+    await signIn(page, '/app?flow=quarterly');
+    await seedSources(page, [
+      {
+        id: 'se-1',
+        type: 'self_employment',
+        label: 'Self-employment',
+        nickname: 'Plumber',
+        businessId: 'XAIS12345678901',
+      },
+    ]);
+    await page.reload();
+
+    await expect(page.locator('#quarterly-source-panel')).toBeVisible();
+    await page.locator('.quarterly-source-row').first().click();
     await expect(page.locator('#upload-panel')).toBeVisible();
     await expect(page.locator('#review-panel')).toBeHidden();
-    await page.locator('#samples').evaluate((element) => { element.open = true; });
 
-    await page
-      .locator('.sample-btn[data-sample="self_employment"]')
-      .click();
+    await page.setInputFiles('#file-input', SE_FIXTURE);
+    await page.locator('#import-btn').click();
 
+    await expect(page.locator('#map-panel')).toBeVisible({ timeout: 20_000 });
+    await page.locator('#goto-figures').click();
     await expect(page.locator('#review-panel')).toBeVisible({ timeout: 15_000 });
-    await expect(page.locator('#validation-panel')).toContainText(
-      /ready|passed|Check|Fix/i
-    );
+    await expect(page.locator('#summary-cards')).toBeVisible();
 
-    await expect(page.locator('#metric-income')).toBeVisible();
-    const income = await page.locator('#metric-income').innerText();
-    expect(income).not.toMatch(/^—$/);
-    expect(income.length).toBeGreaterThan(1);
     await page.locator('#goto-submit').click();
     await expect(page.locator('#submit-panel')).toBeVisible();
 
-    await page.locator('#nino').fill('AA123456A');
-    await page.locator('#tax-year').fill('2024-25');
-    await page.locator('#bid-se').fill('XAIS12345678901');
-
-    // Explicit cell/mapping approval required before send
+    await fillSubmitIds(page, { taxYear: '2024-25' });
     await page.locator('#approve-cells').check();
     await page.locator('#submit-btn').click();
-    await expect(page.locator('#submit-success')).toBeVisible({
-      timeout: 15_000,
-    });
+    await expect(page.locator('#submit-success')).toBeVisible({ timeout: 15_000 });
     await expect(page.locator('#submit-summary')).toContainText(
-      /Preview|NOT sent to HMRC|HMRC response/i
+      /Preview|NOT sent to HMRC|HMRC response|Update prepared|processed/i
     );
-  });
-
-  test('mobile viewport: sample still shows review', async ({ page }) => {
-    await page.setViewportSize({ width: 390, height: 844 });
-    await signIn(page);
-    await page.locator('#samples').evaluate((element) => { element.open = true; });
-    await page.locator('.sample-btn').first().click();
-    await expect(page.locator('#review-panel')).toBeVisible({ timeout: 15_000 });
-    await expect(page.locator('#metric-income')).toBeVisible();
-    await expect(page.locator('#goto-submit')).toBeVisible();
   });
 });

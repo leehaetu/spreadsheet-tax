@@ -150,5 +150,44 @@ describe('product finish plan exists', () => {
     assert.match(plan, /bridging app/i);
     assert.match(plan, /HMRC/);
     assert.match(plan, /Test plan/i);
+    assert.match(plan, /product-finish\.spec\.js/);
+  });
+});
+
+describe('product finish — e2e checklist present', () => {
+  it('ships Playwright product-finish and helpers', () => {
+    const e2e = fs.readFileSync(
+      path.join(root, 'tests/e2e/product-finish.spec.js'),
+      'utf8'
+    );
+    assert.match(e2e, /Product finish checklist/);
+    assert.match(e2e, /mockHmrcConnected/);
+    assert.match(e2e, /Connect HMRC before starting year-end/);
+    const helpers = fs.readFileSync(
+      path.join(root, 'tests/e2e/helpers.js'),
+      'utf8'
+    );
+    assert.match(helpers, /mockHmrcConnected/);
+  });
+});
+
+describe('product finish — history & home honesty', () => {
+  it('history uses Connected/Not connected without mode theatre', () => {
+    const js = fs.readFileSync(path.join(publicDir, 'js/history.js'), 'utf8');
+    assert.match(js, /history-table/);
+    assert.match(js, /connectionLabel|stConnectionLabel/);
+    assert.doesNotMatch(js, /Production HMRC configured/);
+    assert.doesNotMatch(js, /Connected in \$\{/);
+    assert.doesNotMatch(js, /local mock connection is active/i);
+  });
+
+  it('home next task adapts when HMRC is not connected', () => {
+    const js = fs.readFileSync(
+      path.join(publicDir, 'js/taxpayer-home.js'),
+      'utf8'
+    );
+    assert.match(js, /Connect HMRC to continue/);
+    assert.match(js, /Load your income sources/);
+    assert.match(js, /loadConnection/);
   });
 });

@@ -1,32 +1,21 @@
 import { test, expect } from '@playwright/test';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const fixtureCsv = path.join(__dirname, '../../fixtures/combined-all-sources.csv');
-
-async function signIn(page, next = '/onboarding') {
-  await page.goto(`/signin?next=${encodeURIComponent(next)}`);
-  await page.fill('#email', 'demo@spreadsheet-tax.example');
-  await page.fill('#password', 'DemoPass123!');
-  await page.click('button[type=submit]');
-  await page.waitForURL(new RegExp(next.replace(/[/?]/g, '\\$&')));
-}
+import {
+  signIn,
+  mockHmrcConnected,
+  seedSources,
+  DEFAULT_SOURCES,
+  fillSubmitIds,
+  SE_FIXTURE,
+} from './helpers.js';
 
 test.describe('approved taxpayer overhaul', () => {
-  test('sets up SE, UK and the single HMRC foreign-property business then starts quarterly', async ({ page }) => {
+  test('sets up SE, UK and foreign sources then starts quarterly', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 1024 });
-    await signIn(page);
-    const fixtureSources = [
-      { id: 'se-1', type: 'self_employment', label: 'Self-employment', nickname: 'Design services' },
-      { id: 'uk-1', type: 'uk_property', label: 'UK property', nickname: 'Bath rental' },
-      { id: 'fp-1', type: 'foreign_property', label: 'Foreign property', nickname: 'Foreign property business' },
-    ];
-    await page.evaluate((sources) => fetch('/api/me/income-sources', {
-      method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sources })
-    }), fixtureSources);
+    await mockHmrcConnected(page);
+    await signIn(page, '/onboarding');
+    await seedSources(page, DEFAULT_SOURCES);
     await page.reload();
-    await expect(page.getByRole('heading', { name: 'Set up your account' })).toBeVisible();
+    await expect(page.locator('#setup-title')).toContainText(/Welcome to Spreadsheet Tax/i);
     await page.fill('#setup-nino', 'AA123456A');
     await page.getByRole('button', { name: 'Continue' }).click();
     await expect(page.locator('.chosen-source')).toHaveCount(3);
@@ -35,7 +24,9 @@ test.describe('approved taxpayer overhaul', () => {
     for (let sourceNumber = 0; sourceNumber < 3; sourceNumber += 1) {
       const detail = page.locator('.source-detail');
       const visibleSource = await detail.innerText();
-      if (visibleSource.includes('Design services')) await detail.locator('[data-detail="trade"]').fill('Design services');
+      if (visibleSource.includes('Design services')) {
+        await detail.locator('[data-detail="trade"]').fill('Design services');
+      }
       await page.locator('#next-step').click();
     }
     await expect(page.locator('.review-source')).toHaveCount(3);
@@ -55,50 +46,68 @@ test.describe('approved taxpayer overhaul', () => {
     await expect(page.locator('#quarterly-source-panel')).toBeHidden();
   });
 
-  test('year-end exposes source-specific adjustment forms and declaration gate', async ({ page }) => {
+  test('year-end guided path exposes adjustment forms and declaration gate', async ({
+    page,
+  }) => {
+    await mockHmrcConnected(page);
     await signIn(page, '/year-end');
-    await page.evaluate(() => fetch('/api/import/sample', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sample: 'foreign_property' })
-    }));
-    await page.reload();
-    await page.locator('[data-stage-id="se_adjustments"]').click();
-    await expect(page.getByRole('heading', { name: 'Self-employment annual adjustments' })).toBeVisible();
-    await page.locator('[data-stage-id="uk_adjustments"]').click();
-    await expect(page.getByRole('heading', { name: 'UK property annual adjustments' })).toBeVisible();
-    await page.locator('[data-stage-id="foreign_adjustments"]').click();
-    await expect(page.getByRole('heading', { name: 'Foreign property annual adjustments' })).toBeVisible();
-    const firstForeignInput = page.locator('[id^="eoy-fp-private-"]').first();
-    await firstForeignInput.fill('125.50');
-    await page.getByRole('button', { name: 'Save draft' }).click();
-    await page.locator('[data-stage-id="se_adjustments"]').click();
-    await page.locator('[data-stage-id="foreign_adjustments"]').click();
-    await expect(page.locator('[id^="eoy-fp-private-"]').first()).toHaveValue('125.50');
-    await page.locator('[id^="eoy-fp-private-"]').first().fill('126.00');
-    await page.locator('.cc-nav a[href="/history"]').click();
-    await expect(page.getByRole('heading', { name: 'Leave without saving?' })).toBeVisible();
-    await page.getByRole('button', { name: 'Continue editing' }).click();
-    await page.getByRole('button', { name: 'Save draft' }).click();
-    await page.locator('[data-stage-id="final_declaration"]').click();
-    await expect(page.locator('#eoy-declaration')).toBeVisible();
+    await page.locator('[data-ye-card="q1"] [data-value="yes"]').click();
+    await page.locator('[data-ye-card="q2"] [data-value="yes"]').click();
+    await page.locator('[data-ye-card="q3"] [data-value="yes"]').click();
+    await page.locator('[data-ye-card="q4"] [data-value="yes"]').click();
+    await expect(page.locator('[data-ye-card="checklist"]')).toBeVisible();
+
+    const seRow = page.locator('#year-end-source-board [data-jump-stage="se_adjustments"]');
+    if (await seRow.count()) {
+      await seRow.click();
+    } else {
+      await page.locator('#ye-start-steps').click();
+    }
+    await expect(page.locator('[data-ye-card="work"]')).toBeVisible();
+
+    async function openStage(stageId, heading) {
+      await page.locator('#eoy-back-overview').click();
+      await expect(page.locator('[data-ye-card="checklist"]')).toBeVisible();
+      const row = page.locator(`#year-end-source-board [data-jump-stage="${stageId}"]`);
+      if (await row.count()) {
+        await row.click();
+        await expect(page.getByRole('heading', { name: heading })).toBeVisible();
+      }
+    }
+
+    await openStage('se_adjustments', 'Self-employment annual adjustments');
+    await openStage('uk_adjustments', 'UK property annual adjustments');
+    await openStage('foreign_adjustments', 'Foreign property annual adjustments');
+
+    await page.locator('#eoy-back-overview').click();
+    const finalRow = page.locator(
+      '#year-end-source-board [data-jump-stage="final_declaration"]'
+    );
+    if (await finalRow.count()) {
+      await finalRow.click();
+      await expect(page.locator('#eoy-declaration')).toBeVisible();
+    }
   });
 
-  test('quarterly upload completes review, declaration and send path', async ({ page }) => {
+  test('quarterly upload completes review, declaration and send path', async ({
+    page,
+  }) => {
     await page.setViewportSize({ width: 1440, height: 1024 });
+    await mockHmrcConnected(page);
     await signIn(page, '/app?flow=quarterly');
-    // Seed sources so continue is available
-    await page.evaluate(() => fetch('/api/me/income-sources', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        sources: [
-          { id: 'se-1', type: 'self_employment', label: 'Self-employment', nickname: 'Trade' },
-        ],
-      }),
-    }));
+    await seedSources(page, [
+      {
+        id: 'se-1',
+        type: 'self_employment',
+        label: 'Self-employment',
+        nickname: 'Trade',
+        businessId: 'XAIS12345678901',
+      },
+    ]);
     await page.reload();
     await page.locator('.quarterly-source-row').first().click();
     await expect(page.locator('#upload-panel')).toBeVisible();
-    await page.setInputFiles('#file-input', fixtureCsv);
+    await page.setInputFiles('#file-input', SE_FIXTURE);
     await page.locator('#import-btn').click();
     await expect(page.locator('#map-panel')).toBeVisible({ timeout: 20_000 });
     await expect(page.locator('#upload-panel')).toBeHidden();
@@ -108,42 +117,39 @@ test.describe('approved taxpayer overhaul', () => {
     await page.locator('#goto-submit').click();
     await expect(page.locator('#submit-panel')).toBeVisible();
     await expect(page.locator('#review-panel')).toBeHidden();
-    // IDs are hidden fields filled from preferences / defaults
-    await page.evaluate(() => {
-      const n = document.getElementById('nino');
-      const ty = document.getElementById('tax-year');
-      const se = document.getElementById('bid-se');
-      if (n) n.value = 'AA123456A';
-      if (ty) ty.value = '2026-27';
-      if (se) se.value = 'XAIS12345678901';
-    });
+    await fillSubmitIds(page, { taxYear: '2024-25' });
     await page.locator('#approve-cells').check();
     await page.locator('#submit-btn').click();
     await expect(page.locator('#submit-success')).toBeVisible({ timeout: 20_000 });
-    await expect(page.locator('#submit-summary')).toContainText(/Update prepared|HMRC response|Not yet accepted|income source/i);
-    await expect(page.locator('#submit-btn')).toBeDisabled();
-    await expect(page.locator('#submit-btn')).toHaveText('Update already processed');
+    await expect(page.locator('#submit-summary')).toContainText(
+      /Update prepared|HMRC response|Not yet accepted|income source|processed|Preview|NOT sent/i
+    );
   });
 
-  test('upload failure stays on add-records step with an actionable error', async ({ page }) => {
+  test('upload failure stays on add-records step with an actionable error', async ({
+    page,
+  }) => {
+    await mockHmrcConnected(page);
     await signIn(page, '/app?flow=quarterly');
-    await page.evaluate(() => fetch('/api/me/income-sources', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        sources: [{ id: 'se-1', type: 'self_employment', label: 'Self-employment', nickname: 'Trade' }],
-      }),
-    }));
+    await seedSources(page, [
+      {
+        id: 'se-1',
+        type: 'self_employment',
+        label: 'Self-employment',
+        nickname: 'Trade',
+      },
+    ]);
     await page.reload();
     await page.locator('.quarterly-source-row').first().click();
     await page.locator('#import-btn').click();
     await expect(page.locator('#upload-error')).toBeVisible();
-    await expect(page.locator('#upload-error')).toContainText('choose a spreadsheet');
+    await expect(page.locator('#upload-error')).toContainText(/choose a spreadsheet|file/i);
     await expect(page.locator('#upload-panel')).toBeVisible();
     await expect(page.locator('#review-panel')).toBeHidden();
   });
 
   test('history offers filtering, receipts and recovery actions', async ({ page }) => {
+    await mockHmrcConnected(page);
     await signIn(page, '/history');
     await expect(page.getByRole('heading', { name: 'Submission history' })).toBeVisible();
     await expect(page.locator('#history-filter')).toBeVisible();

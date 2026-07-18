@@ -105,13 +105,11 @@
       const c = st.connection || {};
       const human = document.getElementById('status-human');
       if (c.connected && !c.mock && !c.expired) {
-        human.textContent = 'Connected to HMRC. You can load your businesses and prepare updates.';
-      } else if (c.connected && c.mock) {
-        human.textContent = 'Not connected to HMRC yet. Use Connect as individual to authorise.';
+        human.textContent = 'Connected. You can load your businesses and prepare updates.';
       } else if (c.expired) {
         human.textContent = 'Your HMRC authorisation has expired. Connect again to continue.';
       } else {
-        human.textContent = 'Not connected. Connect as individual to continue.';
+        human.textContent = 'Not connected. Connect as individual to authorise Spreadsheet Tax with HMRC.';
       }
       if (typeof window.stRefreshConnection === 'function') window.stRefreshConnection();
       // Operator tools only when explicitly flagged on status for signed-in operators

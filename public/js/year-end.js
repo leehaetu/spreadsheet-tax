@@ -120,8 +120,9 @@ function showResult(data) {
   if (err) err.hidden = true;
   if (ok) ok.hidden = false;
   if (sum) {
+    // Do not surface internal mode labels (preview/sandbox) as customer theatre.
     sum.textContent = data.ok
-      ? `Step “${data.workflow}” completed (mode: ${data.mode}).`
+      ? `Step “${data.workflow}” completed.`
       : `Step “${data.workflow}” failed or returned non-success from HMRC.`;
   }
   const rb = data.readback;
@@ -320,19 +321,53 @@ function renderEditor(stageId) {
   const root = document.getElementById('eoy-editor');
   if (!root) return;
   if (stageId === 'se_adjustments') {
-    root.innerHTML = `<div class="eoy-form"><h4>Self-employment annual adjustments</h4><div class="detail-grid">${field('eoy-se-aia','Annual investment allowance')}${field('eoy-se-other-allowance','Other capital allowance')}${field('eoy-se-nontaxable','Included non-taxable profits')}${field('eoy-se-basis','Basis adjustment')}</div><p class="help-tip">These are annual adjustments, not quarterly income and expenses. Enter only amounts supported by your records.</p></div>`;
+    root.innerHTML = `<div class="eoy-form">
+      <h4>Self-employment annual adjustments</h4>
+      <p class="help-tip">For tax year ${esc(eoyCase?.taxYear || '')}. Annual allowances and adjustments only — not quarterly income and expenses.</p>
+      <div class="detail-grid">
+        ${field('eoy-se-aia','Annual investment allowance')}
+        ${field('eoy-se-other-allowance','Other capital allowance')}
+        ${field('eoy-se-nontaxable','Included non-taxable profits')}
+        ${field('eoy-se-basis','Basis adjustment')}
+      </div>
+      <p class="help-tip">Enter only amounts supported by your records. Brought-forward losses are handled on the losses step if you selected that in the guide.</p>
+    </div>`;
   } else if (stageId === 'uk_adjustments') {
     const uk = (eoyCase?.sources || []).find((source) => source.type === 'uk_property');
-    root.innerHTML = `<div class="eoy-form"><h4>UK property annual adjustments</h4>${uk?.joint ? `<p class="help-tip">Jointly owned source · saved ownership share ${esc(uk.ownershipShare || 50)}%. Check that uploaded records already represent the reportable share.</p>` : ''}<div class="detail-grid">${field('eoy-uk-private','Private-use adjustment')}${field('eoy-uk-balancing','Balancing charge')}${field('eoy-uk-aia','Annual investment allowance')}${field('eoy-uk-other-allowance','Other capital allowance')}</div></div>`;
+    root.innerHTML = `<div class="eoy-form">
+      <h4>UK property annual adjustments</h4>
+      <p class="help-tip">For tax year ${esc(eoyCase?.taxYear || '')}. Finance costs and private use that belong on the annual property update.</p>
+      ${uk?.joint ? `<p class="help-tip">Jointly owned source · saved ownership share ${esc(uk.ownershipShare || 50)}%. Check that uploaded records already represent the reportable share.</p>` : ''}
+      <div class="detail-grid">
+        ${field('eoy-uk-private','Private-use adjustment')}
+        ${field('eoy-uk-balancing','Balancing charge')}
+        ${field('eoy-uk-aia','Annual investment allowance')}
+        ${field('eoy-uk-other-allowance','Other capital allowance')}
+      </div>
+    </div>`;
   } else if (stageId === 'foreign_adjustments') {
     const foreign = (eoyCase?.foreignPropertyRecords || []).filter((record) => /^[A-Z]{3}$/.test(record.countryCode || ''));
     root.innerHTML = foreign.length ? `<div class="eoy-form"><h4>Foreign property annual adjustments</h4><div class="foreign-tabs" role="tablist" aria-label="Foreign property countries">${foreign.map((record,index) => `<button type="button" role="tab" data-foreign-tab="${esc(record.id)}" aria-selected="${index === 0}">${esc(record.label || record.countryCode)} <span>${esc(record.countryCode)}</span></button>`).join('')}</div><p class="help-tip">Enter GBP values only. Keep evidence of the exchange-rate method and foreign tax with your digital records.</p>${foreign.map((record,index) => `<section class="foreign-adjustment" data-foreign-panel="${esc(record.id)}" ${index === 0 ? '' : 'hidden'}><div class="foreign-heading"><div><h5>${esc(record.label || record.countryCode)} adjustments</h5><p>For tax year ${esc(eoyCase?.taxYear || '')}</p></div><strong>${esc(record.countryCode)}</strong></div><div class="detail-grid">${field(`eoy-fp-private-${record.id}`,'Private-use adjustment')}${field(`eoy-fp-balancing-${record.id}`,'Balancing charge')}${field(`eoy-fp-aia-${record.id}`,'Annual investment allowance')}${field(`eoy-fp-other-${record.id}`,'Other capital allowance')}<label>Exchange-rate evidence<select id="eoy-fp-rate-${record.id}"><option>HMRC monthly average rate</option><option>HMRC annual average rate</option><option>Transaction-date rate with evidence</option></select><small>Saved as evidence; this choice is not silently sent as an annual adjustment.</small></label>${field(`eoy-fp-tax-${record.id}`,'Foreign tax paid (evidence only)','Saved with this case. It is not added to an unsupported HMRC field.')}</div></section>`).join('')}</div>` : '<div class="eoy-form"><h4>Foreign property annual adjustments</h4><p class="help-tip">No country records have been carried forward from an uploaded spreadsheet. Spreadsheet Tax will not invent a country or create a separate HMRC income source. Upload and review the foreign-property spreadsheet before this step.</p><a class="btn btn-primary" href="/app?flow=quarterly">Upload foreign-property spreadsheet</a></div>';
   } else if (stageId === 'other_income_losses') {
     root.innerHTML = `<div class="eoy-form"><h4>Losses and other income</h4><div class="detail-grid">${field('eoy-loss','Brought-forward self-employment loss','Use only a loss supported by earlier records.')}</div></div>`;
   } else if (stageId === 'calculation') {
-    root.innerHTML = '<div class="eoy-form"><h4>HMRC calculation</h4><p class="help-tip">The product requests a calculation from HMRC. It does not invent or locally calculate your final tax bill.</p></div>';
+    root.innerHTML = `<div class="eoy-form">
+      <h4>Year-end calculation</h4>
+      <p class="help-tip">Spreadsheet Tax requests a tax calculation from HMRC for ${esc(eoyCase?.taxYear || 'this tax year')}. It does not invent or locally calculate your final tax bill. Use the actions below when you are ready.</p>
+    </div>`;
   } else if (stageId === 'final_declaration') {
-    root.innerHTML = '<div class="eoy-form declaration-box"><h4>Review before finalising</h4><label><input type="checkbox" id="eoy-declaration"> I confirm I have reviewed the figures and that this declaration is accurate to the best of my knowledge.</label><p class="muted">Only send when you are ready to finalise this tax year with HMRC.</p></div>';
+    root.innerHTML = `<div class="eoy-form declaration-box">
+      <h4>Review and declare</h4>
+      <p class="muted">Please review your final figures before submitting your declaration to HMRC.</p>
+      <p class="eyebrow" style="margin-top:1rem">You are declaring that:</p>
+      <ul class="declaration-points">
+        <li>The information provided is correct and complete to the best of your knowledge.</li>
+        <li>You have kept appropriate records to support your tax return.</li>
+        <li>You understand that careless or deliberate inaccuracies may result in penalties.</li>
+      </ul>
+      <label><input type="checkbox" id="eoy-declaration"> I confirm I have read and agree to the declaration above.</label>
+      <p class="muted">Only send when you are ready to finalise this tax year with HMRC.</p>
+    </div>`;
   } else {
     root.innerHTML = '';
   }
@@ -592,8 +627,13 @@ function renderCase() {
     const workSteps = apps.filter((s) => s.id !== 'complete').length;
     meta.textContent = `Tax year ${eoyCase.taxYear} · ${done} of ${workSteps} steps done · built from your answers and HMRC sources`;
   }
+  const yearLabel = eoyCase.taxYear
+    ? String(eoyCase.taxYear).replace('-', '–')
+    : '';
   const hy = document.getElementById('eoy-heading-year');
-  if (hy && eoyCase.taxYear) hy.textContent = String(eoyCase.taxYear).replace('-', '–');
+  if (hy && yearLabel) hy.textContent = yearLabel;
+  const chip = document.getElementById('eoy-tax-chip');
+  if (chip && yearLabel) chip.textContent = yearLabel;
   const title = document.getElementById('stage-title');
   const detail = document.getElementById('stage-detail');
   if (title) title.textContent = stage?.title || eoyCase.stageId;
