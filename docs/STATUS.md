@@ -1,7 +1,7 @@
 # Project status
 
 **Last updated:** 2026-07-18  
-**App version:** **1.28.0**  
+**App version:** **1.29.0**
 **Screen audit pack:** [docs/audits/2026-07-18-all-screens/](./audits/2026-07-18-all-screens/) — drives UI fixes (not “image work”)  
 **Sales review + plan:** [docs/audits/2026-07-18-sales-site-review/](./audits/2026-07-18-sales-site-review/) · [AFTER-REPORT.md](./audits/2026-07-18-sales-site-review/AFTER-REPORT.md)  
 **Taxpayer overhaul gaps:** [TAXPAYER-OVERHAUL-BACKEND-GAP-REPORT.md](./TAXPAYER-OVERHAUL-BACKEND-GAP-REPORT.md)  
@@ -12,6 +12,39 @@
 **Live:** https://spreadsheet-tax-production.up.railway.app  
 
 ---
+
+## Truth status (2026-07-18) — v1.29.0 taxpayer workflow checkpoint 2
+
+### Implemented in 1.29.0 (not the completed overhaul; not pilot-ready)
+
+- Manual quarterly figures for SE, UK property and foreign property now create a CSV draft and use the existing deterministic import, validation and review path [CUSTOMER_WORKFLOW]
+- Year-end adjustment drafts persist per user, tax year and stage, including separate foreign-property evidence fields [UNIT_TESTED + CUSTOMER_WORKFLOW]
+- Unsaved year-end changes are guarded before internal navigation [CUSTOMER_WORKFLOW]
+- Calculation result UI displays only numeric values returned by HMRC; preview mode explicitly shows that no estimate exists [ROUTE_ONLY]
+- Foreign tax and exchange-rate evidence are stored separately and are not silently inserted into unsupported annual HMRC fields [UNIT_TESTED]
+
+```text
+BLOCKERS:
+- Capacity 200 practices / 800k customers NOT MET
+- Release gates remain OPEN
+- HMRC Recognised: No
+- Production HMRC access unproven
+- Annual field matrix and final-declaration wording still require official schema review
+- New annual forms have not been re-proven with complete HMRC sandbox HTTP
+- Full three-board visual QA remains incomplete
+
+PROVEN THIS CHECKPOINT:
+- `npm test`: 231/231 unit/integration tests [UNIT_TESTED]
+- 19/19 focused taxpayer/year-end tests [UNIT_TESTED]
+- 5/5 taxpayer-overhaul Playwright journeys [CUSTOMER_WORKFLOW]
+- Manual entry reaches the mapped review screen [CUSTOMER_WORKFLOW]
+- Foreign adjustment value survives save, stage changes and reload [CUSTOMER_WORKFLOW]
+
+UNPROVEN:
+- HMRC calculation-result rendering against a real current sandbox response
+- Full final declaration submission and readback
+- Production-like capacity, DR, security, privacy and accessibility gates
+```
 
 ## Truth status (2026-07-18) — v1.28.0 tenant security + capacity track
 

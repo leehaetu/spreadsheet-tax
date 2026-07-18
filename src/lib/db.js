@@ -378,6 +378,20 @@ function migrate(database) {
 
   // Additive columns for integrity chain (idempotent)
   try {
+    const eoyCols = database
+      .prepare(`PRAGMA table_info(eoy_cases)`)
+      .all()
+      .map((c) => c.name);
+    if (!eoyCols.includes('data_json')) {
+      database.exec(`ALTER TABLE eoy_cases ADD COLUMN data_json TEXT`);
+    }
+  } catch (e) {
+    console.warn(
+      'eoy_cases data column:',
+      e instanceof Error ? e.message : e
+    );
+  }
+  try {
     const reviewCols = database
       .prepare(`PRAGMA table_info(spreadsheet_reviews)`)
       .all()

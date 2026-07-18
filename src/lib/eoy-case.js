@@ -84,6 +84,7 @@ export function getEoyCase(userId, taxYear) {
       stageIndex: 0,
       completedStages: [],
       notes: {},
+      data: {},
       sources,
       stages: EOY_STAGES,
     };
@@ -103,6 +104,7 @@ export function getEoyCase(userId, taxYear) {
     stageIndex,
     completedStages: completed,
     notes: row.notes_json ? JSON.parse(row.notes_json) : {},
+    data: row.data_json ? JSON.parse(row.data_json) : {},
     sources,
     stages: EOY_STAGES,
     updatedAt: row.updated_at,
@@ -111,7 +113,7 @@ export function getEoyCase(userId, taxYear) {
 
 /**
  * @param {string} userId
- * @param {{ taxYear?: string, stageId?: string, completeCurrent?: boolean, note?: string }} patch
+ * @param {{ taxYear?: string, stageId?: string, completeCurrent?: boolean, note?: string, data?: Record<string, unknown> }} patch
  */
 export function updateEoyCase(userId, patch = {}) {
   const ty = patch.taxYear || defaultTaxYear();
@@ -119,6 +121,7 @@ export function updateEoyCase(userId, patch = {}) {
   let stageId = patch.stageId || cur.stageId;
   let completed = [...(cur.completedStages || [])];
   const notes = { ...cur.notes };
+  const data = { ...(cur.data || {}), ...(patch.data || {}) };
 
   if (patch.note) {
     notes[stageId] = String(patch.note).slice(0, 2000);
@@ -145,8 +148,8 @@ export function updateEoyCase(userId, patch = {}) {
   if (!exists) {
     getDb()
       .prepare(
-        `INSERT INTO eoy_cases (id, user_id, tax_year, stage_id, completed_json, notes_json, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`
+        `INSERT INTO eoy_cases (id, user_id, tax_year, stage_id, completed_json, notes_json, data_json, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
       )
       .run(
         newId(),
@@ -155,18 +158,20 @@ export function updateEoyCase(userId, patch = {}) {
         stageId,
         JSON.stringify(completed),
         JSON.stringify(notes),
+        JSON.stringify(data),
         now
       );
   } else {
     getDb()
       .prepare(
-        `UPDATE eoy_cases SET stage_id = ?, completed_json = ?, notes_json = ?, updated_at = ?
+        `UPDATE eoy_cases SET stage_id = ?, completed_json = ?, notes_json = ?, data_json = ?, updated_at = ?
          WHERE user_id = ? AND tax_year = ?`
       )
       .run(
         stageId,
         JSON.stringify(completed),
         JSON.stringify(notes),
+        JSON.stringify(data),
         now,
         userId,
         ty

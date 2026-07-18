@@ -138,6 +138,9 @@ describe('year-end workflows', () => {
         taxYear: '2024-25',
         completeCurrent: true,
         note: 'Quarterlies confirmed in test',
+        data: {
+          quarterly_complete: { evidenceChecked: true },
+        },
       })
     );
     assert.equal(put.status, 200);
@@ -145,10 +148,12 @@ describe('year-end workflows', () => {
     assert.ok(jPut.case.completedStages.includes('quarterly_complete'));
     assert.equal(jPut.case.stageId, 'review_totals');
     assert.match(jPut.case.notes.quarterly_complete || '', /Quarterlies/);
+    assert.equal(jPut.case.data.quarterly_complete.evidenceChecked, true);
 
     const get2 = await request('GET', '/api/me/eoy-case?taxYear=2024-25');
     const j2 = JSON.parse(get2.body);
     assert.equal(j2.case.stageId, 'review_totals');
+    assert.equal(j2.case.data.quarterly_complete.evidenceChecked, true);
 
     const jump = await request(
       'PUT',

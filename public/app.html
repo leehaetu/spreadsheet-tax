@@ -78,6 +78,11 @@
       </form>
       <p id="upload-error" class="error" hidden></p>
 
+      <div class="manual-entry-launch">
+        <button type="button" class="btn btn-ghost" id="open-manual-entry">Enter figures manually</button>
+        <span class="muted">Useful when you do not have a spreadsheet for this period.</span>
+      </div>
+
       <details id="samples" style="margin-top:1rem">
         <summary class="muted" style="cursor:pointer">Try a sample first (fictional figures — not sent to HMRC)</summary>
       <div class="sample-grid" id="sample-grid" style="margin-top:0.75rem">
@@ -253,6 +258,17 @@
       </div>
     </section>
   </main>
+
+  <dialog id="manual-entry-dialog" class="manual-entry-dialog">
+    <form method="dialog" id="manual-entry-form">
+      <header><div><h2>Enter quarterly figures manually</h2><p>Enter totals in GBP. You will review the mapped figures before any submission.</p></div><button type="button" class="btn btn-ghost btn-sm" id="close-manual-entry">Close</button></header>
+      <div class="detail-grid manual-period"><label>Period start<input type="date" id="manual-period-start" value="2026-04-06" required></label><label>Period end<input type="date" id="manual-period-end" value="2026-07-05" required></label></div>
+      <div id="manual-entry-rows" class="manual-entry-rows"></div>
+      <button type="button" class="btn btn-ghost" id="add-manual-row">Add another figure</button>
+      <p id="manual-entry-error" class="error" hidden></p>
+      <footer><button type="button" class="btn btn-ghost" id="cancel-manual-entry">Cancel</button><button type="submit" class="btn btn-primary">Review these figures</button></footer>
+    </form>
+  </dialog>
 
   <footer class="site-footer">
     <div class="wrap footer-bottom" style="border:0;padding:0">

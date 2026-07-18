@@ -131,7 +131,7 @@
         </div>
         <div class="eoy-actions">
           <button type="button" class="btn btn-primary" id="complete-stage">Mark step done &amp; continue</button>
-          <button type="button" class="btn btn-ghost" id="save-note">Save note only</button>
+          <button type="button" class="btn btn-ghost" id="save-note">Save draft</button>
         </div>
       </div>
     </section>
@@ -142,6 +142,7 @@
       <div id="wf-success" class="success-box" hidden>
         <p id="wf-summary"></p>
         <p class="muted" id="wf-receipt"></p>
+        <div id="calculation-view" class="calculation-view" hidden></div>
         <a class="btn btn-ghost" id="wf-receipt-link" href="/history">View submissions</a>
       </div>
       <pre id="wf-out" class="code-block" style="max-height:20rem;overflow:auto">Connect HMRC, confirm sources, then run the current step.</pre>
@@ -223,6 +224,9 @@
       </details>
     </section>
   </main>
+  <dialog id="unsaved-year-end-dialog" class="confirm-dialog">
+    <form method="dialog"><h2>Leave without saving?</h2><p>You have unsaved year-end figures on this screen.</p><div class="setup-actions"><button value="cancel" class="btn btn-ghost">Continue editing</button><button value="discard" class="btn btn-danger">Discard changes</button></div></form>
+  </dialog>
   <script src="/js/year-end.js"></script>
   <script src="/js/cookie-banner.js"></script>
 </body>

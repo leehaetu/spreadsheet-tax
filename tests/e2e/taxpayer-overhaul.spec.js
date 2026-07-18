@@ -51,6 +51,17 @@ test.describe('approved taxpayer overhaul', () => {
     await expect(page.getByRole('heading', { name: 'UK property annual adjustments' })).toBeVisible();
     await page.locator('[data-stage-id="foreign_adjustments"]').click();
     await expect(page.getByRole('heading', { name: 'Foreign property annual adjustments' })).toBeVisible();
+    const firstForeignInput = page.locator('[id^="eoy-fp-private-"]').first();
+    await firstForeignInput.fill('125.50');
+    await page.getByRole('button', { name: 'Save draft' }).click();
+    await page.locator('[data-stage-id="se_adjustments"]').click();
+    await page.locator('[data-stage-id="foreign_adjustments"]').click();
+    await expect(page.locator('[id^="eoy-fp-private-"]').first()).toHaveValue('125.50');
+    await page.locator('[id^="eoy-fp-private-"]').first().fill('126.00');
+    await page.getByRole('link', { name: 'Receipts' }).first().click();
+    await expect(page.getByRole('heading', { name: 'Leave without saving?' })).toBeVisible();
+    await page.getByRole('button', { name: 'Continue editing' }).click();
+    await page.getByRole('button', { name: 'Save draft' }).click();
     await page.locator('[data-stage-id="final_declaration"]').click();
     await expect(page.locator('#eoy-declaration')).toBeVisible();
   });
@@ -74,6 +85,17 @@ test.describe('approved taxpayer overhaul', () => {
     await page.locator('#submit-btn').click();
     await expect(page.locator('#submit-success')).toBeVisible({ timeout: 20_000 });
     await expect(page.locator('#submit-summary')).toContainText(/Preview|NOT sent to HMRC/i);
+  });
+
+  test('manual quarterly figures use the same mapping and review path', async ({ page }) => {
+    await signIn(page, '/app?flow=quarterly');
+    await page.getByRole('button', { name: 'Enter figures manually' }).click();
+    await expect(page.getByRole('heading', { name: 'Enter quarterly figures manually' })).toBeVisible();
+    await page.locator('[data-manual-value]').first().fill('1250.00');
+    await page.getByRole('button', { name: 'Review these figures' }).click();
+    await expect(page.locator('#review-panel')).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator('#metric-income')).toContainText('1,250');
+    await expect(page.locator('#validation-panel')).toContainText(/ready|passed|check/i);
   });
 
   test('history offers filtering, receipts and recovery actions', async ({ page }) => {

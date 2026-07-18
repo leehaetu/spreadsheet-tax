@@ -4,6 +4,9 @@
 let eoyStages = [];
 /** @type {Record<string, unknown> | null} */
 let eoyCase = null;
+let eoyDirty = false;
+let pendingYearEndHref = '';
+let pendingYearEndStage = '';
 
 /** Stage → primary HMRC workflow button(s) */
 const STAGE_ACTIONS = {
@@ -133,7 +136,37 @@ function showResult(data) {
     link.href = `/api/receipts/${encodeURIComponent(data.receiptId)}`;
     link.textContent = 'Download receipt JSON';
   }
+  renderCalculationResult(data);
   showOut(data);
+}
+
+function renderCalculationResult(data) {
+  const root = document.getElementById('calculation-view');
+  if (!root) return;
+  const isCalculation = ['calc', 'calc_list', 'final_calc'].includes(data.workflow);
+  if (!isCalculation) { root.hidden = true; root.innerHTML = ''; return; }
+  root.hidden = false;
+  if (data.previewOnly) {
+    root.innerHTML = '<h3>Calculation not available in preview</h3><p>No HMRC calculation HTTP request was made. This preview receipt does not contain a tax estimate.</p>';
+    return;
+  }
+  const source = data.readback?.body || data.body || {};
+  const values = [];
+  const visit = (object, prefix = '') => {
+    if (!object || typeof object !== 'object' || values.length >= 12) return;
+    for (const [key, value] of Object.entries(object)) {
+      const path = prefix ? `${prefix}.${key}` : key;
+      if (typeof value === 'number' && /(tax|income|profit|liability|allowance|expense|amount|due)/i.test(path)) values.push([path, value]);
+      else if (value && typeof value === 'object') visit(value, path);
+      if (values.length >= 12) break;
+    }
+  };
+  visit(source);
+  if (!values.length) {
+    root.innerHTML = '<h3>HMRC response received</h3><p>The response did not contain calculation amounts this screen can safely label. Download the receipt for the complete response.</p>';
+    return;
+  }
+  root.innerHTML = `<h3>HMRC calculation figures</h3><p>Values below are read from the HMRC response; they are not calculated locally.</p><dl>${values.map(([path,value]) => `<div><dt>${esc(path.replace(/[._]/g,' '))}</dt><dd>${new Intl.NumberFormat('en-GB',{style:'currency',currency:'GBP'}).format(value)}</dd></div>`).join('')}</dl>`;
 }
 
 function showError(msg) {
@@ -201,7 +234,7 @@ function renderEditor(stageId) {
     root.innerHTML = `<div class="eoy-form"><h4>UK property annual adjustments</h4>${uk?.joint ? `<p class="help-tip">Jointly owned source · saved ownership share ${esc(uk.ownershipShare || 50)}%. Check that uploaded records already represent the reportable share.</p>` : ''}<div class="detail-grid">${field('eoy-uk-private','Private-use adjustment')}${field('eoy-uk-balancing','Balancing charge')}${field('eoy-uk-aia','Annual investment allowance')}${field('eoy-uk-other-allowance','Other capital allowance')}</div></div>`;
   } else if (stageId === 'foreign_adjustments') {
     const foreign = (eoyCase?.sources || []).filter((source) => source.type === 'foreign_property');
-    root.innerHTML = foreign.length ? `<div class="eoy-form"><h4>Foreign property annual adjustments</h4><p class="help-tip">Enter GBP values only. Keep evidence of the exchange-rate method with your digital records.</p>${foreign.map((source) => `<section class="foreign-adjustment"><h5>${esc(source.nickname || source.label)} · ${esc(source.countryCode || 'Country not set')}</h5><div class="detail-grid">${field(`eoy-fp-private-${source.id}`,'Private-use adjustment')}${field(`eoy-fp-balancing-${source.id}`,'Balancing charge')}${field(`eoy-fp-aia-${source.id}`,'Annual investment allowance')}${field(`eoy-fp-other-${source.id}`,'Other capital allowance')}</div></section>`).join('')}</div>` : '<p class="help-tip">No foreign-property sources are configured. Add them in Settings before continuing.</p>';
+    root.innerHTML = foreign.length ? `<div class="eoy-form"><h4>Foreign property annual adjustments</h4><p class="help-tip">Enter GBP values only. Keep evidence of the exchange-rate method with your digital records.</p>${foreign.map((source) => `<section class="foreign-adjustment"><h5>${esc(source.nickname || source.label)} · ${esc(source.countryCode || 'Country not set')}</h5><div class="detail-grid">${field(`eoy-fp-private-${source.id}`,'Private-use adjustment')}${field(`eoy-fp-balancing-${source.id}`,'Balancing charge')}${field(`eoy-fp-aia-${source.id}`,'Annual investment allowance')}${field(`eoy-fp-other-${source.id}`,'Other capital allowance')}<label>Exchange-rate evidence<select id="eoy-fp-rate-${source.id}"><option>HMRC monthly average rate</option><option>HMRC annual average rate</option><option>Transaction-date rate with evidence</option></select><small>Saved as evidence; it is not itself an HMRC annual adjustment field.</small></label>${field(`eoy-fp-tax-${source.id}`,'Foreign tax paid (evidence only)','Saved with this case. The annual adjustment request does not silently add this to an unsupported field.')}</div></section>`).join('')}</div>` : '<p class="help-tip">No foreign-property sources are configured. Add them in Settings before continuing.</p>';
   } else if (stageId === 'other_income_losses') {
     root.innerHTML = `<div class="eoy-form"><h4>Losses and other income</h4><div class="detail-grid">${field('eoy-loss','Brought-forward self-employment loss','Use only a loss supported by earlier records.')}</div></div>`;
   } else if (stageId === 'calculation') {
@@ -211,6 +244,23 @@ function renderEditor(stageId) {
   } else {
     root.innerHTML = '';
   }
+  const saved = eoyCase?.data?.[stageId] || {};
+  root.querySelectorAll('input[id], select[id]').forEach((input) => {
+    if (Object.prototype.hasOwnProperty.call(saved, input.id)) {
+      if (input.type === 'checkbox') input.checked = Boolean(saved[input.id]);
+      else input.value = String(saved[input.id]);
+    }
+    input.addEventListener('input', () => { eoyDirty = true; });
+    input.addEventListener('change', () => { eoyDirty = true; });
+  });
+}
+
+function collectEditorData() {
+  const out = {};
+  document.querySelectorAll('#eoy-editor input[id], #eoy-editor select[id]').forEach((input) => {
+    out[input.id] = input.type === 'checkbox' ? input.checked : input.value;
+  });
+  return out;
 }
 
 function renderProgress() {
@@ -366,20 +416,30 @@ async function patchCase(body) {
 }
 
 async function jumpToStage(stageId) {
+  if (eoyDirty) {
+    pendingYearEndStage = stageId;
+    document.getElementById('unsaved-year-end-dialog')?.showModal();
+    return;
+  }
   await patchCase({ stageId });
 }
 
 async function completeCurrent() {
   const note = document.getElementById('stage-note')?.value || '';
+  const stageId = eoyCase?.stageId;
   await patchCase({
     completeCurrent: true,
     note: note || undefined,
+    data: stageId ? { [stageId]: collectEditorData() } : undefined,
   });
+  eoyDirty = false;
 }
 
 async function saveNoteOnly() {
   const note = document.getElementById('stage-note')?.value || '';
-  await patchCase({ note });
+  const stageId = eoyCase?.stageId;
+  await patchCase({ note, data: stageId ? { [stageId]: collectEditorData() } : undefined });
+  eoyDirty = false;
 }
 
 document.querySelectorAll('[data-wf]').forEach((btn) => {
@@ -402,6 +462,38 @@ document.getElementById('tax-year')?.addEventListener('change', () => {
   const ty = document.getElementById('tax-year');
   if (ty) ty.dataset.userEdited = '1';
   loadCase();
+});
+
+window.addEventListener('beforeunload', (event) => {
+  if (!eoyDirty) return;
+  event.preventDefault();
+  event.returnValue = '';
+});
+document.addEventListener('click', (event) => {
+  const link = event.target.closest('a[href]');
+  if (!link || !eoyDirty || link.target === '_blank') return;
+  const url = new URL(link.href, location.href);
+  if (url.origin !== location.origin) return;
+  event.preventDefault();
+  pendingYearEndHref = url.href;
+  document.getElementById('unsaved-year-end-dialog')?.showModal();
+});
+document.getElementById('unsaved-year-end-dialog')?.addEventListener('close', (event) => {
+  if (event.target.returnValue !== 'discard') {
+    pendingYearEndHref = '';
+    pendingYearEndStage = '';
+    return;
+  }
+  eoyDirty = false;
+  if (pendingYearEndHref) {
+    location.href = pendingYearEndHref;
+    return;
+  }
+  if (pendingYearEndStage) {
+    const stage = pendingYearEndStage;
+    pendingYearEndStage = '';
+    patchCase({ stageId: stage });
+  }
 });
 
 document.getElementById('load-biz')?.addEventListener('click', async () => {
