@@ -1,6 +1,6 @@
 # Security hardening — complete bar (2026-07-18)
 
-**App version:** 1.33.5 (target ship)  
+**App version:** **1.33.5** (live)  
 **Live:** https://spreadsheet-tax-production.up.railway.app  
 
 ## Definition of done (this stream)
@@ -16,7 +16,7 @@
 | H7 | Unused vulnerable `file-type` removed | **MET** |
 | H8 | SheetJS residual documented + isolated parse | **MET** (no npm fix) |
 | H9 | Security tests in CI unit suite | **MET** |
-| H10 | Live re-probe of critical paths | **required after deploy** |
+| H10 | Live re-probe of critical paths | **MET** (1.33.5: sandbox 403, sample/submit 401, admin non-admin 403, HSTS) |
 
 ## Not in scope / residual
 
