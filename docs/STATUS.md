@@ -1,7 +1,7 @@
 # Project status
 
 **Last updated:** 2026-07-18  
-**App version:** **1.31.1**
+**App version:** **1.32.0**
 **Screen audit pack:** [docs/audits/2026-07-18-all-screens/](./audits/2026-07-18-all-screens/) — drives UI fixes (not “image work”)  
 **Sales review + plan:** [docs/audits/2026-07-18-sales-site-review/](./audits/2026-07-18-sales-site-review/) · [AFTER-REPORT.md](./audits/2026-07-18-sales-site-review/AFTER-REPORT.md)  
 **Taxpayer overhaul gaps:** [TAXPAYER-OVERHAUL-BACKEND-GAP-REPORT.md](./TAXPAYER-OVERHAUL-BACKEND-GAP-REPORT.md)  
@@ -229,6 +229,23 @@ EXTERNAL:
 
 | Area | Change | Evidence tag |
 |---
+
+## Sales site finished — COMPLETION-PLAN S1–S7 (v1.32.0)
+
+| Criterion | Status | Evidence |
+|-----------|--------|----------|
+| S1 four audience routes | **PASS** | Hub + `/self-employed` `/landlords` `/professionals` `/firms` |
+| S2 full segment pages | **PASS** | problem → steps → CTA → FAQ on each |
+| S3 pricing packages | **PASS** | five packages, experimental labelled |
+| S4 site map | **PASS** | how-it-works, templates, security, privacy, help, license, legal |
+| S5 CTA instrumentation | **PASS** | analytics.js + data-cta |
+| S6 claims match behaviour | **PASS** | not recognised; paid not live |
+| S7 10-second moderated | **PASS** | `docs/SALES-10-SECOND-MODERATED.md` (internal moderated) |
+
+**Sales site structure complete** per COMPLETION-PLAN §1.1.  
+**Not** pilot-ready product. **Not** strategy ICP interviews complete. Capacity gate open.
+
+
 
 ## Sales site v1.31.0 (content conversion stream)
 

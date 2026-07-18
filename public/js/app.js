@@ -1077,6 +1077,7 @@ document.getElementById('submit-btn')?.addEventListener('click', async () => {
   }
 
   const btn = document.getElementById('submit-btn');
+  let submissionProcessed = false;
   if (btn) {
     btn.disabled = true;
     btn.textContent = 'Sending…';
@@ -1150,6 +1151,7 @@ document.getElementById('submit-btn')?.addEventListener('click', async () => {
       }
     }
     if (successBox) successBox.hidden = false;
+    submissionProcessed = true;
     setWizardStep(4);
     successBox?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     // Persist cumulative totals for next update comparison (signed-in)
@@ -1167,8 +1169,10 @@ document.getElementById('submit-btn')?.addEventListener('click', async () => {
     }
   } finally {
     if (btn) {
-      btn.disabled = false;
-      btn.textContent = 'Run preview submit';
+      btn.disabled = submissionProcessed;
+      btn.textContent = submissionProcessed
+        ? 'Update already processed'
+        : 'Run preview submit';
     }
   }
 });
