@@ -3,24 +3,25 @@
 **Live URL:** https://spreadsheet-tax-production.up.railway.app  
 **Project:** Spreadsheet-Tax · **Env:** production  
 
-## What is actually on Railway (honest)
+## What is actually on Railway (honest) — verified 2026-07-18
 
 | Resource | Status |
 |----------|--------|
-| **spreadsheet-tax** (web app) | One Node service — serves **sales site + API + product UI** in one process |
-| **Volume** `spreadsheet-tax-volume` → `/app/data` | SQLite + files (legacy / local cache path) |
-| **Postgres** | Provisioned (managed DB service) — app gets `DATABASE_URL` |
-| **Redis** | Provisioned — app gets `REDIS_URL` |
-| **Separate “frontend” service** | **None** — not needed; HTML/JS is static from the same app |
-| **Separate worker service** | **Optional** — code supports `npm run worker`; not always a second Railway service yet |
-| **S3 / object storage bucket** | **Not provisioned** — quarantine uses volume path / `OBJECT_STORAGE_DIR` |
-| **200 practices / 800k proven** | **NOT MET** — wiring infra ≠ load proof |
+| **spreadsheet-tax** (web app) | One Node service — sales + API + product UI · **live appVersion 1.28.0** |
+| **Volume** `spreadsheet-tax-volume` → `/app/data` | Files / object quarantine (`OBJECT_STORAGE_DIR=/app/data/objects`) |
+| **Postgres-9ioQ** (current SoR) | **New** managed Postgres · `DATABASE_URL` → `${{Postgres-9ioQ.DATABASE_URL}}` · schema + **RLS policies applied** |
+| **Postgres** (legacy) | Older DB still in project — not the active app URL after rewire |
+| **Redis** | Online · `REDIS_URL` → `${{Redis.REDIS_URL}}` · rate-limit path reports `redis: true` |
+| **Separate frontend** | **None** — static from same app |
+| **Separate worker** | **Optional** — `npm run worker` not a second Railway service yet |
+| **S3 bucket** | **Not provisioned** — volume path used |
+| **200 / 800k capacity gate** | **NOT MET** — infra wired ≠ load proof |
 
 ### Important honesty
 
-- **“Production API ready when you add HMRC keys”** means: the **code path** can flip to production HMRC via env.  
-- It does **not** mean: multi-service HA platform, capacity gate, or “put keys and sell to 800k”.  
-- Live app may still use **SQLite** until `DATABASE_URL` is active and dual-write / cutover is healthy — check `/health` → `dbMode`, `postgresConfigured`, `redisConfigured`.
+- Code + env vars are **not** the capacity gate. Check `/health` → `dbMode`, `postgresConfigured`, `redisConfigured`, `capacityGateMet`.  
+- RLS policies exist on the **new** Postgres after migrate; app-layer RBAC/ABAC still required.  
+- Redis rate limiting is **configured** when `REDIS_URL` is set; multi-instance proof still needs load evidence.
 
 ## GitHub
 
