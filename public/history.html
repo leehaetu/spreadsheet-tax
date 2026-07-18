@@ -1,25 +1,82 @@
 <!DOCTYPE html>
 <html lang="en-GB">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Submission history — Spreadsheet Tax</title><link rel="stylesheet" href="/css/site.css"></head>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Submission history — Spreadsheet Tax</title>
+  <link rel="stylesheet" href="/css/site.css" />
+</head>
 <body class="theme-light app-body cc-page">
   <button class="cc-menu-toggle" id="cc-menu-toggle" type="button" aria-controls="cc-sidebar" aria-expanded="false">Menu</button>
   <aside class="cc-sidebar" id="cc-sidebar">
     <a class="cc-brand" href="/home"><span class="logo-mark">ST</span><span><strong>Spreadsheet Tax</strong><small>Making Tax Digital</small></span></a>
-    <nav class="cc-nav"><a href="/home">Home</a><a href="/app?flow=quarterly">Quarterly updates</a><a href="/year-end">Tax return</a><a href="/records">Records</a><a class="active" href="/history">Messages</a><a href="/account">Settings</a></nav>
-    <div class="cc-connection"><span class="cc-status-dot"></span><div><small>HMRC connection</small><strong id="history-mode">Checking mode…</strong><span>MTD for Income Tax</span></div></div>
+    <nav class="cc-nav">
+      <a href="/home"><span class="cc-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-9.5Z"/></svg></span>Home</a>
+      <a href="/app?flow=quarterly"><span class="cc-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/></svg></span>Quarterly updates</a>
+      <a href="/year-end"><span class="cc-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg></span>Year end</a>
+      <a href="/records"><span class="cc-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 4h9a2 2 0 0 1 2 2v14l-3-2-3 2-3-2-3 2V6a2 2 0 0 1 2-2Z"/><path d="M10 9h6M10 13h6"/></svg></span>Sources</a>
+      <a class="active" href="/history"><span class="cc-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"/><path d="M12 8v5l3 2"/></svg></span>History</a>
+      <a href="/account"><span class="cc-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="9" r="3.5"/><path d="M5 19.5c1.5-3 4-4.5 7-4.5s5.5 1.5 7 4.5"/></svg></span>Settings</a>
+    </nav>
+    <div class="cc-sidebar-bottom">
+      <a class="cc-connection" href="/connect-hmrc"><span class="cc-status-dot" aria-hidden="true"></span><span><small>HMRC connection</small><strong id="history-mode">Checking…</strong><em>MTD for Income Tax</em></span></a>
+      <a class="cc-person" href="/account"><span class="cc-avatar">ST</span><span><strong id="account-name">Your account</strong><small>Taxpayer</small></span></a>
+    </div>
   </aside>
   <main class="cc-main history-shell">
-    <header class="setup-header"><div><h1>Submission history</h1><p>Drafts, attempts, receipts and evidence for your tax account.</p></div><div class="cc-tax-year"><strong>Tax year 2026–27</strong><span>6 April 2026 to 5 April 2027</span></div></header>
+    <header class="setup-header">
+      <div>
+        <h1>Submission history</h1>
+        <p>Drafts, attempts, receipts and evidence for your tax account.</p>
+      </div>
+      <div class="cc-tax-year"><strong>Tax year 2026–27</strong><span>6 April 2026 to 5 April 2027</span></div>
+    </header>
     <p id="gate" class="error" hidden></p>
-    <section class="history-summary" aria-label="Submission summary"><div><strong id="history-total">—</strong><span>Total attempts</span></div><div><strong id="history-success">—</strong><span>Successful or previewed</span></div><div><strong id="history-action">—</strong><span>Need attention</span></div></section>
-    <section class="history-section"><div class="history-toolbar"><div><h2>Submission timeline</h2><p>Recent drafts, attempts and evidence. Every result keeps its actual mode.</p></div><label>Status<select id="history-filter"><option value="all">All statuses</option><option value="ok">Successful / preview</option><option value="failed">Failed</option><option value="draft">Drafts</option></select></label><a class="btn btn-ghost btn-sm" href="/api/me/submissions/export">Export CSV</a></div><div id="history-list" class="history-list"><p class="muted">Loading history…</p></div><div class="history-more"><button type="button" class="btn btn-ghost btn-sm" id="history-more" hidden>Show all history</button></div></section>
-    <section class="recovery-section"><h2>When something needs attention</h2><div class="recovery-grid">
-      <article id="recovery-authority"><strong>HMRC authorisation</strong><p id="recovery-authority-copy">Checking your connection…</p><a href="/connect-hmrc">Manage connection</a></article>
-      <article><strong>Upload validation failed</strong><p>Return to the draft, fix highlighted records and approve the new figures.</p><a href="/records">View drafts</a></article>
-      <article id="recovery-service"><strong>HMRC service availability</strong><p id="recovery-service-copy">Checking the recorded service status…</p><a href="/app?flow=quarterly">Return to update</a></article>
-      <article id="recovery-duplicate"><strong>Duplicate-submission protection</strong><p id="recovery-duplicate-copy">Checking failed receipts for duplicate-submission evidence…</p><a href="/history">Review attempts</a></article>
-    </div></section>
+    <section class="history-summary" aria-label="Submission summary">
+      <div><strong id="history-total">—</strong><span>Total attempts</span></div>
+      <div><strong id="history-success">—</strong><span>Successful</span></div>
+      <div><strong id="history-action">—</strong><span>Need attention</span></div>
+    </section>
+    <section class="history-section">
+      <div class="history-toolbar">
+        <div>
+          <h2>Submission timeline</h2>
+          <p>Recent drafts, attempts and evidence.</p>
+        </div>
+        <label>Status
+          <select id="history-filter">
+            <option value="all">All statuses</option>
+            <option value="ok">Successful</option>
+            <option value="failed">Failed</option>
+            <option value="draft">Drafts</option>
+          </select>
+        </label>
+        <a class="btn btn-ghost btn-sm" href="/api/me/submissions/export">Export CSV</a>
+      </div>
+      <div id="history-list" class="history-list"><p class="muted">Loading history…</p></div>
+      <div class="history-more"><button type="button" class="btn btn-ghost btn-sm" id="history-more" hidden>Show all history</button></div>
+    </section>
+    <section class="recovery-section">
+      <h2>When something needs attention</h2>
+      <div class="recovery-grid">
+        <article id="recovery-authority"><strong>HMRC authorisation</strong><p id="recovery-authority-copy">Checking your connection…</p><a href="/connect-hmrc">Manage connection</a></article>
+        <article><strong>Upload validation failed</strong><p>Return to the draft, fix highlighted records and approve the new figures.</p><a href="/records">View drafts</a></article>
+        <article id="recovery-service"><strong>HMRC service availability</strong><p id="recovery-service-copy">Checking the recorded service status…</p><a href="/app?flow=quarterly">Return to update</a></article>
+        <article id="recovery-duplicate"><strong>Duplicate-submission protection</strong><p id="recovery-duplicate-copy">Checking failed receipts for duplicate-submission evidence…</p><a href="/history">Review attempts</a></article>
+      </div>
+    </section>
   </main>
-  <dialog id="delete-draft-dialog" class="confirm-dialog"><form method="dialog"><h2>Delete this draft?</h2><p>The draft and its unsent working data will be removed. Submission receipts are not deleted.</p><div class="setup-actions"><button class="btn btn-ghost" value="cancel">Cancel</button><button class="btn btn-danger" value="confirm">Delete draft</button></div></form></dialog>
+  <dialog id="delete-draft-dialog" class="confirm-dialog">
+    <form method="dialog">
+      <h2>Delete this draft?</h2>
+      <p>The draft and its unsent working data will be removed. Submission receipts are not deleted.</p>
+      <div class="setup-actions">
+        <button class="btn btn-ghost" value="cancel">Cancel</button>
+        <button class="btn btn-danger" value="confirm">Delete draft</button>
+      </div>
+    </form>
+  </dialog>
+  <script src="/js/product-shell.js"></script>
   <script src="/js/history.js"></script>
-</body></html>
+</body>
+</html>

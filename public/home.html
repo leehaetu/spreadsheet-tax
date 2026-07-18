@@ -4,46 +4,46 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Your tax updates — Spreadsheet Tax</title>
-  <meta name="description" content="See what HMRC needs next for self-employment, UK property and foreign property." />
+  <meta name="description" content="See your next Making Tax Digital task for self-employment, UK property and foreign property." />
   <meta name="theme-color" content="#ffffff" />
   <link rel="stylesheet" href="/css/site.css" />
 </head>
 <body class="theme-light control-centre">
   <div class="cc-shell">
-    <aside class="cc-sidebar" aria-label="Application navigation">
+    <aside class="cc-sidebar" id="cc-sidebar" aria-label="Application navigation">
       <a class="cc-brand" href="/home"><span class="logo-mark">ST</span><span><strong>Spreadsheet Tax</strong><small>Making Tax Digital</small></span></a>
       <nav class="cc-nav">
-        <a class="active" href="/home">Home</a>
-        <a href="/app?flow=quarterly">Quarterly updates</a>
-        <a href="/year-end">Tax return</a>
-        <a href="/records">Records</a>
-        <a href="/history">Messages</a>
-        <a href="/account">Settings</a>
+        <a class="active" href="/home"><span class="cc-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-9.5Z"/></svg></span>Home</a>
+        <a href="/app?flow=quarterly"><span class="cc-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/></svg></span>Quarterly updates</a>
+        <a href="/year-end"><span class="cc-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg></span>Year end</a>
+        <a href="/records"><span class="cc-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 4h9a2 2 0 0 1 2 2v14l-3-2-3 2-3-2-3 2V6a2 2 0 0 1 2-2Z"/><path d="M10 9h6M10 13h6"/></svg></span>Sources</a>
+        <a href="/history"><span class="cc-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"/><path d="M12 8v5l3 2"/></svg></span>History</a>
+        <a href="/account"><span class="cc-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="9" r="3.5"/><path d="M5 19.5c1.5-3 4-4.5 7-4.5s5.5 1.5 7 4.5"/></svg></span>Settings</a>
       </nav>
 
       <div class="cc-sidebar-bottom">
         <a class="cc-connection" href="/connect-hmrc">
           <span class="cc-status-dot" aria-hidden="true"></span>
-          <span><small>HMRC connection</small><strong id="connection-status">Checking status…</strong><em>MTD for Income Tax</em></span>
+          <span><small>HMRC connection</small><strong id="connection-status">Checking…</strong><em>MTD for Income Tax</em></span>
         </a>
-        <a class="cc-person" href="/account"><span class="cc-avatar">JS</span><span><strong id="account-name">Your account</strong><small>Taxpayer</small></span></a>
+        <a class="cc-person" href="/account"><span class="cc-avatar">ST</span><span><strong id="account-name">Your account</strong><small>Taxpayer</small></span></a>
       </div>
     </aside>
 
     <main class="cc-main">
       <header class="cc-topbar">
         <button class="cc-menu" id="cc-menu" type="button" aria-expanded="false" aria-controls="cc-mobile-nav">Menu</button>
-        <span id="today-label">18 July 2026</span>
+        <span id="today-label">—</span>
       </header>
       <nav id="cc-mobile-nav" class="cc-mobile-nav" hidden>
-        <a href="/home">Home</a><a href="/app?flow=quarterly">Quarterly</a><a href="/records">Records</a><a href="/year-end">Tax return</a><a href="/account">Settings</a>
+        <a href="/home">Home</a><a href="/app?flow=quarterly">Quarterly</a><a href="/records">Sources</a><a href="/year-end">Year end</a><a href="/history">History</a><a href="/account">Settings</a>
       </nav>
 
       <div class="cc-content">
         <p id="gate" class="error" hidden></p>
 
         <section class="cc-heading">
-          <div><h1>Good morning</h1><p>Here’s your tax position at a glance.</p></div>
+          <div><h1 id="home-greeting">Hello</h1><p>Here’s your tax position at a glance.</p></div>
           <div class="cc-tax-year"><strong id="tax-year-label">Tax year</strong><span id="tax-year-dates">6 April to 5 April</span></div>
         </section>
 
@@ -51,29 +51,24 @@
           <div class="cc-task-copy">
             <span class="cc-task-kicker">Your next task</span>
             <h2 id="next-task-title">Prepare your quarterly update</h2>
-            <p id="next-task-period">Quarterly update for all active income sources</p>
+            <p id="next-task-period">Quarterly update for your active income sources</p>
             <p class="cc-deadline" id="deadline-lead">Loading your deadline…</p>
           </div>
           <div class="cc-task-actions">
             <a class="btn btn-primary btn-lg" id="next-task-cta" href="/app?flow=quarterly">Continue quarterly update <span aria-hidden="true">→</span></a>
-            <a class="btn btn-ghost" href="/onboarding">View what HMRC needs</a>
+            <a class="btn btn-ghost" href="/onboarding">Set up income sources</a>
           </div>
         </section>
 
         <section class="cc-sources" aria-labelledby="sources-title">
-          <div class="cc-section-title"><div><h2 id="sources-title">Your income sources</h2><p id="source-count">Loading sources…</p></div><a href="/onboarding">Manage sources</a></div>
+          <div class="cc-section-title"><div><h2 id="sources-title">Your income sources</h2><p id="source-count">Loading sources…</p></div><a href="/onboarding">Refresh from HMRC</a></div>
           <div id="source-list" class="cc-source-list"></div>
-          <p id="source-empty" class="cc-empty" hidden>No HMRC income sources have been retrieved. <a href="/onboarding">Retrieve your income sources</a>.</p>
-        </section>
-
-        <section class="cc-honesty">
-          <strong>Making Tax Digital for Income Tax</strong>
-          <span id="mode-explainer">Checking whether this app is in preview or HMRC sandbox mode…</span>
-          <a href="/security">About MTD for IT</a>
+          <p id="source-empty" class="cc-empty" hidden>No HMRC income sources have been retrieved yet. <a href="/onboarding">Connect HMRC and load your sources</a>.</p>
         </section>
       </div>
     </main>
   </div>
+  <script src="/js/product-shell.js"></script>
   <script src="/js/taxpayer-home.js"></script>
 </body>
 </html>

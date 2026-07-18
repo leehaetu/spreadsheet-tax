@@ -60,19 +60,17 @@ async function apiFetch(url, options = {}) {
   return fetch(url, { ...options, headers });
 }
 
-/** Honest connection label — never imply HMRC filing when preview-only. */
+/** Customer-facing connection label for product chrome. */
 function connectionLabel(data) {
-  if (data?.previewOnly || data?.hmrcMode === 'double') {
-    return 'Preview mode — not sent to HMRC';
+  if (typeof window.stConnectionLabel === 'function') {
+    return window.stConnectionLabel(data);
   }
-  if (data?.oauthMock) {
-    return 'HMRC OAuth not configured (mock connect only)';
+  if (data?.oauthConnected && !data.oauthMock) return 'Connected';
+  if (data?.previewOnly || data?.hmrcMode === 'double' || data?.oauthMock) {
+    return 'Not connected';
   }
-  if (data?.hmrcMode === 'sandbox' && data?.liveSubmitEnabled) {
-    return 'Sandbox submit available when signed in';
-  }
-  if (data?.liveSubmitEnabled) return 'Live HMRC submit flag on (controlled)';
-  return 'Preview mode — not sent to HMRC';
+  if (data?.liveSubmitEnabled) return 'Connected';
+  return 'Not connected';
 }
 
 function setWizardStep(step) {
@@ -88,14 +86,33 @@ function panel(id) {
   return document.getElementById(id);
 }
 
-function showPanels({ upload, review, submit }) {
+function showPanels({ sources = false, upload = false, review = false, submit = false }) {
+  const q = panel('quarterly-source-panel');
   const u = panel('upload-panel');
   const r = panel('review-panel');
   const s = panel('submit-panel');
+  if (q) q.hidden = !sources;
   if (u) u.hidden = !upload;
   if (r) r.hidden = !review;
   if (s) s.hidden = !submit;
 }
+
+window.stQuarterlyShowStep = function stQuarterlyShowStep(step) {
+  if (step === 'sources') {
+    showPanels({ sources: true });
+    setWizardStep(1);
+  } else if (step === 'upload') {
+    showPanels({ upload: true });
+    setWizardStep(1);
+  } else if (step === 'review') {
+    showPanels({ review: true });
+    setWizardStep(2);
+  } else if (step === 'submit') {
+    showPanels({ submit: true });
+    setWizardStep(3);
+  }
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+};
 
 function showQuarterlyReviewState(state) {
   const review = panel('review-panel');
@@ -110,31 +127,28 @@ async function loadStatus() {
   try {
     const res = await apiFetch('/api/status');
     const data = await res.json();
+    try {
+      const connRes = await apiFetch('/api/hmrc/status');
+      if (connRes.ok) {
+        const conn = await connRes.json();
+        Object.assign(data, conn);
+        data.oauthConnected = Boolean(conn?.connection?.connected);
+        data.oauthMock = Boolean(conn?.connection?.mock || conn?.oauth?.mock);
+      }
+    } catch { /* optional */ }
     const el = document.getElementById('connection-status');
     if (el) {
       el.textContent = connectionLabel(data);
       el.classList.add('ok');
-      el.title =
-        data.honesty?.realHmrcRequires ||
-        'Default path is preview-only until HMRC credentials and live flag are set.';
     }
     const btn = document.getElementById('submit-btn');
     if (btn) {
-      if (
-        data.previewOnly ||
-        data.hmrcMode === 'double' ||
-        !data.liveSubmitEnabled
-      ) {
-        btn.textContent = 'Run preview submit';
-      } else {
-        btn.textContent = 'Submit to HMRC sandbox';
-        btn.title =
-          'Requires signed-in real HMRC OAuth. Still sandbox host when HMRC_OAUTH_ENV=sandbox — not live taxpayer production APIs.';
-      }
+      btn.textContent = 'Send quarterly update';
+      btn.removeAttribute('title');
     }
   } catch {
     const el = document.getElementById('connection-status');
-    if (el) el.textContent = 'Preview mode — not sent to HMRC';
+    if (el) el.textContent = 'Not connected';
   }
 }
 
@@ -243,6 +257,8 @@ function handleImportSuccess(data) {
   showReview(data);
   renderSpreadsheetCheck(lastSpreadsheetCheck);
   showQuarterlyReviewState('figures');
+  showPanels({ review: true });
+  setWizardStep(2);
   const advanced = document.getElementById('quarterly-advanced');
   if (advanced) advanced.open = !lastValidation.ready;
 
@@ -258,11 +274,10 @@ function handleImportSuccess(data) {
     const se = document.getElementById('bid-se');
     if (se && !se.value) se.value = data.metadata.business_id;
   }
-  // Bind saved taxpayer profile / income sources (unified journey)
   bindTaxpayerIds().catch(() => {});
 
-  panel('review-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  loadCumulativeReview(data.draftId);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  // YTD cumulative breakdown stays off the main quarterly path
 }
 
 /** Prefill NINO and business IDs from profile + income sources */
@@ -830,7 +845,7 @@ function esc(s) {
  * @param {object} data
  */
 function showReview(data) {
-  showPanels({ upload: true, review: true, submit: false });
+  showPanels({ review: true });
 
   const success = document.getElementById('submit-success');
   if (success) success.hidden = true;
@@ -1039,7 +1054,7 @@ function resetToUpload() {
   lastSources = null;
   lastFilename = null;
   lastRowCount = null;
-  showPanels({ upload: true, review: false, submit: false });
+  showPanels({ upload: true });
   const success = document.getElementById('submit-success');
   if (success) success.hidden = true;
   if (fileInput) fileInput.value = '';
@@ -1056,14 +1071,14 @@ document.getElementById('reset-upload-2')?.addEventListener('click', resetToUplo
 document.getElementById('goto-submit')?.addEventListener('click', () => {
   if (lastValidation && !lastValidation.ready) return;
   renderDeclarationSummary();
-  showPanels({ upload: false, review: true, submit: true });
+  showPanels({ submit: true });
   setWizardStep(3);
   const approve = document.getElementById('approve-cells');
   const submitBtn = document.getElementById('submit-btn');
   if (approve && submitBtn) {
     submitBtn.disabled = !approve.checked;
   }
-  panel('submit-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 });
 
 document.getElementById('approve-cells')?.addEventListener('change', (e) => {
@@ -1072,9 +1087,29 @@ document.getElementById('approve-cells')?.addEventListener('change', (e) => {
 });
 
 document.getElementById('back-to-review')?.addEventListener('click', () => {
-  showPanels({ upload: true, review: true, submit: false });
+  showPanels({ review: true });
   showQuarterlyReviewState('figures');
-  panel('review-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+document.getElementById('back-to-review-link')?.addEventListener('click', (e) => {
+  e.preventDefault();
+  document.getElementById('back-to-review')?.click();
+});
+document.getElementById('back-to-upload-link')?.addEventListener('click', (e) => {
+  e.preventDefault();
+  document.getElementById('back-to-upload')?.click();
+});
+document.getElementById('back-to-sources')?.addEventListener('click', (e) => {
+  e.preventDefault();
+  showPanels({ sources: true });
+  setWizardStep(1);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+document.getElementById('open-ss-viewer')?.addEventListener('click', () => {
+  document.getElementById('ss-viewer-dialog')?.showModal();
+});
+document.getElementById('close-ss-viewer')?.addEventListener('click', () => {
+  document.getElementById('ss-viewer-dialog')?.close();
 });
 
 document.getElementById('submit-btn')?.addEventListener('click', async () => {
@@ -1149,7 +1184,7 @@ document.getElementById('submit-btn')?.addEventListener('click', async () => {
         : '';
       const replay = data.idempotentReplay ? ' (safe replay)' : '';
       if (ok && previewOnly) {
-        summary.textContent = `Preview complete for ${count} income source${count === 1 ? '' : 's'} — NOT sent to HMRC. The request shape matches a real submit for review.${receiptBit}${replay}`;
+        summary.textContent = `Update prepared for ${count} income source${count === 1 ? '' : 's'}. NOT sent to HMRC yet — check connection and try again when ready.${receiptBit}${replay}`;
       } else if (ok) {
         summary.textContent = `HMRC response received for ${count} income source${count === 1 ? '' : 's'}.${receiptBit}${replay}`;
       } else {
@@ -1171,7 +1206,7 @@ document.getElementById('submit-btn')?.addEventListener('click', async () => {
         const statusLabel = !r.ok
           ? 'Not accepted'
           : previewOnly || r.mode === 'double'
-            ? 'Preview only (not HMRC)'
+            ? 'Not sent to HMRC yet'
             : 'HMRC response OK';
         li.innerHTML = `<span>${esc(src)}</span><span>${esc(statusLabel)}${id ? ` · ${esc(String(id))}` : ''}</span>`;
         list.appendChild(li);
@@ -1199,7 +1234,7 @@ document.getElementById('submit-btn')?.addEventListener('click', async () => {
       btn.disabled = submissionProcessed;
       btn.textContent = submissionProcessed
         ? 'Update already processed'
-        : 'Run preview submit';
+        : 'Send quarterly update';
     }
   }
 });
@@ -1298,7 +1333,7 @@ document
       if (errEl) {
         errEl.textContent =
           err.message ||
-          'Could not load businesses. Connect HMRC sandbox OAuth first (/connect-hmrc).';
+          'Could not load businesses. Connect HMRC first from Connect HMRC.';
         errEl.hidden = false;
       }
     }
@@ -1394,7 +1429,7 @@ document
       if (errEl) {
         errEl.textContent =
           err.message ||
-          'Could not load obligations. Connect HMRC sandbox OAuth first (/connect-hmrc).';
+          'Could not load obligations. Connect HMRC first from Connect HMRC.';
         errEl.hidden = false;
       }
     }
@@ -1451,7 +1486,7 @@ document.getElementById('submit-btn')?.addEventListener(
 );
 
 setWizardStep(1);
-showPanels({ upload: true, review: false, submit: false });
+showPanels({ sources: true });
 loadStatus();
 loadSavedIdentifiers();
 

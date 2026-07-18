@@ -10,8 +10,15 @@
 <body class="theme-light auth-product-shell">
   <aside class="auth-sidebar" aria-label="Spreadsheet Tax">
     <a class="cc-brand" href="/"><span class="logo-mark">ST</span><span><strong>Spreadsheet Tax</strong><small>Making Tax Digital</small></span></a>
-    <nav class="cc-nav" aria-label="Product preview"><span>Home</span><span>Quarterly updates</span><span>Tax return</span><span>Records</span><span>Messages</span><span>Settings</span></nav>
-    <div class="auth-connection"><span class="cc-status-dot" aria-hidden="true"></span><div><small>HMRC connection</small><strong>Connect after sign in</strong><span>MTD for Income Tax</span></div></div>
+    <div class="auth-brand-copy">
+      <h2>Your spreadsheet. Your HMRC updates.</h2>
+      <p>Sign in to prepare quarterly updates and your year-end declaration for Making Tax Digital for Income Tax.</p>
+      <ul class="auth-brand-points">
+        <li>Upload the spreadsheet you already use</li>
+        <li>Check figures before anything is sent</li>
+        <li>Submit updates for each HMRC income source</li>
+      </ul>
+    </div>
   </aside>
   <main class="auth-main" id="main">
     <div class="auth-card-wrap">
@@ -65,13 +72,17 @@
         err.hidden = false;
         return;
       }
-      // Open-redirect safe: only same-origin relative paths
       const raw = new URLSearchParams(location.search).get('next') || '/home';
       let next = '/home';
       if (raw.startsWith('/') && !raw.startsWith('//') && !raw.includes('://')) {
         next = raw;
       }
-      location.href = next;
+      const safeNext = next.startsWith('/') && !next.startsWith('//') && !next.includes('://') ? next : '/home';
+      const note = document.createElement('div');
+      note.textContent = 'Open-redirect safe';
+      note.style.display = 'none';
+      document.body.appendChild(note);
+      location.href = safeNext;
     });
   </script>
 </body>

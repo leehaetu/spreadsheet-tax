@@ -12,48 +12,73 @@
   <aside class="cc-sidebar" id="cc-sidebar">
     <a class="cc-brand" href="/home"><span class="logo-mark">ST</span><span><strong>Spreadsheet Tax</strong><small>Making Tax Digital</small></span></a>
     <nav class="cc-nav" aria-label="Tax account">
-      <a href="/home">Home</a><a href="/app?flow=quarterly">Quarterly updates</a><a href="/year-end">Tax return</a><a href="/records">Records</a><a href="/history">Messages</a><a href="/account">Settings</a>
+      <a href="/home"><span class="cc-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-9.5Z"/></svg></span>Home</a>
+      <a href="/app?flow=quarterly"><span class="cc-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/></svg></span>Quarterly updates</a>
+      <a href="/year-end"><span class="cc-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg></span>Year end</a>
+      <a href="/records"><span class="cc-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 4h9a2 2 0 0 1 2 2v14l-3-2-3 2-3-2-3 2V6a2 2 0 0 1 2-2Z"/><path d="M10 9h6M10 13h6"/></svg></span>Sources</a>
+      <a href="/history"><span class="cc-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"/><path d="M12 8v5l3 2"/></svg></span>History</a>
+      <a href="/account"><span class="cc-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="9" r="3.5"/><path d="M5 19.5c1.5-3 4-4.5 7-4.5s5.5 1.5 7 4.5"/></svg></span>Settings</a>
     </nav>
-    <div class="cc-connection"><span class="cc-status-dot" aria-hidden="true"></span><div><small>HMRC connection</small><strong id="setup-mode">Checking mode…</strong><span>MTD for Income Tax</span></div></div>
+    <div class="cc-sidebar-bottom">
+      <a class="cc-connection" href="/connect-hmrc"><span class="cc-status-dot" aria-hidden="true"></span><span><small>HMRC connection</small><strong id="setup-mode">Checking…</strong><em>MTD for Income Tax</em></span></a>
+      <a class="cc-person" href="/account"><span class="cc-avatar">ST</span><span><strong id="account-name">Your account</strong><small>Taxpayer</small></span></a>
+    </div>
   </aside>
 
   <main class="cc-main setup-shell">
     <header class="setup-header">
-      <div><a class="setup-back" id="setup-back" href="/home">Back to home</a><h1 id="setup-title">Welcome to Spreadsheet Tax</h1><p id="setup-subtitle">Set up the income sources you need to report.</p></div>
+      <div><a class="setup-back" id="setup-back" href="/home">Back to home</a><h1 id="setup-title">Set up your account</h1><p id="setup-subtitle">Connect HMRC and load the income sources you report.</p></div>
       <div class="cc-tax-year"><strong>Tax year 2026–27</strong><span>6 April 2026 to 5 April 2027</span></div>
     </header>
 
     <ol class="setup-progress" aria-label="Setup progress">
-      <li class="active" data-progress="1"><span>1</span>Welcome</li><li data-progress="2"><span>2</span>Sources</li><li data-progress="3"><span>3</span>Details</li><li data-progress="4"><span>4</span>Review</li>
+      <li class="active" data-progress="1"><span>1</span>Account</li><li data-progress="2"><span>2</span>Sources</li><li data-progress="3"><span>3</span>Details</li><li data-progress="4"><span>4</span>Review</li>
     </ol>
     <p id="err" class="error" role="alert" hidden></p>
 
     <section class="setup-step" data-step="1">
       <div class="setup-callout">
-        <h2>Practise safely before sending anything</h2>
-        <p>This account can be used in preview or HMRC sandbox mode. The current mode is always shown before a submission.</p>
-        <div class="mode-compare">
-          <div><strong>Preview or sandbox</strong><ul><li>Use fictional or sandbox test data</li><li>No production submission</li><li>Check the complete workflow</li></ul></div>
-          <div><strong>Production access</strong><ul><li>Requires HMRC production approval</li><li>Uses your real HMRC authorisation</li><li>Only enabled after explicit configuration</li></ul></div>
+        <h2>Prepare your HMRC connection</h2>
+        <p>Spreadsheet Tax uses the businesses already registered with HMRC. Enter your National Insurance number, then connect HMRC so we can load your income sources.</p>
+        <div class="detail-grid" style="margin-top:1.25rem">
+          <label>National Insurance number
+            <input type="text" id="setup-nino" autocomplete="off" placeholder="QQ123456C" maxlength="13" />
+          </label>
+          <label>Tax year
+            <input type="text" id="setup-tax-year" value="2026-27" maxlength="12" />
+          </label>
+        </div>
+        <div class="setup-inline" style="margin-top:1.25rem">
+          <a class="btn btn-primary" href="/connect-hmrc">Connect HMRC</a>
+          <span class="muted" id="setup-connect-note">Connection status appears in the left sidebar.</span>
         </div>
       </div>
-      <div class="setup-callout setup-rule"><strong>Who can use this account</strong><p>You can use the software yourself. An agent can act only through the separate agent journey when the required HMRC authorisation is in place.</p></div>
     </section>
 
     <section class="setup-step" data-step="2" hidden>
-      <h2>Confirm your HMRC income sources</h2><p class="muted">Spreadsheet Tax retrieves the self-employment and property businesses already held by HMRC. It cannot create an HMRC business.</p>
-      <div class="setup-inline hmrc-source-sync"><button class="btn btn-primary" type="button" id="load-hmrc-sources">Retrieve businesses from HMRC</button><span id="hmrc-note" class="muted">Requires an authorised HMRC sandbox or production connection.</span></div>
+      <h2>Your HMRC income sources</h2>
+      <p class="muted">These are the self-employment and property businesses returned by HMRC. Spreadsheet Tax only mirrors that list — it cannot create, replace or remove an HMRC business.</p>
+      <div class="setup-inline hmrc-source-sync">
+        <button class="btn btn-primary" type="button" id="load-hmrc-sources">Retrieve businesses from HMRC</button>
+        <span id="hmrc-note" class="muted">Uses your saved National Insurance number and HMRC connection.</span>
+      </div>
       <div id="chosen-sources" class="chosen-sources" aria-live="polite"></div>
-      <div class="setup-callout setup-rule"><strong>Is a business missing?</strong><p>Add or update the income source in your HMRC online account, then return here and retrieve the list again. Do not create a replacement inside Spreadsheet Tax.</p><a href="https://www.gov.uk/guidance/use-making-tax-digital-for-income-tax/add-or-cease-income-sources" target="_blank" rel="noopener">Read HMRC’s income-source guidance</a></div>
+      <div class="setup-callout setup-rule">
+        <strong>Is a business missing?</strong>
+        <p>Add or update it in your HMRC online account, then return here and load the list again.</p>
+        <a href="https://www.gov.uk/guidance/use-making-tax-digital-for-income-tax/add-or-cease-income-sources" target="_blank" rel="noopener">HMRC guidance on income sources</a>
+      </div>
     </section>
 
     <section class="setup-step" data-step="3" hidden>
-      <h2>Name each HMRC source</h2><p class="muted">A display name helps you recognise the source. Individual UK properties and overseas countries stay as records in your spreadsheet: HMRC treats all UK property as one business and all foreign property as one business.</p>
+      <h2>Name each income source</h2>
+      <p class="muted">A display name helps you recognise the source in quarterly updates. HMRC still treats all UK property as one business and all foreign property as one business.</p>
       <div id="source-details"></div>
     </section>
 
     <section class="setup-step" data-step="4" hidden>
-      <h2>Review your setup</h2><p class="muted">Nothing is submitted by completing setup.</p>
+      <h2>Review your setup</h2>
+      <p class="muted">Nothing is submitted to HMRC by completing setup.</p>
       <div id="setup-review" class="review-list"></div>
       <fieldset class="setup-fieldset"><legend>Reporting period</legend><div class="choice-grid compact">
         <label><input type="radio" name="periodType" value="standard" checked><span><strong>Standard tax-year quarters</strong><small>6 April to 5 April</small></span></label>
@@ -63,7 +88,7 @@
 
     <footer class="setup-actions"><button type="button" class="btn btn-ghost" id="prev-step" hidden>Back</button><span></span><button type="button" class="btn btn-primary btn-lg" id="next-step">Continue</button><button type="button" class="btn btn-primary btn-lg" id="save-setup" hidden>Save setup and go home</button></footer>
   </main>
-  <dialog id="remove-source-dialog" class="confirm-dialog"><form method="dialog"><h2>Remove this source?</h2><p id="remove-source-copy">This removes it from this software only. It does not remove or change the business held by HMRC. Existing submission receipts are kept.</p><div class="setup-actions"><button value="cancel" class="btn btn-ghost">Cancel</button><button value="confirm" class="btn btn-danger">Remove source</button></div></form></dialog>
+  <script src="/js/product-shell.js"></script>
   <script src="/js/onboarding.js"></script>
 </body>
 </html>

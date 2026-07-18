@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Send your quarterly update — Spreadsheet Tax</title>
-  <meta name="description" content="Upload your business spreadsheet, check the figures, and send your HMRC quarterly update. Built for self-employed trades and landlords." />
+  <meta name="description" content="Upload your business spreadsheet, check the figures, and send your HMRC quarterly update." />
   <meta name="theme-color" content="#f4f6f9" />
   <link rel="stylesheet" href="/css/site.css" />
 </head>
@@ -13,24 +13,23 @@
   <aside class="cc-sidebar" id="cc-sidebar">
     <a class="cc-brand" href="/home"><span class="logo-mark">ST</span><span><strong>Spreadsheet Tax</strong><small>Making Tax Digital</small></span></a>
     <nav class="cc-nav" aria-label="Tax account">
-      <a href="/home">Home</a><a class="active" href="/app?flow=quarterly">Quarterly updates</a><a href="/year-end">Tax return</a><a href="/records">Records</a><a href="/history">Messages</a><a href="/account">Settings</a>
+      <a href="/home"><span class="cc-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-9.5Z"/></svg></span>Home</a>
+      <a class="active" href="/app?flow=quarterly"><span class="cc-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/></svg></span>Quarterly updates</a>
+      <a href="/year-end"><span class="cc-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg></span>Year end</a>
+      <a href="/records"><span class="cc-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 4h9a2 2 0 0 1 2 2v14l-3-2-3 2-3-2-3 2V6a2 2 0 0 1 2-2Z"/><path d="M10 9h6M10 13h6"/></svg></span>Sources</a>
+      <a href="/history"><span class="cc-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"/><path d="M12 8v5l3 2"/></svg></span>History</a>
+      <a href="/account"><span class="cc-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="9" r="3.5"/><path d="M5 19.5c1.5-3 4-4.5 7-4.5s5.5 1.5 7 4.5"/></svg></span>Settings</a>
     </nav>
-    <div class="cc-sidebar-bottom"><a class="cc-connection" href="/connect-hmrc"><span class="cc-status-dot" aria-hidden="true"></span><span><small>HMRC connection</small><strong id="connection-status">Checking mode…</strong><em>MTD for Income Tax</em></span></a><a class="cc-person" href="/account"><span class="cc-avatar">JS</span><span><strong>Your account</strong><small>Taxpayer</small></span></a></div>
+    <div class="cc-sidebar-bottom">
+      <a class="cc-connection" href="/connect-hmrc"><span class="cc-status-dot" aria-hidden="true"></span><span><small>HMRC connection</small><strong id="connection-status">Checking…</strong><em>MTD for Income Tax</em></span></a>
+      <a class="cc-person" href="/account"><span class="cc-avatar">ST</span><span><strong id="account-name">Your account</strong><small>Taxpayer</small></span></a>
+    </div>
   </aside>
 
   <main class="cc-main journey-main">
     <div class="app-hero">
       <h1>Quarterly update</h1>
-      <p class="lead">
-        Upload → check figures → approve → send.
-        Self-employment, UK property and foreign property in one file when needed.
-      </p>
-      <p class="muted" style="margin:0">
-        <a href="/download/template">Template</a> ·
-        <a href="/onboarding">Income sources</a> ·
-        <a href="/home">What’s due next?</a> ·
-        <a href="/app?flow=nil">Nil update</a>
-      </p>
+      <p class="lead">Add your spreadsheet, check the figures, then review and send — one HMRC income source at a time.</p>
     </div>
 
     <div class="wizard-steps" id="wizard-steps" aria-label="Progress">
@@ -39,199 +38,162 @@
       <div class="wizard-step" data-step="3"><span class="num">3</span><span class="label-hide-sm">Review &amp; send</span></div>
     </div>
 
+    <p id="quarterly-gate" class="error" hidden></p>
+
     <section class="panel quarterly-source-panel" id="quarterly-source-panel">
-      <div class="panel-header"><div><p class="eyebrow">Quarterly update</p><h2>Choose an income source</h2><p class="muted">Work through one source at a time. A combined spreadsheet can still contain several sources.</p></div><a href="/onboarding" class="btn btn-ghost btn-sm">Manage sources</a></div>
+      <div class="panel-header">
+        <div>
+          <p class="eyebrow">Step 1 of 3</p>
+          <h2>Choose an income source</h2>
+          <p class="muted">Each quarterly update is submitted to HMRC for one income source. Complete one source, then return for the next if you need to.</p>
+        </div>
+        <a href="/onboarding" class="btn btn-ghost btn-sm">Refresh sources from HMRC</a>
+      </div>
       <div id="quarterly-source-list" class="quarterly-source-list" aria-live="polite"><p class="muted">Loading your income sources…</p></div>
       <p id="quarterly-source-note" class="help-tip" hidden></p>
     </section>
 
-    <section class="panel" id="upload-panel">
+    <section class="panel" id="upload-panel" hidden>
+      <a class="step-back-link" href="#" id="back-to-sources">← Change income source</a>
       <div class="panel-header">
         <div>
-          <h2>1. Upload your spreadsheet</h2>
-          <p class="muted">Excel or CSV. One file can include your trade and any rental property.</p>
+          <p class="eyebrow">Step 1 of 3</p>
+          <h2>Upload your spreadsheet</h2>
+          <p class="muted" id="upload-source-label">Excel or CSV for this income source and period.</p>
         </div>
       </div>
+      <p class="period-upload-note">
+        <strong>What to upload:</strong> a spreadsheet covering the <strong>current quarter’s figures</strong> for the income source you selected.
+        Use the same structure as the template. Do not upload a full year-to-date workbook unless your bookkeeping already presents the quarter that way and you are sure the totals match this period only.
+      </p>
       <form id="upload-form">
         <label class="dropzone" id="dropzone" for="file-input">
           <input type="file" id="file-input" name="file" accept=".csv,.xlsx,.xls" />
-          <strong>Drop your spreadsheet here</strong>
-          <p>or tap to choose a file (max 5&nbsp;MB)</p>
+          <strong>Choose a spreadsheet file to upload</strong>
+          <p>Excel or CSV · max 5&nbsp;MB</p>
+          <span class="dropzone-hint">Tap or click this area to browse your files</span>
           <div class="file-chosen" id="file-chosen">
             <span class="tag green" id="file-label">No file chosen</span>
           </div>
         </label>
         <div class="upload-actions">
           <button type="submit" class="btn btn-primary btn-lg" id="import-btn">Check my figures</button>
-          <a class="btn btn-ghost" href="/download/template" data-cta="download-template">Download free template</a>
+          <a class="btn btn-ghost" href="/download/template" data-cta="download-template">Download template</a>
         </div>
       </form>
       <p id="upload-error" class="error" hidden></p>
-
-      <div class="digital-link-notice"><strong>Your spreadsheet is the digital record</strong><span>Correct transactions in your spreadsheet, then upload the corrected file again. Uploading the file creates the digital link into this bridging workflow; quarterly totals cannot be typed in manually.</span></div>
-
-      <details id="samples" style="margin-top:1rem">
-        <summary class="muted" style="cursor:pointer">Try a sample first (fictional figures — not sent to HMRC)</summary>
-      <div class="sample-grid" id="sample-grid" style="margin-top:0.75rem">
-        <button type="button" class="sample-btn" data-sample="self_employment">
-          <strong>Self-employed plumber</strong>
-          <span>Example trade income and expenses</span>
-        </button>
-        <button type="button" class="sample-btn" data-sample="uk_property">
-          <strong>UK landlord</strong>
-          <span>Example rental income and costs</span>
-        </button>
-        <button type="button" class="sample-btn" data-sample="foreign_property">
-          <strong>Foreign property</strong>
-          <span>Example overseas rental</span>
-        </button>
-        <button type="button" class="sample-btn" data-sample="combined">
-          <strong>Trade + property</strong>
-          <span>Both in one file</span>
-        </button>
+      <p class="panel-muted-note">Your spreadsheet is the digital record for this update. Fix transactions in the file, then upload again if needed.</p>
+      <div class="action-bar" style="border:0;padding-top:0.5rem;margin-top:0.5rem">
+        <button type="button" class="btn btn-ghost" id="nil-update-btn">Confirm nil (no activity this quarter)</button>
       </div>
-      </details>
     </section>
 
     <section class="panel" id="review-panel" hidden>
+      <a class="step-back-link" href="#" id="back-to-upload-link">← Upload a different file</a>
       <div class="panel-header">
         <div>
-          <h2>2. Check your figures</h2>
-          <p class="muted">
-            We have read your spreadsheet and prepared the quarterly figures.
-            Fix only the items marked as needing attention, then check the totals.
-          </p>
+          <p class="eyebrow">Step 2 of 3</p>
+          <h2>Check your figures</h2>
+          <p class="muted">These are the figures for this quarterly update. Fix only items that need attention, then continue.</p>
         </div>
       </div>
       <div id="validation-panel"></div>
-      <div class="quarterly-state-heading" data-quarterly-state="figures" hidden><p class="eyebrow">Figures ready</p><h3>Income, expenses and profit</h3><p>These figures came from the spreadsheet you uploaded.</p></div>
+      <div class="quarterly-state-heading" data-quarterly-state="figures" hidden>
+        <p class="eyebrow">Figures ready</p>
+        <h3>Income, expenses and profit</h3>
+        <p>These figures came from the spreadsheet you uploaded for this period.</p>
+      </div>
       <div id="summary-cards" class="stat-cards" data-quarterly-state="figures" hidden></div>
-      <div id="cumulative-review" class="panel" data-quarterly-state="figures" style="margin:0.75rem 0;padding:0.75rem" hidden></div>
+      <!-- Cumulative / YTD kept off the main path; available only if needed later -->
+      <div id="cumulative-review" hidden style="display:none"></div>
 
       <details class="quarterly-advanced" id="quarterly-advanced">
-        <summary>Advanced details: mappings, source cells and audit evidence</summary>
-      <div class="panel" id="spreadsheet-check-panel" style="margin:0.75rem 0;padding:0.75rem" hidden>
-        <h3 style="margin-top:0;font-size:1.1rem">Check your spreadsheet</h3>
-        <p class="muted" id="ss-security-note" style="margin-top:0"></p>
-        <div id="ss-reupload-diff" class="help-tip" hidden style="border-left:3px solid var(--warn,#d97706)"></div>
-        <div id="ss-legend" class="muted" style="font-size:0.85rem;margin:0.5rem 0"></div>
-        <div class="form-row" style="align-items:end;flex-wrap:wrap">
-          <label>Sheet
-            <select id="ss-sheet"></select>
-          </label>
-          <label>Income source
-            <select id="ss-outline"></select>
-          </label>
-          <label>HMRC category
-            <select id="ss-category"></select>
-          </label>
-          <button type="button" class="btn btn-ghost btn-sm" id="ss-show-cells">Show contributing cells</button>
-        </div>
-        <div id="ss-total-proof" class="help-tip" hidden></div>
-        <div class="hero-grid" style="gap:0.75rem;align-items:start">
-          <div>
-            <div class="table-wrap" id="ss-virtual" style="max-height:320px;overflow:auto;border:1px solid var(--border,#ddd);border-radius:8px">
-              <table class="data-table" id="ss-sheet-grid">
-                <thead id="ss-sheet-head"></thead>
-                <tbody id="ss-sheet-body"></tbody>
-              </table>
-            </div>
-            <div class="table-wrap" style="max-height:200px;overflow:auto;margin-top:0.5rem">
-              <table class="data-table" id="ss-grid">
-                <thead>
-                  <tr>
-                    <th>State</th>
-                    <th>Cell</th>
-                    <th>Description</th>
-                    <th>Value</th>
-                    <th>Formula</th>
-                    <th>Included in</th>
-                  </tr>
-                </thead>
-                <tbody id="ss-grid-body"></tbody>
-              </table>
-            </div>
+        <summary>Advanced details (mappings and cell evidence)</summary>
+        <div class="panel" id="spreadsheet-check-panel" style="margin:0.75rem 0;padding:0.75rem" hidden>
+          <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap">
+            <h3 style="margin:0;font-size:1.1rem">Spreadsheet evidence</h3>
+            <button type="button" class="btn btn-ghost btn-sm" id="open-ss-viewer">Open spreadsheet viewer</button>
           </div>
-          <div id="ss-cell-detail" class="panel" style="margin:0;padding:0.75rem;min-width:220px" hidden>
+          <p class="muted" id="ss-security-note" style="margin-top:0.5rem"></p>
+          <div id="ss-reupload-diff" class="help-tip" hidden style="border-left:3px solid var(--warn,#d97706)"></div>
+          <div id="ss-legend" class="muted" style="font-size:0.85rem;margin:0.5rem 0"></div>
+          <div class="form-row" style="align-items:end;flex-wrap:wrap">
+            <label>Sheet <select id="ss-sheet"></select></label>
+            <label>Income source <select id="ss-outline"></select></label>
+            <label>HMRC category <select id="ss-category"></select></label>
+            <button type="button" class="btn btn-ghost btn-sm" id="ss-show-cells">Show contributing cells</button>
+          </div>
+          <div id="ss-total-proof" class="help-tip" hidden></div>
+          <div id="ss-cell-detail" class="panel" style="margin:0.75rem 0;padding:0.75rem;min-width:220px" hidden>
             <strong>Cell detail</strong>
             <div id="ss-cell-detail-body" class="muted" style="margin-top:0.5rem"></div>
-            <label style="display:block;margin-top:0.75rem">Comment (preparer / review)
-              <textarea id="ss-comment-body" rows="2" style="width:100%" placeholder="Ask a question about this cell…"></textarea>
+            <label style="display:block;margin-top:0.75rem">Comment
+              <textarea id="ss-comment-body" rows="2" style="width:100%" placeholder="Note about this cell…"></textarea>
             </label>
             <button type="button" class="btn btn-ghost btn-sm" id="ss-comment-save">Attach comment</button>
             <ul id="ss-comments" class="result-list" style="margin-top:0.5rem"></ul>
           </div>
+          <div class="table-wrap" style="max-height:200px;overflow:auto;margin-top:0.5rem">
+            <table class="data-table" id="ss-grid">
+              <thead>
+                <tr>
+                  <th>State</th>
+                  <th>Cell</th>
+                  <th>Description</th>
+                  <th>Value</th>
+                  <th>Formula</th>
+                  <th>Included in</th>
+                </tr>
+              </thead>
+              <tbody id="ss-grid-body"></tbody>
+            </table>
+          </div>
+          <p class="muted" id="ss-meta" style="font-size:0.85rem"></p>
         </div>
-        <p class="muted" id="ss-meta" style="font-size:0.85rem"></p>
-      </div>
-
-      <div id="mapping-table-wrap" class="table-wrap"></div>
+        <div id="mapping-table-wrap" class="table-wrap"></div>
       </details>
+
       <div class="action-bar" data-quarterly-state="figures" hidden>
         <button type="button" class="btn btn-primary btn-lg" id="goto-submit">Review and send</button>
         <button type="button" class="btn btn-ghost" id="back-to-upload">Upload a different file</button>
-        <button type="button" class="btn btn-ghost" id="nil-update-btn">Confirm nil (no activity)</button>
       </div>
     </section>
 
     <section class="panel" id="submit-panel" hidden>
+      <a class="step-back-link" href="#" id="back-to-review-link">← Back to check figures</a>
       <div class="panel-header">
         <div>
-          <h2>3. Send to HMRC</h2>
-          <p class="muted">
-            You need to be signed in and connected to HMRC.
-            <a href="/connect-hmrc">Connect HMRC</a> if you have not already.
-          </p>
+          <p class="eyebrow">Step 3 of 3</p>
+          <h2>Review and send</h2>
+          <p class="muted">Confirm the figures for this income source, then send the quarterly update.</p>
         </div>
       </div>
       <div id="declaration-summary" class="declaration-summary" aria-live="polite"></div>
-      <div class="submission-identifiers">
-        <div class="submission-identifiers-heading"><strong>Submission identifiers</strong><span>Loaded from your saved account or HMRC connection where available.</span></div>
-      <div class="form-row">
-        <label>National Insurance number
-          <input type="text" id="nino" placeholder="e.g. QQ 12 34 56 C" autocomplete="off" />
-        </label>
-        <label>Tax year
-          <input type="text" id="tax-year" placeholder="e.g. 2024-25" />
-          <span class="field-hint">UK tax year for this update</span>
-        </label>
+
+      <!-- Technical IDs are filled automatically; not shown as a primary form -->
+      <div class="submission-identifiers" hidden>
+        <input type="hidden" id="nino" />
+        <input type="hidden" id="tax-year" />
+        <input type="hidden" id="bid-se" />
+        <input type="hidden" id="bid-uk" />
+        <input type="hidden" id="bid-fp" />
       </div>
-      <div class="form-row">
-        <label>Self-employment business ID
-          <input type="text" id="bid-se" placeholder="From HMRC when connected" />
-        </label>
-        <label>UK property business ID
-          <input type="text" id="bid-uk" placeholder="If you have UK rentals" />
-        </label>
-        <label>Foreign property business ID
-          <input type="text" id="bid-fp" placeholder="If you have overseas rentals" />
-        </label>
-      </div>
-      <div class="help-strip" id="hmrc-helpers" style="flex-wrap:wrap;gap:0.5rem">
-        <button type="button" class="btn btn-ghost" id="load-businesses-btn">Fill business IDs from HMRC</button>
-        <button type="button" class="btn btn-ghost" id="load-obligations-btn">Show due periods</button>
-        <a class="btn btn-ghost" href="https://www.gov.uk/log-in-register-hmrc-online-services" target="_blank" rel="noopener noreferrer">My HMRC account</a>
-      </div>
-      <p class="muted" id="hmrc-helpers-note" style="margin-top:0.5rem">
-        After you connect HMRC, use “Fill business IDs” so you do not have to type them.
-        For a tax estimate, use your HMRC online account — we do not invent a tax bill.
-      </p>
-      </div>
-      <div id="hmrc-businesses-panel" class="panel" hidden style="margin:0.75rem 0;padding:0.75rem">
-        <h3 style="margin-top:0;font-size:1rem">Your HMRC businesses</h3>
-        <ul id="hmrc-businesses-list" class="result-list"></ul>
-        <p id="hmrc-businesses-error" class="error" hidden></p>
-      </div>
-      <div id="hmrc-obligations-panel" class="panel" hidden style="margin:0.75rem 0;padding:0.75rem">
-        <h3 style="margin-top:0;font-size:1rem">Open periods</h3>
-        <ul id="hmrc-obligations-list" class="result-list"></ul>
-        <p id="hmrc-obligations-error" class="error" hidden></p>
-      </div>
+      <div id="hmrc-helpers" hidden></div>
+      <div id="hmrc-businesses-panel" hidden></div>
+      <div id="hmrc-obligations-panel" hidden></div>
+      <ul id="hmrc-businesses-list" hidden></ul>
+      <ul id="hmrc-obligations-list" hidden></ul>
+      <p id="hmrc-businesses-error" hidden></p>
+      <p id="hmrc-obligations-error" hidden></p>
+      <p id="hmrc-helpers-note" hidden></p>
+      <button type="button" id="load-businesses-btn" hidden></button>
+      <button type="button" id="load-obligations-btn" hidden></button>
+
       <div class="help-tip" id="approval-box">
         <label style="display:flex;gap:0.5rem;align-items:flex-start;cursor:pointer">
           <input type="checkbox" id="approve-cells" style="margin-top:0.35rem" />
           <span>
-            I have checked the figures and any issues shown above.
+            I have checked the figures for this update.
             These are the figures I authorise Spreadsheet Tax to send to HMRC.
           </span>
         </label>
@@ -243,54 +205,43 @@
       <p id="submit-error" class="error" hidden></p>
       <div id="submit-success" class="success-box" hidden>
         <div class="receipt-mark" aria-hidden="true">✓</div>
-        <div class="receipt-copy"><p class="eyebrow">Submission receipt</p><h3>Update processed</h3>
-        <p id="submit-summary" class="muted" style="margin:0"></p>
-        <ul id="submit-result-list" class="result-list"></ul>
-        <div class="action-bar" style="border:0;padding-top:0.5rem">
-          <button type="button" class="btn btn-primary" id="another-file">Do another period</button>
-          <a class="btn btn-ghost" href="/history">View my submissions</a>
-        </div>
+        <div class="receipt-copy">
+          <p class="eyebrow">Submission receipt</p>
+          <h3>Update processed</h3>
+          <p id="submit-summary" class="muted" style="margin:0"></p>
+          <ul id="submit-result-list" class="result-list"></ul>
+          <div class="action-bar" style="border:0;padding-top:0.5rem">
+            <button type="button" class="btn btn-primary" id="another-file">Do another period</button>
+            <a class="btn btn-ghost" href="/history">View submission history</a>
+          </div>
         </div>
       </div>
     </section>
   </main>
 
-  <footer class="journey-footer">
-    <div class="footer-bottom" style="border:0;padding:0">
-      <p class="muted">
-        Your books stay in your spreadsheet. We only use the file you upload for this quarter’s update.
-        <a href="/help">Help</a> · <a href="/">Home</a>
-      </p>
-      <p class="muted">© Lee Hine · Spreadsheet Tax</p>
+  <dialog id="ss-viewer-dialog" class="ss-modal">
+    <div class="ss-modal-head">
+      <h2>Spreadsheet viewer</h2>
+      <button type="button" class="btn btn-ghost btn-sm" id="close-ss-viewer">Close</button>
     </div>
-  </footer>
+    <div class="ss-modal-body">
+      <div class="table-wrap" id="ss-virtual" style="max-height:60vh;overflow:auto;border:1px solid var(--border,#ddd);border-radius:8px">
+        <table class="data-table" id="ss-sheet-grid">
+          <thead id="ss-sheet-head"></thead>
+          <tbody id="ss-sheet-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </dialog>
+
   <script type="module">
     import { trackCta } from '/js/analytics.js';
     trackCta('app_open');
     window.trackCta = trackCta;
   </script>
+  <script src="/js/product-shell.js"></script>
   <script src="/js/app.js"></script>
   <script src="/js/quarterly-sources.js"></script>
   <script src="/js/cookie-banner.js"></script>
-  <script>
-    document.getElementById('cc-menu-toggle')?.addEventListener('click', () => {
-      const side = document.getElementById('cc-sidebar');
-      const open = side.classList.toggle('open');
-      document.getElementById('cc-menu-toggle').setAttribute('aria-expanded', String(open));
-    });
-    (function () {
-      const mode = new URLSearchParams(location.search).get('mode') || '';
-      document.querySelectorAll('.audience-pills a').forEach((a) => {
-        const m = a.getAttribute('data-mode') || '';
-        if (
-          (mode === 'self-employed' || mode === 'self_employment') && m === 'self-employed'
-        )
-          a.classList.add('active');
-        if ((mode === 'landlord' || mode === 'property' || mode === 'landlords') && m === 'landlord')
-          a.classList.add('active');
-        if ((mode === 'both' || mode === 'combined') && m === 'both') a.classList.add('active');
-      });
-    })();
-  </script>
 </body>
 </html>

@@ -3,42 +3,52 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Records — Spreadsheet Tax</title>
+  <title>Income sources — Spreadsheet Tax</title>
   <link rel="stylesheet" href="/css/site.css" />
   <meta name="theme-color" content="#f4f6f9" />
 </head>
-<body class="theme-light app-body app-simple">
-  <header class="site-header">
-    <div class="wrap header-inner">
-      <a class="logo" href="/home"><span class="logo-mark">ST</span> Spreadsheet Tax</a>
-      <nav>
-        <a href="/home">Home</a>
-        <a href="/app?flow=quarterly">Quarterly</a>
-        <a href="/records" class="active">Records</a>
-        <a href="/history">Receipts</a>
-        <a href="/account">Settings</a>
-      </nav>
+<body class="theme-light app-body cc-page">
+  <button class="cc-menu-toggle" id="cc-menu-toggle" type="button" aria-controls="cc-sidebar" aria-expanded="false">Menu</button>
+  <aside class="cc-sidebar" id="cc-sidebar">
+    <a class="cc-brand" href="/home"><span class="logo-mark">ST</span><span><strong>Spreadsheet Tax</strong><small>Making Tax Digital</small></span></a>
+    <nav class="cc-nav" aria-label="Tax account">
+      <a href="/home"><span class="cc-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-9.5Z"/></svg></span>Home</a>
+      <a href="/app?flow=quarterly"><span class="cc-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/></svg></span>Quarterly updates</a>
+      <a href="/year-end"><span class="cc-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg></span>Year end</a>
+      <a class="active" href="/records"><span class="cc-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 4h9a2 2 0 0 1 2 2v14l-3-2-3 2-3-2-3 2V6a2 2 0 0 1 2-2Z"/><path d="M10 9h6M10 13h6"/></svg></span>Sources</a>
+      <a href="/history"><span class="cc-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"/><path d="M12 8v5l3 2"/></svg></span>History</a>
+      <a href="/account"><span class="cc-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="9" r="3.5"/><path d="M5 19.5c1.5-3 4-4.5 7-4.5s5.5 1.5 7 4.5"/></svg></span>Settings</a>
+    </nav>
+    <div class="cc-sidebar-bottom">
+      <a class="cc-connection" href="/connect-hmrc"><span class="cc-status-dot" aria-hidden="true"></span><span><small>HMRC connection</small><strong id="connection-status">Checking…</strong><em>MTD for Income Tax</em></span></a>
+      <a class="cc-person" href="/account"><span class="cc-avatar">ST</span><span><strong id="account-name">Your account</strong><small>Taxpayer</small></span></a>
     </div>
-  </header>
-  <main class="wrap app-main">
-    <h1>Records</h1>
-    <p class="lead">Sources you report · drafts from uploads · link to receipts.</p>
+  </aside>
+
+  <main class="cc-main records-shell">
+    <header class="setup-header" style="border:0;padding-top:8px">
+      <div>
+        <h1>Income sources</h1>
+        <p class="lead" style="margin:0;color:#66758d">Businesses loaded from HMRC, plus draft uploads waiting for review.</p>
+      </div>
+      <div class="cc-tax-year"><strong>Tax year 2026–27</strong><span>6 April 2026 to 5 April 2027</span></div>
+    </header>
     <p id="gate" class="error" hidden></p>
 
     <section class="panel">
-      <h2 style="margin-top:0">1. Income sources</h2>
+      <div class="cc-section-title" style="padding:0 0 12px">
+        <div>
+          <h2 style="margin:0">HMRC income sources</h2>
+          <p style="margin:4px 0 0;color:#728097">Mirrored from HMRC. Missing a business? Add it in your HMRC account, then refresh.</p>
+        </div>
+        <a class="btn btn-primary btn-sm" href="/onboarding">Refresh from HMRC</a>
+      </div>
       <ul id="source-list" class="result-list"></ul>
-      <a class="btn btn-primary btn-sm" href="/onboarding">Edit sources</a>
-      <a class="btn btn-ghost btn-sm" href="/download/template">Template</a>
-    </section>
-    <section class="panel">
-      <h2 style="margin-top:0">2. Drafts &amp; receipts</h2>
-      <p class="muted">Open <a href="/history">Receipts</a> for submission attempts. Start a new period on <a href="/app?flow=quarterly">Quarterly</a>.</p>
     </section>
 
     <section class="panel">
-      <h2 style="margin-top:0">Uploaded workbooks &amp; drafts</h2>
-      <p class="muted">Each draft keeps filename, tax year and state. Full file hash is stored on import when you are signed in.</p>
+      <h2 style="margin-top:0">Draft uploads</h2>
+      <p class="muted">Workbooks you have uploaded but not yet sent. Open one to continue checking figures.</p>
       <div class="table-wrap">
         <table class="data-table">
           <thead>
@@ -52,15 +62,16 @@
           <tbody id="draft-body"></tbody>
         </table>
       </div>
-      <p id="draft-empty" class="muted" hidden>No drafts yet. <a href="/app?flow=quarterly">Upload a spreadsheet</a>.</p>
+      <p id="draft-empty" class="muted" hidden>No drafts yet. <a href="/app?flow=quarterly">Start a quarterly update</a>.</p>
     </section>
 
     <section class="panel">
-      <h2 style="margin-top:0">Submissions &amp; receipts</h2>
+      <h2 style="margin-top:0">Recent submissions</h2>
       <ul id="sub-list" class="result-list"></ul>
-      <a class="btn btn-ghost" href="/history">Full history</a>
+      <a class="btn btn-ghost" href="/history">Full submission history</a>
     </section>
   </main>
+  <script src="/js/product-shell.js"></script>
   <script>
     function esc(s) {
       return String(s ?? '')
@@ -72,24 +83,21 @@
       const gate = document.getElementById('gate');
       const srcRes = await fetch('/api/me/income-sources');
       if (srcRes.status === 401) {
-        gate.hidden = false;
-        gate.innerHTML = 'Sign in to see your records. <a href="/signin?next=/records">Sign in</a>';
+        window.location.replace('/signin?next=/records');
         return;
       }
       const srcData = await srcRes.json();
       const sl = document.getElementById('source-list');
       if (!srcData.sources?.length) {
-        sl.innerHTML = '<li class="muted">No sources. <a href="/onboarding">Set up</a></li>';
+        sl.innerHTML = '<li class="muted">No sources loaded. <a href="/onboarding">Connect HMRC and load businesses</a>.</li>';
       } else {
         sl.innerHTML = srcData.sources
-          .map(
-            (s) =>
-              `<li><strong>${esc(s.nickname || s.label)}</strong> · ${esc(
-                s.type.replace(/_/g, ' ')
-              )}${s.businessId ? ` · <code>${esc(s.businessId)}</code>` : ''}${
-                s.countryCode ? ` · ${esc(s.countryCode)}` : ''
-              }</li>`
-          )
+          .map((s) => {
+            const type = String(s.type || '').replace(/_/g, ' ');
+            return `<li><strong>${esc(s.nickname || s.label)}</strong> · ${esc(type)}${
+              s.countryCode ? ` · ${esc(s.countryCode)}` : ''
+            }</li>`;
+          })
           .join('');
       }
 
@@ -130,9 +138,9 @@
             .slice(0, 10)
             .map(
               (s) =>
-                `<li><code>${esc(s.id.slice(0, 8))}</code> · ${esc(s.mode)} · ${
-                  s.ok ? 'OK' : 'Failed'
-                } · ${esc((s.createdAt || '').slice(0, 19))}
+                `<li>${esc((s.createdAt || '').slice(0, 19))} · ${
+                  s.ok ? 'Accepted path' : 'Needs attention'
+                }
                 <a href="/api/receipts/${encodeURIComponent(s.id)}">Receipt</a></li>`
             )
             .join('');

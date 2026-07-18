@@ -58,7 +58,7 @@ function renderSources(sources) {
       <span class="cc-source-icon ${state.className}" aria-hidden="true">${escapeHtml(meta.icon)}</span>
       <span class="cc-source-name"><strong>${escapeHtml(meta.kind)}</strong><small>${escapeHtml(meta.detail)}</small></span>
       <span class="cc-source-state ${state.className}"><strong>${escapeHtml(state.label)}</strong><small>${escapeHtml(state.detail)}</small></span>
-      <a href="/app?flow=quarterly" aria-label="${escapeHtml(state.action)} for ${escapeHtml(meta.kind)}">${escapeHtml(state.action)} <span aria-hidden="true">→</span></a>
+      <a href="/app?flow=quarterly&sourceId=${encodeURIComponent(source.id || '')}" aria-label="${escapeHtml(state.action)} for ${escapeHtml(meta.kind)}">${escapeHtml(state.action)} <span aria-hidden="true">→</span></a>
     </article>`;
   }).join('');
 }
@@ -84,7 +84,7 @@ async function load() {
 
   const nextTask = data.nextTask || {};
   document.getElementById('next-task-title').textContent = nextTask.title || 'Prepare this quarter’s update';
-  document.getElementById('next-task-period').textContent = nextTask.detail || 'Review all active income sources before anything is sent';
+  document.getElementById('next-task-period').textContent = nextTask.detail || 'Review each active income source before anything is sent';
   const cta = document.getElementById('next-task-cta');
   if (nextTask.href) cta.href = nextTask.href;
 
@@ -95,26 +95,9 @@ async function load() {
 
   renderSources(Array.isArray(data.sources) ? data.sources : []);
 
-  const status = await api('/api/status').catch(() => ({ data: {} }));
-  const connection = document.getElementById('connection-status');
-  const explainer = document.getElementById('mode-explainer');
-  if (status.data?.previewOnly || status.data?.hmrcMode === 'double') {
-    connection.textContent = 'Preview mode';
-    explainer.textContent = 'Nothing is sent to HMRC while preview mode is active.';
-  } else if (status.data?.hmrcMode === 'sandbox') {
-    connection.textContent = 'HMRC sandbox connected';
-    explainer.textContent = 'Connected to HMRC sandbox for testing — not live taxpayer submission.';
-  } else {
-    connection.textContent = status.data?.liveSubmitEnabled ? 'HMRC submission available' : 'HMRC not connected';
-    explainer.textContent = 'Your connection status controls whether an approved update can be sent.';
+  if (typeof window.stRefreshConnection === 'function') {
+    await window.stRefreshConnection();
   }
 }
-
-const menu = document.getElementById('cc-menu');
-menu?.addEventListener('click', () => {
-  const nav = document.getElementById('cc-mobile-nav');
-  nav.hidden = !nav.hidden;
-  menu.setAttribute('aria-expanded', String(!nav.hidden));
-});
 
 load();
