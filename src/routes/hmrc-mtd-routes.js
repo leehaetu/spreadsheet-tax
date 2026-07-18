@@ -37,6 +37,7 @@ import {
   retrieveBalanceAndTransactions,
   createTestBusiness,
   defaultSeAnnualBody,
+  resolveSeAnnualBody,
   periodBodyFromDraft,
   taxYearFromPeriodStart,
   mtdCapabilityMatrix,
@@ -354,7 +355,8 @@ export function registerHmrcMtdRoutes(app, deps) {
         ...o,
         businessId: req.body.businessId,
         taxYear: req.body.taxYear,
-        body: req.body.body || req.body.payload || defaultSeAnnualBody(),
+        // Empty {} allowances/adjustments from UI/e2e → replace with valid default
+        body: resolveSeAnnualBody(req.body.body || req.body.payload),
       })
     )
   );

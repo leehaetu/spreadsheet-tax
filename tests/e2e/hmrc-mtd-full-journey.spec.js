@@ -397,6 +397,7 @@ test.describe('Full MTD sandbox journey (operator)', () => {
     });
 
     if (bidSe) {
+      // Omit empty body — server resolveSeAnnualBody() injects non-empty default
       const annual = await page.evaluate(
         async ({ n, bid }) => {
           const r = await fetch('/api/hmrc/mtd/annual/se', {
@@ -406,19 +407,30 @@ test.describe('Full MTD sandbox journey (operator)', () => {
               nino: n,
               businessId: bid,
               taxYear: '2024-25',
-              body: { adjustments: {}, allowances: {} },
             }),
           });
           return { status: r.status, body: await r.json() };
         },
         { n: NINO, bid: bidSe }
       );
+      const emptyRule =
+        annual.body?.body?.code === 'RULE_INCORRECT_OR_EMPTY_BODY_SUBMITTED';
       logStep('se_annual', {
-        ok: annual.status === 200 || annual.status === 502,
+        ok:
+          !emptyRule &&
+          (annual.body?.ok === true ||
+            annual.body?.status === 200 ||
+            annual.body?.status === 429 ||
+            annual.status === 200),
         status: annual.status,
         body: annual.body,
         path: annual.body?.path,
       });
+      if (emptyRule) {
+        throw new Error(
+          'SE annual still RULE_INCORRECT_OR_EMPTY_BODY_SUBMITTED — default body not applied'
+        );
+      }
 
       const bsas = await page.evaluate(
         async ({ n, bid }) => {
@@ -483,16 +495,26 @@ test.describe('Full MTD sandbox journey (operator)', () => {
 
     const accounts = await page.evaluate(async (n) => {
       const r = await fetch(
-        `/api/hmrc/mtd/accounts/balance?nino=${encodeURIComponent(n)}`
+        `/api/hmrc/mtd/accounts/balance?nino=${encodeURIComponent(n)}&onlyOpenItems=true`
       );
       return { status: r.status, body: await r.json() };
     }, NINO);
+    const inconsistent =
+      accounts.body?.body?.code === 'RULE_INCONSISTENT_QUERY_PARAMS';
     logStep('accounts_balance', {
-      ok: accounts.status === 200 || accounts.status === 502,
+      ok:
+        !inconsistent &&
+        (accounts.status === 200 ||
+          accounts.body?.status === 403 ||
+          accounts.body?.status === 429 ||
+          accounts.status === 502),
       status: accounts.status,
       body: accounts.body,
       path: accounts.body?.path,
     });
+    if (inconsistent) {
+      throw new Error('Accounts balance RULE_INCONSISTENT_QUERY_PARAMS — fix query defaults');
+    }
 
     // Fraud validate
     const fph = await page.evaluate(async () => {

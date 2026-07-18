@@ -245,17 +245,13 @@
           if (a === 'fd-obl')
             return jfetch('/api/hmrc/mtd/obligations/final-declaration?' + q(b.nino));
           if (a === 'se-annual')
+            // Omit body so server applies defaultSeAnnualBody() (non-empty HMRC shape)
             return jfetch('/api/hmrc/mtd/annual/se', {
               method: 'PUT',
               body: JSON.stringify({
                 nino: b.nino,
                 businessId: b.businessIdSe,
                 taxYear: b.taxYear,
-                body: {
-                  adjustments: {},
-                  allowances: {},
-                  nonFinancials: { businessDetailsChangedRecently: false, class4NicsExemptionReason: null },
-                },
               }),
             });
           if (a === 'bsas-trigger')
@@ -313,7 +309,11 @@
                 '&typeOfBusiness=self-employment'
             );
           if (a === 'accounts')
-            return jfetch('/api/hmrc/mtd/accounts/balance?' + q(b.nino));
+            return jfetch(
+              '/api/hmrc/mtd/accounts/balance?' +
+                q(b.nino) +
+                '&onlyOpenItems=true'
+            );
         } catch (e) {
           show(String(e));
         }

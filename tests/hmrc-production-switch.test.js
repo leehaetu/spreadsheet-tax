@@ -4,7 +4,12 @@ import {
   resolveHmrcBaseUrl,
   buildSubmitRequest,
 } from '../src/lib/hmrc-client.js';
-import { taxYearFromPeriodId, defaultSeAnnualBody } from '../src/lib/hmrc-api.js';
+import {
+  taxYearFromPeriodId,
+  defaultSeAnnualBody,
+  isEmptySeAnnualBody,
+  resolveSeAnnualBody,
+} from '../src/lib/hmrc-api.js';
 
 describe('production switch is env-only', () => {
   it('sandbox host by default', () => {
@@ -60,5 +65,18 @@ describe('default SE annual body is non-empty', () => {
     assert.ok(b.allowances);
     assert.ok(b.adjustments);
     assert.notEqual(Object.keys(b.allowances).length, 0);
+  });
+
+  it('resolveSeAnnualBody replaces empty UI payload', () => {
+    assert.equal(isEmptySeAnnualBody({ adjustments: {}, allowances: {} }), true);
+    const fixed = resolveSeAnnualBody({ adjustments: {}, allowances: {} });
+    assert.equal(isEmptySeAnnualBody(fixed), false);
+    assert.ok(fixed.allowances.annualInvestmentAllowance != null);
+  });
+
+  it('resolveSeAnnualBody keeps non-empty payload', () => {
+    const input = { allowances: { tradingIncomeAllowance: 1000 }, adjustments: {} };
+    const out = resolveSeAnnualBody(input);
+    assert.equal(out.allowances.tradingIncomeAllowance, 1000);
   });
 });

@@ -477,7 +477,10 @@ export async function retrieveBalanceAndTransactions(opts) {
   if (opts.docNumber) params.set('docNumber', opts.docNumber);
   if (opts.fromDate) params.set('fromDate', opts.fromDate);
   if (opts.toDate) params.set('toDate', opts.toDate);
-  if (opts.onlyOpenItems != null) params.set('onlyOpenItems', String(opts.onlyOpenItems));
+  // HMRC RULE_INCONSISTENT_QUERY_PARAMS without onlyOpenItems or a date range
+  const onlyOpen =
+    opts.onlyOpenItems != null ? opts.onlyOpenItems : opts.fromDate ? undefined : true;
+  if (onlyOpen != null) params.set('onlyOpenItems', String(onlyOpen));
   if (opts.includeLocks != null) params.set('includeLocks', String(opts.includeLocks));
   if (opts.calculateAccruedInterest != null) {
     params.set('calculateAccruedInterest', String(opts.calculateAccruedInterest));
@@ -496,6 +499,24 @@ export async function retrieveBalanceAndTransactions(opts) {
     accept: `application/vnd.hmrc.${ACCOUNTS()}+json`,
     label: 'accounts_balance_and_transactions',
   });
+}
+
+/**
+ * True when annual body would be rejected as empty by HMRC.
+ * @param {object|null|undefined} body
+ */
+export function isEmptySeAnnualBody(body) {
+  if (!body || typeof body !== 'object') return true;
+  const all = body.allowances && typeof body.allowances === 'object' ? body.allowances : {};
+  const adj = body.adjustments && typeof body.adjustments === 'object' ? body.adjustments : {};
+  return Object.keys(all).length === 0 && Object.keys(adj).length === 0;
+}
+
+/**
+ * @param {object|null|undefined} body
+ */
+export function resolveSeAnnualBody(body) {
+  return isEmptySeAnnualBody(body) ? defaultSeAnnualBody() : body;
 }
 
 /**
