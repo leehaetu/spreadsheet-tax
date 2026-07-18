@@ -63,7 +63,12 @@ describe('analytics and jobs', () => {
       JSON.stringify({ event: 'test_cta', path: '/', meta: { x: 1 } })
     );
     assert.equal(res.status, 200);
-    const metrics = await request('GET', '/api/metrics/summary');
+    const denied = await request('GET', '/api/metrics/summary');
+    assert.equal(denied.status, 403);
+    const metrics = await request('GET', '/api/metrics/summary', null, {
+      'x-jobs-secret': 'test-jobs',
+    });
+    assert.equal(metrics.status, 200);
     const m = JSON.parse(metrics.body);
     assert.ok(m.ctaEvents >= 1);
   });

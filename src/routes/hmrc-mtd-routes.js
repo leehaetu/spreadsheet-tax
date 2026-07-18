@@ -146,7 +146,10 @@ export function registerHmrcMtdRoutes(app, deps) {
     };
   }
 
-  app.get('/api/hmrc/mtd/capabilities', (_req, res) => {
+  app.get('/api/hmrc/mtd/capabilities', (req, res) => {
+    // Not a public product surface — requires sign-in
+    const user = requireUser(req, res);
+    if (!user) return;
     res.json({ ok: true, ...mtdCapabilityMatrix() });
   });
 

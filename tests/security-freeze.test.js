@@ -88,8 +88,9 @@ describe('Product surface freeze', () => {
     assert.equal(res.status, 200);
     const json = JSON.parse(res.body);
     assert.equal(json.honesty.paymentsLive, false);
-    assert.equal(json.honesty.productFreeze, true);
-    assert.equal(json.productSurfaces.freezeActive, true);
+    // Full productSurfaces inventory is no longer public on /api/status
+    assert.equal(json.productSurfaces, undefined);
+    assert.equal(json.honesty.billingCharged, false);
   });
 });
 

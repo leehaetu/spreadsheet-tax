@@ -256,6 +256,43 @@ const APP_VERSION = JSON.parse(
 ).version;
 
 /**
+ * Shared secret for ops/metrics surfaces — never customer-facing without it.
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ * @returns {boolean}
+ */
+function requireJobsSecret(req, res) {
+  const secret =
+    process.env.JOBS_SECRET ||
+    (process.env.NODE_ENV === 'production' ? null : 'dev-jobs-secret');
+  if (!secret) {
+    res.status(503).json({ error: 'JOBS_SECRET is not configured on this server.' });
+    return false;
+  }
+  const provided =
+    req.headers['x-jobs-secret'] ||
+    (typeof req.query?.secret === 'string' ? req.query.secret : '') ||
+    (typeof req.body?.secret === 'string' ? req.body.secret : '');
+  if (provided !== secret) {
+    res.status(403).json({ error: 'Jobs secret required' });
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Public demo portfolio (/accountant, /practice, /api/firms, /api/clients).
+ * Off by default in production. Enable only with DEMO_PUBLIC_PORTFOLIO=1.
+ * Local/test: open unless DEMO_PUBLIC_PORTFOLIO=0.
+ */
+function demoPublicPortfolioEnabled() {
+  if (process.env.DEMO_PUBLIC_PORTFOLIO === '1') return true;
+  if (process.env.DEMO_PUBLIC_PORTFOLIO === '0') return false;
+  if (process.env.SPREADSHEET_TAX_NO_LISTEN === '1') return true;
+  return process.env.NODE_ENV !== 'production';
+}
+
+/**
  * Serve HTML with site-chrome (HMRC recognition banner/footer) injected once.
  * @param {import('express').Response} res
  * @param {string} filename - file under public/
@@ -403,12 +440,33 @@ app.get(/.*\.html$/i, (req, res, next) => {
   const rel = path.normalize(req.path).replace(/^(\.\.(\/|\\|$))+/, '');
   const base = path.basename(rel);
   if (!base.endsWith('.html')) return next();
+  // Never serve internal/reviewer HTML via static path tricks
+  if (
+    base === 'integrity.html' ||
+    base === 'admin.html' ||
+    base.startsWith('internal-')
+  ) {
+    return res.status(404).type('text/plain').send('Not found');
+  }
+  if (
+    (base === 'accountant.html' || base === 'practice.html') &&
+    !demoPublicPortfolioEnabled()
+  ) {
+    return res.redirect(302, '/professionals');
+  }
   const full = path.join(publicDir, base);
   if (!full.startsWith(publicDir) || !fs.existsSync(full)) return next();
   return sendPublicHtml(res, base);
 });
 
-app.use(express.static(publicDir));
+app.use(express.static(publicDir, {
+  // Block residual sensitive filenames if ever reintroduced under public/
+  setHeaders(res, filePath) {
+    if (/integrity\.html$/i.test(filePath)) {
+      res.setHeader('X-Robots-Tag', 'noindex');
+    }
+  },
+}));
 
 /**
  * Explicit template download — reliable Content-Disposition + Content-Type.
@@ -441,93 +499,25 @@ app.use('/templates', express.static(templatesDir));
 
 app.get('/health', async (_req, res) => {
   let dbOk = false;
-  let clientCount = null;
-  let firmCount = null;
-  let clientCountSource = null;
   try {
     getDb().prepare('SELECT 1 AS x').get();
     dbOk = true;
   } catch {
     dbOk = false;
   }
-  // Prefer Postgres counts when DATABASE_URL is the system of record
-  try {
-    if (isPostgresMode()) {
-      await ensureOperationalPostgres();
-      const { pgOne } = await import('./lib/pg-pool.js');
-      const c = await pgOne(`SELECT COUNT(*)::int AS c FROM clients`);
-      const f = await pgOne(`SELECT COUNT(*)::int AS c FROM firms`);
-      clientCount = c?.c ?? 0;
-      firmCount = f?.c ?? 0;
-      clientCountSource = 'postgres';
-    } else {
-      clientCount = getDb().prepare(`SELECT COUNT(*) AS c FROM clients`).get().c;
-      firmCount = getDb().prepare(`SELECT COUNT(*) AS c FROM firms`).get().c;
-      clientCountSource = 'sqlite';
-    }
-  } catch {
-    try {
-      clientCount = getDb().prepare(`SELECT COUNT(*) AS c FROM clients`).get().c;
-      clientCountSource = 'sqlite-fallback';
-    } catch {
-      clientCount = null;
-    }
-  }
-  let dataDir = null;
-  try {
-    dataDir = getDataDir();
-  } catch {
-    dataDir = process.env.DATA_DIR || null;
-  }
   const capacity = evaluateCapacityPlatform(process.env);
-  const store = operationalStoreHealth();
   const ready = dbOk || capacity.postgres;
+  // Public probe payload only — no row counts, paths, or control-plane inventory
   res.status(ready ? 200 : 503).json({
     ok: ready,
     service: 'spreadsheet-tax',
     /** Our software release number (semver: major.minor.patch). Not an HMRC receipt/submit id. */
     version: APP_VERSION,
     appVersion: APP_VERSION,
-    versionMeaning:
-      'Spreadsheet Tax application release (semantic version). Not HMRC-recognised software ID, not a submission reference, not a tax year.',
     ...hmrcRecognitionPublic(),
     bridging: true,
     db: dbOk,
-    dbMode: capacity.mode,
-    operationalStore: store,
-    postgresConfigured: capacity.postgres,
-    redisConfigured: capacity.redis,
-    capacityGateMet: false,
-    capacityGateMetNote:
-      'Always false until CAPACITY-REQUIREMENTS acceptance evidence is recorded — never inferred from DATABASE_URL alone',
-    capacityRequired: { practices: 200, customers: 800_000 },
-    capacityNote:
-      'Capacity gate NOT MET until 200 practices + 800k customers proven under load — see docs/CAPACITY-REQUIREMENTS.md',
-    productionApiReady: Boolean(
-      process.env.HMRC_CLIENT_ID &&
-        (process.env.HMRC_OAUTH_ENV === 'production' || process.env.HMRC_BASE_URL)
-    ),
-    productionApiNote:
-      'Production host is env-only (HMRC_OAUTH_ENV / HMRC_BASE_URL). Live traffic still requires real OAuth token + HMRC_ALLOW_LIVE_SUBMIT=1 + approval.',
-    oauthMock: oauthConfig().mock,
-    liveSubmitEnabled: process.env.HMRC_ALLOW_LIVE_SUBMIT === '1',
     previewOnlyDefault: process.env.HMRC_ALLOW_LIVE_SUBMIT !== '1',
-    emailDelivery: emailDeliveryMode(),
-    volumeDataDir: dataDir,
-    volumeConfigured: Boolean(process.env.DATA_DIR),
-    clientRows: clientCount,
-    firmRows: firmCount,
-    clientCountSource,
-    // integrity map is code-only — not a public HTTP surface
-    fraudHeaderKeys: listFraudHeaderKeys().length,
-    scale: {
-      clientListPagination: true,
-      sqlIndexes: true,
-      designTargetClients: 600_000,
-      designTargetNote:
-        'Capacity design target only — not a load-test claim. SQLite on volume for pilot; Postgres for multi-instance.',
-    },
-    portals: ['accountant', 'practice', 'client', 'workspace'],
   });
 });
 
@@ -695,12 +685,18 @@ app.get('/firms', (req, res) => {
   sendMarketingHtml(req, res, 'firms.html', '/firms');
 });
 
-/** Demo-only portfolios — still public but must not look like live books (copy in HTML). */
+/** Demo-only portfolios — off on production unless DEMO_PUBLIC_PORTFOLIO=1. */
 app.get('/accountant', (_req, res) => {
+  if (!demoPublicPortfolioEnabled()) {
+    return res.redirect(302, '/professionals');
+  }
   sendPublicHtml(res, 'accountant.html');
 });
 
 app.get('/practice', (_req, res) => {
+  if (!demoPublicPortfolioEnabled()) {
+    return res.redirect(302, '/professionals');
+  }
   sendPublicHtml(res, 'practice.html');
 });
 
@@ -805,6 +801,11 @@ Disallow: /workspace
 Disallow: /admin
 Disallow: /history
 Disallow: /integrity
+Disallow: /integrity.html
+Disallow: /accountant
+Disallow: /practice
+Disallow: /mtd
+Disallow: /billing
 Sitemap: https://spreadsheet-tax-production.up.railway.app/sitemap.xml
 `);
 });
@@ -2159,8 +2160,12 @@ app.get('/api/csrf', (req, res) => {
   });
 });
 
-app.get('/api/product-surfaces', (_req, res) => {
-  res.json({ ok: true, ...productSurfacePublicStatus() });
+app.get('/api/product-surfaces', (req, res) => {
+  // Full freeze inventory is ops/internal; public only sees billing freeze flags
+  if (requireJobsSecret(req, res)) {
+    return res.json({ ok: true, ...productSurfacePublicStatus() });
+  }
+  // requireJobsSecret already sent response
 });
 
 /** MFA enrollment (TOTP) — practice admins and any user */
@@ -2267,7 +2272,8 @@ app.post('/api/billing/select-plan', (req, res) => {
 });
 
 app.get('/api/metrics/summary', (req, res) => {
-  // Aggregate only — no tax identifiers
+  // Ops only — aggregate counts are not for anonymous internet
+  if (!requireJobsSecret(req, res)) return;
   try {
     const database = getDb();
     const users = database.prepare(`SELECT COUNT(*) AS c FROM users`).get().c;
@@ -2294,18 +2300,7 @@ app.get('/api/metrics/summary', (req, res) => {
  * Query: days=7 (default), max 90.
  */
 app.get('/api/metrics/sales-weekly', (req, res) => {
-  const secret =
-    process.env.JOBS_SECRET ||
-    (process.env.NODE_ENV === 'production' ? null : 'dev-jobs-secret');
-  if (!secret) {
-    return res.status(503).json({ error: 'JOBS_SECRET is not configured on this server.' });
-  }
-  const provided =
-    req.headers['x-jobs-secret'] ||
-    (typeof req.query?.secret === 'string' ? req.query.secret : '');
-  if (provided !== secret) {
-    return res.status(403).json({ error: 'Jobs secret required' });
-  }
+  if (!requireJobsSecret(req, res)) return;
   try {
     const days = Math.min(90, Math.max(1, Number(req.query?.days) || 7));
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
@@ -3969,6 +3964,7 @@ app.get('/api/portal/client', (req, res) => {
 app.get('/api/status', (_req, res) => {
   const client = createSubmitClient();
   const oauth = oauthConfig();
+  // Customer/app UI needs mode labels — not full control-plane inventory
   res.json({
     ok: true,
     appVersion: APP_VERSION,
@@ -3979,52 +3975,31 @@ app.get('/api/status', (_req, res) => {
     oauthMock: oauth.mock,
     product: 'HMRC MTD ITSA bridging-only',
     supported: ['self_employment', 'uk_property', 'foreign_property'],
-    // Accurate privacy: files are uploaded for mapping; ongoing books stay in the user's spreadsheet.
     recordsStayInSpreadsheet: true,
     fileUploadedForMapping: true,
     notAFullLedger: true,
-    practiceWritesEnabled: process.env.DEMO_PRACTICE_WRITES === '1',
     authEnabled: true,
     serverOwnedDrafts: true,
-    gate: '0-safe-demo',
-    pilotFeatures: ['auth', 'drafts', 'workspace'],
     honesty: {
       publicSubmitIsPreview: client.mode === 'double',
       hmrcRecognisedSoftware: false,
-      realHmrcRequires:
-        'HMRC Developer Hub app + OAuth credentials + HMRC_ALLOW_LIVE_SUBMIT=1 + non-mock token',
-      demoPracticeStore: true,
-      realAuthenticatedWorkspace: true,
       billingCharged: false,
       paymentsLive: paymentsLive(),
-      emailDelivered: emailDeliveryMode() !== 'stub',
       csrfEnforced: csrfEnforced(),
-      loginLockout: loginLockoutConfig(),
-      productFreeze: true,
     },
-    productSurfaces: productSurfacePublicStatus(),
-    audiences: [
-      'self_employed',
-      'landlords',
-      'bookkeepers',
-      'accountants',
-      'practices',
-      'clients',
-    ],
     security: {
       tenantIsolation: true,
       rbac: true,
       abac: true,
-      rlsPostgres: isPostgresMode(),
       rateLimiting: true,
       csrfEnforced: csrfEnforced(),
-      capacityPlatform: evaluateCapacityPlatform(),
     },
   });
 });
 
-/** Security control plane summary (no secrets) */
+/** Security control plane summary — ops secret only (not customer internet) */
 app.get('/api/security/posture', (req, res) => {
+  if (!requireJobsSecret(req, res)) return;
   const cap = evaluateCapacityPlatform();
   res.json({
     ok: true,
@@ -4060,8 +4035,15 @@ app.get('/api/integrity', (_req, res) => {
   res.status(404).json({ error: 'Not found' });
 });
 
-/** Practice / accountant / client portal APIs (demo store) */
+/** Practice / accountant / client portal APIs (demo store) — off in production */
+function denyDemoPortfolio(res) {
+  if (demoPublicPortfolioEnabled()) return false;
+  res.status(404).json({ error: 'Not found' });
+  return true;
+}
+
 app.get('/api/firms', (_req, res) => {
+  if (denyDemoPortfolio(res)) return;
   res.json({
     ok: true,
     demo: true,
@@ -4073,6 +4055,7 @@ app.get('/api/firms', (_req, res) => {
 });
 
 app.get('/api/accountants', (req, res) => {
+  if (denyDemoPortfolio(res)) return;
   const firmId = typeof req.query.firmId === 'string' ? req.query.firmId : null;
   res.json({
     ok: true,
@@ -4083,6 +4066,7 @@ app.get('/api/accountants', (req, res) => {
 });
 
 app.get('/api/clients', (req, res) => {
+  if (denyDemoPortfolio(res)) return;
   const firmId = typeof req.query.firmId === 'string' ? req.query.firmId : null;
   const accountantId =
     typeof req.query.accountantId === 'string' ? req.query.accountantId : null;
@@ -4097,6 +4081,7 @@ app.get('/api/clients', (req, res) => {
 });
 
 app.get('/api/clients/:clientId', (req, res) => {
+  if (denyDemoPortfolio(res)) return;
   const client = getClient(req.params.clientId);
   if (!client) {
     return res.status(404).json({ error: 'Client not found' });
@@ -4111,14 +4096,16 @@ app.get('/api/clients/:clientId', (req, res) => {
 });
 
 app.get('/api/workflow-statuses', (_req, res) => {
+  if (denyDemoPortfolio(res)) return;
   res.json({ ok: true, demo: true, statuses: listWorkflowStatuses() });
 });
 
 /**
  * Gate 0 practice freeze: no unauthenticated professional writes unless
- * DEMO_PRACTICE_WRITES=1 (local demo only). Read APIs remain available.
+ * DEMO_PRACTICE_WRITES=1 (local demo only). Read APIs gated by demoPublicPortfolioEnabled.
  */
 app.patch('/api/clients/:clientId/workflow', (req, res) => {
+  if (denyDemoPortfolio(res)) return;
   if (process.env.DEMO_PRACTICE_WRITES !== '1') {
     return res.status(403).json({
       error:

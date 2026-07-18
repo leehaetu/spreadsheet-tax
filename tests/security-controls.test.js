@@ -33,12 +33,19 @@ const { getDb } = await import('../src/lib/db.js');
 let server;
 let port;
 
-function request(method, urlPath, body, cookie = '') {
+function request(method, urlPath, body, cookieOrHeaders = '') {
   return new Promise((resolve, reject) => {
     const data = body != null ? Buffer.from(body) : null;
     /** @type {Record<string, string|number>} */
     const headers = {};
-    if (cookie) headers.Cookie = cookie;
+    let cookie = '';
+    if (typeof cookieOrHeaders === 'string') {
+      cookie = cookieOrHeaders;
+      if (cookie) headers.Cookie = cookie;
+    } else if (cookieOrHeaders && typeof cookieOrHeaders === 'object') {
+      Object.assign(headers, cookieOrHeaders);
+      cookie = String(headers.Cookie || '');
+    }
     if (data) {
       headers['Content-Type'] = 'application/json';
       headers['Content-Length'] = data.length;
@@ -185,22 +192,26 @@ describe('rate limit', () => {
 });
 
 describe('HTTP security posture', () => {
-  it('exposes security posture without secrets', async () => {
-    const res = await request('GET', '/api/security/posture');
+  it('security posture requires jobs secret (not public)', async () => {
+    const denied = await request('GET', '/api/security/posture');
+    assert.equal(denied.status, 403);
+    const res = await request('GET', '/api/security/posture', null, {
+      'x-jobs-secret': 'dev-jobs-secret',
+    });
     assert.equal(res.status, 200);
     const j = JSON.parse(res.body);
     assert.equal(j.tenantIsolation.appLayer, true);
     assert.equal(j.rbac.roles.includes('practice_admin'), true);
-    assert.equal(j.rateLimiting.globalApiMiddleware, true);
-    assert.ok(j.capacity);
   });
 
-  it('status includes security block', async () => {
+  it('status includes security block without control-plane inventory', async () => {
     const res = await request('GET', '/api/status');
     assert.equal(res.status, 200);
     const j = JSON.parse(res.body);
     assert.equal(j.security.rbac, true);
     assert.equal(j.security.tenantIsolation, true);
+    assert.equal(j.productSurfaces, undefined);
+    assert.equal(j.security.capacityPlatform, undefined);
   });
 
   it('authorize helper denies outsider firm permission', () => {
