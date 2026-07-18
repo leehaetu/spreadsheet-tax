@@ -97,6 +97,16 @@ function showPanels({ upload, review, submit }) {
   if (s) s.hidden = !submit;
 }
 
+function showQuarterlyReviewState(state) {
+  const review = panel('review-panel');
+  if (review) review.dataset.reviewState = state;
+  document.querySelectorAll('[data-quarterly-state]').forEach((element) => {
+    const unavailable = element.id === 'spreadsheet-check-panel' && element.dataset.available === '0';
+    element.hidden = element.dataset.quarterlyState !== state || unavailable;
+  });
+  setWizardStep(state === 'mapping' ? 2 : 3);
+}
+
 async function loadStatus() {
   try {
     const res = await apiFetch('/api/status');
@@ -233,6 +243,7 @@ function handleImportSuccess(data) {
   lastSpreadsheetCheck = data.spreadsheetCheck || null;
   showReview(data);
   renderSpreadsheetCheck(lastSpreadsheetCheck);
+  showQuarterlyReviewState('mapping');
 
   if (data.payloads?.meta?.taxYear) {
     const ty = document.getElementById('tax-year');
@@ -249,7 +260,6 @@ function handleImportSuccess(data) {
   // Bind saved taxpayer profile / income sources (unified journey)
   bindTaxpayerIds().catch(() => {});
 
-  setWizardStep(2);
   panel('review-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   loadCumulativeReview(data.draftId);
 }
@@ -304,9 +314,11 @@ function renderSpreadsheetCheck(model) {
   const panel = document.getElementById('spreadsheet-check-panel');
   if (!panel) return;
   if (!model || (!(model.gridRows || []).length && !(model.sheets || []).length)) {
+    panel.dataset.available = '0';
     panel.hidden = true;
     return;
   }
+  panel.dataset.available = '1';
   panel.hidden = false;
   lastSpreadsheetCheck = model;
 
@@ -780,6 +792,17 @@ function friendlyPath(path) {
   return 'Included amount';
 }
 
+function renderDeclarationSummary() {
+  const root = document.getElementById('declaration-summary');
+  if (!root) return;
+  const totals = lastSummary?.totals || {};
+  const sources = lastSummary?.sources || [];
+  const sourceRows = sources.length
+    ? sources.map((source) => { const amount = Number(source.net ?? source.profit); return `<li><span>${esc(source.title || friendlySource(source.source || 'Income source'))}</span><strong>${Number.isFinite(amount) ? esc(formatMoney(amount)) : 'Included'}</strong></li>`; }).join('')
+    : `<li><span>Income sources in this update</span><strong>${esc(String(lastSummary?.sourceCount || 1))}</strong></li>`;
+  root.innerHTML = `<div><p class="eyebrow">Quarterly update summary</p><h3>Declare and submit</h3><p>Review the figures you are approving for this update.</p></div><ul>${sourceRows}<li class="declaration-total"><span>Total income</span><strong>${esc(formatMoney(totals.totalIncome ?? 0))}</strong></li><li><span>Total expenses</span><strong>${esc(formatMoney(totals.totalExpenses ?? 0))}</strong></li><li class="declaration-profit"><span>Profit for this period</span><strong>${esc(formatMoney(totals.net ?? 0))}</strong></li></ul>`;
+}
+
 function formatMoney(v) {
   const n = Number(v);
   if (!Number.isFinite(n)) return String(v ?? '—');
@@ -841,12 +864,11 @@ function showReview(data) {
   }
 
   const continueBtn = document.getElementById('goto-submit');
-  if (continueBtn) {
-    continueBtn.disabled = !lastValidation.ready;
-    continueBtn.title = lastValidation.ready
-      ? ''
-      : 'Resolve the blocking spreadsheet checks first';
-  }
+  const mappingContinue = document.getElementById('goto-figures');
+  [continueBtn, mappingContinue].filter(Boolean).forEach((button) => {
+    button.disabled = !lastValidation.ready;
+    button.title = lastValidation.ready ? '' : 'Resolve the blocking spreadsheet checks first';
+  });
 
   // Summary cards
   const cards = document.getElementById('summary-cards');
@@ -1029,8 +1051,9 @@ document.getElementById('reset-upload-2')?.addEventListener('click', resetToUplo
 
 document.getElementById('goto-submit')?.addEventListener('click', () => {
   if (lastValidation && !lastValidation.ready) return;
+  renderDeclarationSummary();
   showPanels({ upload: false, review: true, submit: true });
-  setWizardStep(3);
+  setWizardStep(4);
   const approve = document.getElementById('approve-cells');
   const submitBtn = document.getElementById('submit-btn');
   if (approve && submitBtn) {
@@ -1046,7 +1069,18 @@ document.getElementById('approve-cells')?.addEventListener('change', (e) => {
 
 document.getElementById('back-to-review')?.addEventListener('click', () => {
   showPanels({ upload: true, review: true, submit: false });
-  setWizardStep(2);
+  showQuarterlyReviewState('figures');
+  panel('review-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+
+document.getElementById('goto-figures')?.addEventListener('click', () => {
+  if (lastValidation && !lastValidation.ready) return;
+  showQuarterlyReviewState('figures');
+  panel('review-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+
+document.getElementById('back-to-mapping')?.addEventListener('click', () => {
+  showQuarterlyReviewState('mapping');
   panel('review-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 });
 

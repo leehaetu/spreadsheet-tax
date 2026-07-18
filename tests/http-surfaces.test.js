@@ -264,6 +264,19 @@ describe('bridging app customer focus', () => {
 
 describe('sample import API', () => {
   it('returns customer summary for a combined sample period', async () => {
+    const login = await request(
+      'POST',
+      '/api/auth/login',
+      JSON.stringify({
+        email: 'demo@spreadsheet-tax.example',
+        password: 'DemoPass123!',
+      })
+    );
+    assert.equal(login.status, 200, login.body.toString('utf8'));
+    const loginCookies = login.headers['set-cookie'];
+    const sessionCookie = (Array.isArray(loginCookies) ? loginCookies : [loginCookies].filter(Boolean))
+      .map((value) => String(value).split(';')[0])
+      .join('; ');
     const res = await new Promise((resolve, reject) => {
       const body = JSON.stringify({ sample: 'combined' });
       const req = http.request(
@@ -275,6 +288,7 @@ describe('sample import API', () => {
           headers: {
             'Content-Type': 'application/json',
             'Content-Length': Buffer.byteLength(body),
+            Cookie: sessionCookie,
           },
         },
         (r) => {

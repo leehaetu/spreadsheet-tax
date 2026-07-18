@@ -83,7 +83,7 @@ describe('taxpayer journey pages', () => {
     assert.match((await request('GET', '/home')).body, /next task|Income sources/i);
     assert.match(
       (await request('GET', '/onboarding')).body,
-      /Who will manage this account/i
+      /Retrieve businesses from HMRC/i
     );
   });
 });

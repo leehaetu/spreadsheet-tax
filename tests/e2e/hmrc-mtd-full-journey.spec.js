@@ -15,6 +15,7 @@ const TEST_PASS = process.env.HMRC_SANDBOX_TEST_USER_PASSWORD || 'ugsesjaAyhu4';
 const NINO = process.env.HMRC_SANDBOX_TEST_NINO || 'TB116925D';
 const DEMO_EMAIL = process.env.ST_DEMO_EMAIL || 'demo@spreadsheet-tax.example';
 const DEMO_PASS = process.env.ST_DEMO_PASSWORD || 'DemoPass123!';
+const RUN_REAL_SANDBOX = process.env.RUN_HMRC_SANDBOX_E2E === '1';
 
 const evidence = {
   at: new Date().toISOString(),
@@ -73,10 +74,10 @@ async function productLogin(page) {
 
 async function hmrcOauth(page) {
   await page.goto(`${BASE}/connect-hmrc`);
-  await expect(page.getByRole('heading', { name: 'Connect to HMRC' })).toBeVisible({
+  await expect(page.getByRole('heading', { name: 'Connect HMRC' })).toBeVisible({
     timeout: 20_000,
   });
-  await page.locator('#connect-btn').click();
+  await page.locator('#connect-individual-btn').click();
   await page.waitForURL(/test-www\.tax\.service\.gov\.uk/, { timeout: 45_000 });
 
   const acc = page.getByRole('button', { name: /accept additional cookies/i });
@@ -116,6 +117,7 @@ async function hmrcOauth(page) {
 }
 
 test.describe('Full MTD sandbox journey (operator)', () => {
+  test.skip(!RUN_REAL_SANDBOX, 'Set RUN_HMRC_SANDBOX_E2E=1 for operator-run external HMRC evidence.');
   test.setTimeout(300_000);
 
   test('OAuth + P1 periods + P2/P3 probes', async ({ page }) => {

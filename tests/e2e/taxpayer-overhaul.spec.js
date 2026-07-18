@@ -12,26 +12,44 @@ test.describe('approved taxpayer overhaul', () => {
   test('sets up SE, UK and two foreign properties then starts quarterly', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 1024 });
     await signIn(page);
-    await page.evaluate(() => fetch('/api/me/income-sources', {
-      method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sources: [] })
-    }));
+    const fixtureSources = [
+      { id: 'se-1', type: 'self_employment', label: 'Self-employment', nickname: 'Design services' },
+      { id: 'uk-1', type: 'uk_property', label: 'UK property', nickname: 'Bath rental' },
+      { id: 'fp-1', type: 'foreign_property', label: 'Foreign property', nickname: 'Madrid flat', countryCode: 'ESP' },
+      { id: 'fp-2', type: 'foreign_property', label: 'Foreign property', nickname: 'Nice flat', countryCode: 'FRA' },
+    ];
+    await page.evaluate((sources) => fetch('/api/me/income-sources', {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sources })
+    }), fixtureSources);
     await page.reload();
     await expect(page.getByRole('heading', { name: 'Welcome to Spreadsheet Tax' })).toBeVisible();
     await page.getByRole('button', { name: 'Continue' }).click();
+    await expect(page.locator('.chosen-source')).toHaveCount(4);
 
-    await page.locator('[data-add-type="self_employment"]').click();
-    await page.locator('[data-add-type="uk_property"]').click();
-    await page.locator('[data-add-type="foreign_property"]').click();
-    await page.locator('[data-add-type="foreign_property"]').click();
+    await page.locator('[data-remove-source]').last().click();
+    await expect(page.getByRole('heading', { name: 'Remove this source?' })).toBeVisible();
+    await page.getByRole('button', { name: 'Cancel' }).click();
+    await expect(page.locator('.chosen-source')).toHaveCount(4);
+    await page.locator('[data-remove-source]').last().click();
+    await page.getByRole('button', { name: 'Remove source' }).click();
+    await expect(page.locator('.chosen-source')).toHaveCount(3);
+    await page.evaluate((sources) => fetch('/api/me/income-sources', {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sources })
+    }), fixtureSources);
+    await page.reload();
+    await page.getByRole('button', { name: 'Continue' }).click();
     await expect(page.locator('.chosen-source')).toHaveCount(4);
     await page.getByRole('button', { name: 'Continue' }).click();
 
-    await page.locator('[data-source-index="0"] [data-detail="trade"]').fill('Design services');
-    await page.locator('[data-source-index="1"] [data-detail="address"]').fill('10 High Street, Bath');
-    await page.locator('[data-source-index="2"] [data-detail="address"]').fill('Calle Mayor 10, Madrid');
-    await page.locator('[data-source-index="3"] [data-field="countryCode"]').selectOption('FRA');
-    await page.locator('[data-source-index="3"] [data-detail="address"]').fill('20 Rue Victor Hugo, Nice');
-    await page.getByRole('button', { name: 'Continue' }).click();
+    for (let sourceNumber = 0; sourceNumber < 4; sourceNumber += 1) {
+      const detail = page.locator('.source-detail');
+      const visibleSource = await detail.innerText();
+      if (visibleSource.includes('Design services')) await detail.locator('[data-detail="trade"]').fill('Design services');
+      if (visibleSource.includes('Bath rental')) await detail.locator('[data-detail="address"]').fill('10 High Street, Bath');
+      if (visibleSource.includes('Madrid flat')) await detail.locator('[data-detail="address"]').fill('Calle Mayor 10, Madrid');
+      if (visibleSource.includes('Nice flat')) await detail.locator('[data-detail="address"]').fill('20 Rue Victor Hugo, Nice');
+      await page.locator('#next-step').click();
+    }
     await expect(page.locator('.review-source')).toHaveCount(4);
     await page.getByRole('button', { name: 'Save setup and go home' }).click();
     await page.waitForURL(/\/home$/);
@@ -58,7 +76,7 @@ test.describe('approved taxpayer overhaul', () => {
     await page.locator('[data-stage-id="foreign_adjustments"]').click();
     await expect(page.locator('[id^="eoy-fp-private-"]').first()).toHaveValue('125.50');
     await page.locator('[id^="eoy-fp-private-"]').first().fill('126.00');
-    await page.getByRole('link', { name: 'Receipts' }).first().click();
+    await page.locator('.cc-nav a[href="/history"]').click();
     await expect(page.getByRole('heading', { name: 'Leave without saving?' })).toBeVisible();
     await page.getByRole('button', { name: 'Continue editing' }).click();
     await page.getByRole('button', { name: 'Save draft' }).click();
@@ -74,6 +92,9 @@ test.describe('approved taxpayer overhaul', () => {
     });
     await page.locator('.sample-btn[data-sample="combined"]').click({ force: true });
     await expect(page.locator('#review-panel')).toBeVisible({ timeout: 20_000 });
+    await expect(page.locator('#mapping-table-wrap')).toBeVisible();
+    await page.locator('#goto-figures').click();
+    await expect(page.locator('#summary-cards')).toBeVisible();
     await page.locator('#goto-submit').click();
     await expect(page.locator('#submit-panel')).toBeVisible();
     await page.locator('#nino').fill('AA123456A');
@@ -85,23 +106,25 @@ test.describe('approved taxpayer overhaul', () => {
     await page.locator('#submit-btn').click();
     await expect(page.locator('#submit-success')).toBeVisible({ timeout: 20_000 });
     await expect(page.locator('#submit-summary')).toContainText(/Preview|NOT sent to HMRC/i);
+    await expect(page.locator('#submit-btn')).toBeDisabled();
+    await expect(page.locator('#submit-btn')).toHaveText('Update already processed');
   });
 
-  test('manual quarterly figures use the same mapping and review path', async ({ page }) => {
+  test('upload failure stays on add-records step with an actionable error', async ({ page }) => {
     await signIn(page, '/app?flow=quarterly');
-    await page.getByRole('button', { name: 'Enter figures manually' }).click();
-    await expect(page.getByRole('heading', { name: 'Enter quarterly figures manually' })).toBeVisible();
-    await page.locator('[data-manual-value]').first().fill('1250.00');
-    await page.getByRole('button', { name: 'Review these figures' }).click();
-    await expect(page.locator('#review-panel')).toBeVisible({ timeout: 15_000 });
-    await expect(page.locator('#metric-income')).toContainText('1,250');
-    await expect(page.locator('#validation-panel')).toContainText(/ready|passed|check/i);
+    await page.locator('#import-btn').click();
+    await expect(page.locator('#upload-error')).toBeVisible();
+    await expect(page.locator('#upload-error')).toContainText('choose a spreadsheet');
+    await expect(page.locator('#upload-panel')).toBeVisible();
+    await expect(page.locator('#review-panel')).toBeHidden();
   });
 
   test('history offers filtering, receipts and recovery actions', async ({ page }) => {
     await signIn(page, '/history');
     await expect(page.getByRole('heading', { name: 'Submission history' })).toBeVisible();
     await expect(page.locator('#history-filter')).toBeVisible();
-    await expect(page.locator('.recovery-grid article')).toHaveCount(3);
+    await expect(page.locator('.recovery-grid article')).toHaveCount(4);
+    await expect(page.locator('#recovery-authority-copy')).not.toContainText('Checking');
+    await expect(page.locator('#recovery-service-copy')).not.toContainText('Checking');
   });
 });

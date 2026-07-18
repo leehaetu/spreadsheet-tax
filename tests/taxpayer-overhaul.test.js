@@ -78,12 +78,11 @@ after(async () => {
 });
 
 describe('taxpayer overhaul HTML surfaces', () => {
-  it('onboarding ships multi-step setup with manage modes and source picker', () => {
+  it('onboarding retrieves HMRC businesses without local source creation', () => {
     const html = fs.readFileSync(path.join(root, 'public/onboarding.html'), 'utf8');
-    assert.match(html, /Who will manage this account/);
-    assert.match(html, /data-add-type="self_employment"/);
-    assert.match(html, /data-add-type="uk_property"/);
-    assert.match(html, /data-add-type="foreign_property"/);
+    assert.match(html, /Retrieve businesses from HMRC/);
+    assert.doesNotMatch(html, /Who will manage this account/);
+    assert.doesNotMatch(html, /data-add-type=/);
     assert.match(html, /Save setup and go home/);
     assert.match(html, /onboarding\.js/);
   });

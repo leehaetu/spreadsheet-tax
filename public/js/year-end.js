@@ -108,6 +108,8 @@ function showOut(obj) {
 }
 
 function showResult(data) {
+  const resultPanel = document.getElementById('year-end-result');
+  if (resultPanel) resultPanel.hidden = false;
   const err = document.getElementById('wf-error');
   const ok = document.getElementById('wf-success');
   const sum = document.getElementById('wf-summary');
@@ -170,6 +172,8 @@ function renderCalculationResult(data) {
 }
 
 function showError(msg) {
+  const resultPanel = document.getElementById('year-end-result');
+  if (resultPanel) resultPanel.hidden = false;
   const err = document.getElementById('wf-error');
   const ok = document.getElementById('wf-success');
   if (ok) ok.hidden = true;
@@ -234,7 +238,7 @@ function renderEditor(stageId) {
     root.innerHTML = `<div class="eoy-form"><h4>UK property annual adjustments</h4>${uk?.joint ? `<p class="help-tip">Jointly owned source · saved ownership share ${esc(uk.ownershipShare || 50)}%. Check that uploaded records already represent the reportable share.</p>` : ''}<div class="detail-grid">${field('eoy-uk-private','Private-use adjustment')}${field('eoy-uk-balancing','Balancing charge')}${field('eoy-uk-aia','Annual investment allowance')}${field('eoy-uk-other-allowance','Other capital allowance')}</div></div>`;
   } else if (stageId === 'foreign_adjustments') {
     const foreign = (eoyCase?.sources || []).filter((source) => source.type === 'foreign_property');
-    root.innerHTML = foreign.length ? `<div class="eoy-form"><h4>Foreign property annual adjustments</h4><p class="help-tip">Enter GBP values only. Keep evidence of the exchange-rate method with your digital records.</p>${foreign.map((source) => `<section class="foreign-adjustment"><h5>${esc(source.nickname || source.label)} · ${esc(source.countryCode || 'Country not set')}</h5><div class="detail-grid">${field(`eoy-fp-private-${source.id}`,'Private-use adjustment')}${field(`eoy-fp-balancing-${source.id}`,'Balancing charge')}${field(`eoy-fp-aia-${source.id}`,'Annual investment allowance')}${field(`eoy-fp-other-${source.id}`,'Other capital allowance')}<label>Exchange-rate evidence<select id="eoy-fp-rate-${source.id}"><option>HMRC monthly average rate</option><option>HMRC annual average rate</option><option>Transaction-date rate with evidence</option></select><small>Saved as evidence; it is not itself an HMRC annual adjustment field.</small></label>${field(`eoy-fp-tax-${source.id}`,'Foreign tax paid (evidence only)','Saved with this case. The annual adjustment request does not silently add this to an unsupported field.')}</div></section>`).join('')}</div>` : '<p class="help-tip">No foreign-property sources are configured. Add them in Settings before continuing.</p>';
+    root.innerHTML = foreign.length ? `<div class="eoy-form"><h4>Foreign property annual adjustments</h4><div class="foreign-tabs" role="tablist" aria-label="Foreign properties">${foreign.map((source,index) => `<button type="button" role="tab" data-foreign-tab="${esc(source.id)}" aria-selected="${index === 0}">${esc(source.nickname || source.label)} <span>${esc(source.countryCode || 'Country not set')}</span></button>`).join('')}</div><p class="help-tip">Enter GBP values only. Keep evidence of the exchange-rate method and foreign tax with your digital records.</p>${foreign.map((source,index) => `<section class="foreign-adjustment" data-foreign-panel="${esc(source.id)}" ${index === 0 ? '' : 'hidden'}><div class="foreign-heading"><div><h5>${esc(source.nickname || source.label)} adjustments</h5><p>For tax year ${esc(eoyCase?.taxYear || '')}</p></div><strong>${esc(source.countryCode || 'Country')}</strong></div><div class="detail-grid">${field(`eoy-fp-private-${source.id}`,'Private-use adjustment')}${field(`eoy-fp-balancing-${source.id}`,'Balancing charge')}${field(`eoy-fp-aia-${source.id}`,'Annual investment allowance')}${field(`eoy-fp-other-${source.id}`,'Other capital allowance')}<label>Exchange-rate evidence<select id="eoy-fp-rate-${source.id}"><option>HMRC monthly average rate</option><option>HMRC annual average rate</option><option>Transaction-date rate with evidence</option></select><small>Saved as evidence; this choice is not silently sent as an annual adjustment.</small></label>${field(`eoy-fp-tax-${source.id}`,'Foreign tax paid (evidence only)','Saved with this case. It is not added to an unsupported HMRC field.')}</div></section>`).join('')}</div>` : '<p class="help-tip">No foreign-property sources are configured. Add them in Settings before continuing.</p>';
   } else if (stageId === 'other_income_losses') {
     root.innerHTML = `<div class="eoy-form"><h4>Losses and other income</h4><div class="detail-grid">${field('eoy-loss','Brought-forward self-employment loss','Use only a loss supported by earlier records.')}</div></div>`;
   } else if (stageId === 'calculation') {
@@ -252,6 +256,13 @@ function renderEditor(stageId) {
     }
     input.addEventListener('input', () => { eoyDirty = true; });
     input.addEventListener('change', () => { eoyDirty = true; });
+  });
+  root.querySelectorAll('[data-foreign-tab]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const id = button.dataset.foreignTab;
+      root.querySelectorAll('[data-foreign-tab]').forEach((tab) => tab.setAttribute('aria-selected', String(tab === button)));
+      root.querySelectorAll('[data-foreign-panel]').forEach((panel) => { panel.hidden = panel.dataset.foreignPanel !== id; });
+    });
   });
 }
 
@@ -350,9 +361,7 @@ function renderCase() {
       list.innerHTML = sources
         .map(
           (s) =>
-            `<li><strong>${esc(s.label || s.type)}</strong> · ${esc(
-              s.type || ''
-            )}${s.businessId ? ` · ${esc(s.businessId)}` : ''}</li>`
+            `<li><span class="source-avatar">${s.type === 'self_employment' ? 'SE' : s.type === 'uk_property' ? 'UK' : esc(s.countryCode || 'FP')}</span><span><strong>${esc(s.nickname || s.label || s.type)}</strong><small>${esc(s.label || s.type || '')}${s.countryCode ? ` · ${esc(s.countryCode)}` : ''}${s.businessId ? ` · ${esc(s.businessId)}` : ''}</small></span><b>${s.type === 'foreign_property' ? 'Adjust separately' : 'Review adjustments'}</b></li>`
         )
         .join('');
     }

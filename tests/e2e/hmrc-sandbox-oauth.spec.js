@@ -23,8 +23,10 @@ const TEST_PASS =
 const DEMO_EMAIL =
   process.env.ST_DEMO_EMAIL || 'demo@spreadsheet-tax.example';
 const DEMO_PASS = process.env.ST_DEMO_PASSWORD || 'DemoPass123!';
+const RUN_REAL_SANDBOX = process.env.RUN_HMRC_SANDBOX_E2E === '1';
 
 test.describe('REAL HMRC sandbox evidence (no mock)', () => {
+  test.skip(!RUN_REAL_SANDBOX, 'Set RUN_HMRC_SANDBOX_E2E=1 for operator-run external HMRC evidence.');
   test('direct HMRC: client_credentials + hello/world + hello/application', async ({
     request,
   }) => {
@@ -125,6 +127,7 @@ test.describe('REAL HMRC sandbox evidence (no mock)', () => {
 });
 
 test.describe('Playwright OAuth journey against production + HMRC sandbox', () => {
+  test.skip(!RUN_REAL_SANDBOX, 'Set RUN_HMRC_SANDBOX_E2E=1 for operator-run external HMRC evidence.');
   test.setTimeout(180_000);
 
   test('sign in, start HMRC connect, complete sandbox user OAuth if UI allows', async ({
@@ -140,7 +143,7 @@ test.describe('Playwright OAuth journey against production + HMRC sandbox', () =
     // May land on home or stay on signin — go to connect
     await page.goto(`${BASE}/connect-hmrc`);
     await expect(
-      page.getByRole('heading', { name: 'Connect to HMRC', exact: true })
+      page.getByRole('heading', { name: 'Connect HMRC', exact: true })
     ).toBeVisible({ timeout: 20_000 });
 
     // Sandbox check button if present
@@ -154,7 +157,7 @@ test.describe('Playwright OAuth journey against production + HMRC sandbox', () =
     }
 
     // Start OAuth — must leave our origin for real HMRC sandbox
-    const connectBtn = page.locator('#connect-btn');
+    const connectBtn = page.locator('#connect-individual-btn');
     await expect(connectBtn).toBeVisible();
     await connectBtn.click();
 
@@ -238,5 +241,4 @@ test.describe('Playwright OAuth journey against production + HMRC sandbox', () =
     expect(obligations.body).toBeTruthy();
   });
 });
-
 

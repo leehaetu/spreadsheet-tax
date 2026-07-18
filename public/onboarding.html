@@ -37,21 +37,12 @@
           <div><strong>Production access</strong><ul><li>Requires HMRC production approval</li><li>Uses your real HMRC authorisation</li><li>Only enabled after explicit configuration</li></ul></div>
         </div>
       </div>
-      <fieldset class="setup-fieldset"><legend>Who will manage this account?</legend><div class="choice-grid">
-        <label><input type="radio" name="manageMode" value="self" checked><span><strong>I do it myself</strong><small>I prepare and review my updates.</small></span></label>
-        <label><input type="radio" name="manageMode" value="together"><span><strong>We work together</strong><small>I prepare records; my accountant can review.</small></span></label>
-        <label><input type="radio" name="manageMode" value="accountant"><span><strong>My accountant manages it</strong><small>I provide records through the portal.</small></span></label>
-      </div></fieldset>
+      <div class="setup-callout setup-rule"><strong>Who can use this account</strong><p>You can use the software yourself. An agent can act only through the separate agent journey when the required HMRC authorisation is in place.</p></div>
     </section>
 
     <section class="setup-step" data-step="2" hidden>
-      <h2>Choose your income sources</h2><p class="muted">Choose every source you expect to report. You can add more foreign properties separately.</p>
-      <div class="source-picker">
-        <button type="button" data-add-type="self_employment"><strong>Self-employment</strong><span>Sole trader business or profession</span><b>Add source</b></button>
-        <button type="button" data-add-type="uk_property"><strong>UK property</strong><span>Residential property income in the UK</span><b>Add source</b></button>
-        <button type="button" data-add-type="foreign_property"><strong>Foreign property</strong><span>Property income outside the UK</span><b>Add source</b></button>
-      </div>
-      <div class="setup-inline"><button class="btn btn-ghost" type="button" id="load-hmrc-sources">Load businesses from HMRC</button><span id="hmrc-note" class="muted">Available after a real HMRC OAuth connection.</span></div>
+      <h2>Confirm your HMRC income sources</h2><p class="muted">Spreadsheet Tax retrieves the self-employment and property businesses held by HMRC. It does not create an HMRC business by adding a local card.</p>
+      <div class="setup-inline hmrc-source-sync"><button class="btn btn-primary" type="button" id="load-hmrc-sources">Retrieve businesses from HMRC</button><span id="hmrc-note" class="muted">Requires an authorised HMRC sandbox or production connection.</span></div>
       <div id="chosen-sources" class="chosen-sources" aria-live="polite"></div>
     </section>
 
@@ -71,7 +62,7 @@
 
     <footer class="setup-actions"><button type="button" class="btn btn-ghost" id="prev-step" hidden>Back</button><span></span><button type="button" class="btn btn-primary btn-lg" id="next-step">Continue</button><button type="button" class="btn btn-primary btn-lg" id="save-setup" hidden>Save setup and go home</button></footer>
   </main>
-  <dialog id="remove-source-dialog" class="confirm-dialog"><form method="dialog"><h2>Remove this source?</h2><p id="remove-source-copy">This removes it from your account setup. Existing submission receipts are kept.</p><div class="setup-actions"><button value="cancel" class="btn btn-ghost">Cancel</button><button value="confirm" class="btn btn-danger">Remove source</button></div></form></dialog>
+  <dialog id="remove-source-dialog" class="confirm-dialog"><form method="dialog"><h2>Remove this source?</h2><p id="remove-source-copy">This removes it from this software only. It does not remove or change the business held by HMRC. Existing submission receipts are kept.</p><div class="setup-actions"><button value="cancel" class="btn btn-ghost">Cancel</button><button value="confirm" class="btn btn-danger">Remove source</button></div></form></dialog>
   <script src="/js/onboarding.js"></script>
 </body>
 </html>
