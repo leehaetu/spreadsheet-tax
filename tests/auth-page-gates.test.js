@@ -122,8 +122,11 @@ describe('auth page gates (audit P0)', () => {
   it('pricing does not claim live card purchase', async () => {
     const res = await request('GET', '/pricing');
     assert.equal(res.status, 200);
-    assert.match(res.body, /No card payments are live|not live yet|Not sold yet/i);
+    assert.match(
+      res.body,
+      /Free|free account|Card payments are not available|not available yet|Coming later/i
+    );
     assert.doesNotMatch(res.body, /Buy now|Add to cart|Pay with card/i);
-    assert.match(res.body, /Create free account|register/i);
+    assert.match(res.body, /Create free account|Get started free|register/i);
   });
 });

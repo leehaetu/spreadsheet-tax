@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Security &amp; HMRC status — Spreadsheet Tax</title>
-  <meta name="description" content="How Spreadsheet Tax handles data, authentication, and HMRC. Honest limits included." />
+  <title>Security &amp; privacy — Spreadsheet Tax</title>
+  <meta name="description" content="How Spreadsheet Tax looks after your account, spreadsheet uploads and HMRC connection." />
   <link rel="stylesheet" href="/css/site.css" />
 </head>
 <body class="theme-light">
@@ -13,57 +13,71 @@
       <a class="logo" href="/"><span class="logo-mark">ST</span> Spreadsheet Tax</a>
       <nav>
         <a href="/privacy">Privacy</a>
-        <a class="btn btn-primary btn-sm" href="/register">Create free account</a>
+        <a class="btn btn-primary btn-sm" href="/register">Get started free</a>
       </nav>
     </div>
   </header>
   <main class="wrap app-main narrow">
     <p class="eyebrow">Trust</p>
     <h1>Security &amp; HMRC status</h1>
-    <p class="lead">Short answers. Full technical matrix lives under integrity for reviewers.</p>
+    <p class="lead">Straight answers about your data and how we work with HMRC.</p>
 
     <section class="panel">
       <h2>HMRC recognition</h2>
-      <p><strong>Not HMRC-recognised software.</strong> Not affiliated with HMRC. Sandbox and live APIs only when credentials and flags are set.</p>
+      <p>
+        Spreadsheet Tax is <strong>independent software</strong> and is
+        <strong>not</strong> currently on HMRC’s recognised software list.
+        We are not affiliated with HMRC.
+      </p>
     </section>
 
     <section class="panel">
       <h2>Your spreadsheet</h2>
       <p>
-        Ongoing books stay in <strong>your</strong> file. When you upload, the file is processed to map period figures.
-        That is different from a “device-only” claim — upload is required for mapping.
+        You keep your day-to-day books in your own file.
+        When you upload a period summary, we use it to prepare the figures you review —
+        so the file is processed by the service, not left only on your device.
       </p>
     </section>
 
     <section class="panel">
-      <h2>Accounts &amp; access</h2>
+      <h2>Your account</h2>
       <ul class="outcome-list">
-        <li>Password accounts with HttpOnly session cookies</li>
-        <li>Optional authenticator MFA (TOTP) on the account page</li>
-        <li>Product pages require sign-in — no usable shell when signed out</li>
-        <li>Practice clients are scoped by firm membership</li>
+        <li>Sign-in with email and password</li>
+        <li>Optional authenticator app for extra protection</li>
+        <li>Your account pages only work when you are signed in</li>
+        <li>Practice clients stay within the firm you belong to</li>
       </ul>
     </section>
 
     <section class="panel">
-      <h2>What is still open</h2>
-      <ul class="outcome-list">
-        <li>Independent pen-test and full security launch-gate sign-off</li>
-        <li>Production malware scanning of uploads</li>
-        <li>Capacity proof for large practices</li>
-        <li>Card payments and guaranteed transactional email</li>
-      </ul>
-      <p class="muted">See <a href="/integrity">integrity map</a> for implementer detail.</p>
-    </section>
-
-    <section class="panel">
-      <h2>Quarterly vs year-end</h2>
+      <h2>What you send to HMRC</h2>
       <p>
-        Quarterly SE / UK / foreign property is the primary path.
-        Year-end and BSAS tools exist as guided product stages; treat live HMRC outcomes as evidence-gated, not marketing claims.
+        Nothing goes to HMRC until you connect your HMRC login and choose to send.
+        You approve the figures first. Preview checks stay inside Spreadsheet Tax.
       </p>
+      <p>
+        The main path is <strong>quarterly updates</strong>. Year-end return steps are available in the app when you need them.
+      </p>
+    </section>
+
+    <section class="panel">
+      <h2>Uploading files</h2>
+      <p>
+        Your period spreadsheet is uploaded so we can map income and expenses for review.
+        That mapping step is required before you approve and send.
+      </p>
+    </section>
+
+    <section class="panel">
+      <h2>Privacy</h2>
+      <p>See our <a href="/privacy">privacy notice</a> for what we store and why.</p>
     </section>
   </main>
-  <footer class="site-footer"><div class="wrap footer-bottom"><p><a href="/">Home</a> · <a href="/privacy">Privacy</a></p></div></footer>
+  <footer class="site-footer">
+    <div class="wrap footer-bottom">
+      <p><a href="/">Home</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></p>
+    </div>
+  </footer>
 </body>
 </html>

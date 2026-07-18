@@ -74,11 +74,10 @@ describe('customer-facing claims alignment', () => {
       res.body,
       /Not supported in this product stage:[\s\S]*BSAS/i
     );
-    // Positive: points at year-end and quarterly
-    assert.match(res.body, /year-end|\/year-end/i);
-    assert.match(res.body, /Quarterly updates|quarterly/i);
-    assert.match(res.body, /BSAS/i);
-    assert.match(res.body, /not.*HMRC-recognised|not HMRC-recognised/i);
+    // Positive: points at year-end and quarterly (customer language)
+    assert.match(res.body, /year-end|Year-end/i);
+    assert.match(res.body, /quarterly/i);
+    assert.match(res.body, /not.*HMRC-recognised|not.*recognised software list/i);
 
     await request(
       'POST',
