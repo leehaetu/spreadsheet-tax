@@ -1,0 +1,26 @@
+# Local capacity stack (Postgres + Redis). Not production HA.
+# Usage:
+#   docker compose -f docker-compose.capacity.yml up -d
+#   export DATABASE_URL=postgres://st:st@localhost:5432/spreadsheet_tax
+#   export REDIS_URL=redis://localhost:6379
+#   export OBJECT_STORAGE_DIR=./data/objects
+#   node scripts/seed-capacity.js
+#   CAPACITY_SEED_FULL=1 node scripts/seed-capacity.js   # 800k — long running
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: st
+      POSTGRES_PASSWORD: st
+      POSTGRES_DB: spreadsheet_tax
+    ports:
+      - '5432:5432'
+    volumes:
+      - st_pg:/var/lib/postgresql/data
+  redis:
+    image: redis:7-alpine
+    ports:
+      - '6379:6379'
+volumes:
+  st_pg:

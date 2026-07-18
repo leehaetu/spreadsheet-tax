@@ -90,15 +90,15 @@ export const XLSX_MAX_SHEETS = 8;
 export const XLSX_MAX_ROWS_PER_SHEET = 5000;
 
 /**
- * Whether Excel parse is allowed (CSV is always preferred/safe).
- * Production defaults to CSV-only unless ALLOW_XLSX_PARSE=1.
+ * Excel is a first-class customer format (.xlsx / .xls).
+ * Only incident kill-switch EXCEL_KILL_SWITCH=1 or ALLOW_XLSX_PARSE=0 disables.
+ * Prefer isolated worker (processLocalFileIsolated) in production web path.
  * @param {NodeJS.ProcessEnv} [env]
  */
 export function isXlsxParseEnabled(env = process.env) {
+  if (env.EXCEL_KILL_SWITCH === '1') return false;
   if (env.ALLOW_XLSX_PARSE === '0') return false;
-  if (env.ALLOW_XLSX_PARSE === '1') return true;
-  // Non-production: allow for tests and local; production: opt-in only
-  return env.NODE_ENV !== 'production';
+  return true;
 }
 
 /**
@@ -119,7 +119,7 @@ export function parseFileBuffer(buffer, filename = '') {
 
   if (!isXlsxParseEnabled()) {
     throw new Error(
-      'Excel (.xlsx) upload is disabled on this server. Export your sheet as CSV and upload that, or set ALLOW_XLSX_PARSE=1 with risk acceptance.'
+      'Excel processing disabled (EXCEL_KILL_SWITCH or ALLOW_XLSX_PARSE=0).'
     );
   }
   if (buffer.length > XLSX_MAX_BYTES) {

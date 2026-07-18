@@ -1,18 +1,25 @@
 /**
  * Production-safe boot checks. Refuse to start when secrets/cookies are weak.
+ * Capacity posture: when CAPACITY_ENFORCE=1, require Postgres/Redis/object storage.
  */
+
+import { evaluateCapacityPlatform } from './platform-config.js';
 
 const DEV_TOKEN_KEY = 'dev-only-spreadsheet-tax-token-key!!';
 
 /**
  * @param {NodeJS.ProcessEnv} [env]
- * @returns {{ ok: true, mode: string } | { ok: false, errors: string[] }}
+ * @returns {{ ok: true, mode: string, capacity?: object } | { ok: false, errors: string[], mode: string }}
  */
 export function evaluateProductionSafety(env = process.env) {
   const force = env.FORCE_PRODUCTION_SAFETY === '1';
   const isProd = env.NODE_ENV === 'production' || force;
   if (!isProd) {
-    return { ok: true, mode: 'non-production' };
+    return {
+      ok: true,
+      mode: 'non-production',
+      capacity: evaluateCapacityPlatform(env),
+    };
   }
 
   /** @type {string[]} */
@@ -44,8 +51,6 @@ export function evaluateProductionSafety(env = process.env) {
     errors.push('COOKIE_SECURE=1 is required in production (Secure session cookies)');
   }
 
-  // Live submit accidentally on without production OAuth env is still sandbox-safe,
-  // but production OAuth env without allow flag is fine. Block anonymous live path:
   if (
     env.HMRC_ALLOW_LIVE_SUBMIT === '1' &&
     env.HMRC_OAUTH_ENV === 'production' &&
@@ -56,10 +61,21 @@ export function evaluateProductionSafety(env = process.env) {
     );
   }
 
-  if (errors.length) {
-    return { ok: false, errors, mode: 'production' };
+  // Hard capacity platform (200 practices / 800k) — enforce when CAPACITY_ENFORCE=1
+  const capacity = evaluateCapacityPlatform({
+    ...env,
+    CAPACITY_ENFORCE: env.CAPACITY_ENFORCE || '0',
+  });
+  if (env.CAPACITY_ENFORCE === '1' && !capacity.ok) {
+    for (const m of capacity.missing) {
+      errors.push(`Capacity platform: ${m}`);
+    }
   }
-  return { ok: true, mode: 'production' };
+
+  if (errors.length) {
+    return { ok: false, errors, mode: 'production', capacity };
+  }
+  return { ok: true, mode: 'production', capacity };
 }
 
 /**

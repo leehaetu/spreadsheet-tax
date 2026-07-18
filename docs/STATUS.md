@@ -34,15 +34,26 @@
 
 ### Version / deploy
 
-- App code version may be **1.16.x** on Railway — **version ≠ capacity**  
+- App code version **1.17.0** — platform foundations in-repo — **version ≠ capacity gate MET**  
+- See [PLATFORM-IMPLEMENTATION.md](./PLATFORM-IMPLEMENTATION.md)  
 - Sandbox app ID: `e6751be5-fd22-4447-9e77-aa51729b1b46`  
 - Production HMRC app: not applied for  
 
+### Platform foundations shipped (1.17.0) — still NOT capacity-complete
+
+- Postgres pool + schema (`DATABASE_URL`)  
+- Redis rate limits/locks/sessions (`REDIS_URL`)  
+- Job queue + `npm run worker` (no autonomous HMRC)  
+- Object quarantine + magic-byte types  
+- First-class Excel via isolated child worker (LibreOffice container still TODO)  
+- Seed + load harness (`seed:capacity`, `load:capacity`)  
+- **Gate still open:** full 800k on HA Postgres + Redis + CAPACITY_CLAIM_FULL evidence  
+
 ## Immediate engineering priority order
 
-1. **P0** Capacity platform: Postgres, Redis, queues, workers, object storage, monitoring, backups  
-2. **P0** Secure Excel workers (first-class xls/xlsx) on isolated workers  
-3. **P0** Load/endurance/recovery tests against 200 practices + 800k records  
+1. **P0** Provision Railway Postgres + Redis; cut over app data path fully to Postgres  
+2. **P0** LibreOffice disposable worker for .xls + formula recalc; ClamAV  
+3. **P0** Full `seed:capacity:full` + deadline load evidence; then only claim capacity MET  
 4. Then only: pilot claims, HMRC Production package, marketing  
 
 ## Demo login (dev only)

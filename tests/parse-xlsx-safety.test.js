@@ -25,22 +25,20 @@ describe('xlsx safety controls', () => {
     assert.equal(rows[0].category, 'turnover');
   });
 
-  it('isXlsxParseEnabled is false in production without opt-in', () => {
+  it('Excel is first-class in production unless kill-switched', () => {
     assert.equal(
       isXlsxParseEnabled({ NODE_ENV: 'production', ALLOW_XLSX_PARSE: undefined }),
-      false
+      true
     );
     assert.equal(
-      isXlsxParseEnabled({ NODE_ENV: 'production', ALLOW_XLSX_PARSE: '1' }),
-      true
+      isXlsxParseEnabled({ NODE_ENV: 'production', EXCEL_KILL_SWITCH: '1' }),
+      false
     );
   });
 
-  it('production without ALLOW_XLSX rejects xlsx buffer', () => {
-    const prev = process.env.NODE_ENV;
-    const prevAllow = process.env.ALLOW_XLSX_PARSE;
-    process.env.NODE_ENV = 'production';
-    delete process.env.ALLOW_XLSX_PARSE;
+  it('kill switch rejects xlsx buffer', () => {
+    const prev = process.env.EXCEL_KILL_SWITCH;
+    process.env.EXCEL_KILL_SWITCH = '1';
     try {
       const xlsxPath = path.join(root, 'test-spreadsheets/06-combined-workbook.xlsx');
       if (!fs.existsSync(xlsxPath)) {
@@ -50,12 +48,11 @@ describe('xlsx safety controls', () => {
       const buf = fs.readFileSync(xlsxPath);
       assert.throws(
         () => parseFileBuffer(buf, '06-combined-workbook.xlsx'),
-        /Excel|CSV|disabled/i
+        /Excel|disabled|kill/i
       );
     } finally {
-      process.env.NODE_ENV = prev;
-      if (prevAllow != null) process.env.ALLOW_XLSX_PARSE = prevAllow;
-      else delete process.env.ALLOW_XLSX_PARSE;
+      if (prev != null) process.env.EXCEL_KILL_SWITCH = prev;
+      else delete process.env.EXCEL_KILL_SWITCH;
     }
   });
 

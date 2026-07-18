@@ -8,7 +8,10 @@ import multer from 'multer';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import fs from 'node:fs';
-import { processLocalFile } from './lib/pipeline.js';
+import { processLocalFile, processLocalFileIsolated } from './lib/pipeline.js';
+import { redisRateLimit } from './lib/redis-client.js';
+import { enqueueJob } from './lib/job-queue.js';
+import { evaluateCapacityPlatform, isPostgresMode } from './lib/platform-config.js';
 import { createHmrcClient } from './lib/hmrc-client.js';
 import { validateSubmission } from './lib/validation.js';
 import {
@@ -158,7 +161,7 @@ const root = path.join(__dirname, '..');
 const publicDir = path.join(root, 'public');
 const templatesDir = path.join(root, 'templates');
 const testSpreadsheetsDir = path.join(root, 'test-spreadsheets');
-const APP_VERSION = '1.16.0';
+const APP_VERSION = '1.17.0';
 
 /**
  * Serve HTML with site-chrome (HMRC recognition banner/footer) injected once.
@@ -295,6 +298,7 @@ app.get('/health', (_req, res) => {
   } catch {
     dataDir = process.env.DATA_DIR || null;
   }
+  const capacity = evaluateCapacityPlatform(process.env);
   const ready = dbOk;
   res.status(ready ? 200 : 503).json({
     ok: ready,
@@ -307,6 +311,13 @@ app.get('/health', (_req, res) => {
     ...hmrcRecognitionPublic(),
     bridging: true,
     db: dbOk,
+    dbMode: capacity.mode,
+    postgresConfigured: capacity.postgres,
+    redisConfigured: capacity.redis,
+    capacityGateMet: false,
+    capacityRequired: { practices: 200, customers: 800_000 },
+    capacityNote:
+      'Capacity gate NOT MET until 200 practices + 800k customers proven under load — see docs/CAPACITY-REQUIREMENTS.md',
     oauthMock: oauthConfig().mock,
     liveSubmitEnabled: process.env.HMRC_ALLOW_LIVE_SUBMIT === '1',
     previewOnlyDefault: process.env.HMRC_ALLOW_LIVE_SUBMIT !== '1',
@@ -570,7 +581,12 @@ function sendImportResult(req, res, result, filename) {
       action: 'import_created_draft',
       entityType: 'draft',
       entityId: draft.id,
-      meta: { filename },
+      meta: {
+        filename,
+        fileSha256: result.fileSha256 || null,
+        fileKind: result.fileKind || null,
+        objectKey: result.quarantine?.storageKey || null,
+      },
     });
   } catch (e) {
     console.warn('Draft persist failed (import still returned):', e);
@@ -591,6 +607,8 @@ function sendImportResult(req, res, result, filename) {
     },
     figures,
     fieldLinks: result.payloads.linkIndex,
+    fileSha256: result.fileSha256 || null,
+    fileKind: result.fileKind || null,
     // payloads still returned for UI preview; submit prefers draftId
     payloads,
   });
@@ -598,9 +616,10 @@ function sendImportResult(req, res, result, filename) {
 
 /**
  * Upload local spreadsheet → parse → map → quarterly payloads (preview).
+ * Customer uploads use isolated Excel path (magic bytes + worker + quarantine).
  */
 app.post('/api/import', (req, res) => {
-  upload.single('file')(req, res, (err) => {
+  upload.single('file')(req, res, async (err) => {
     if (err) {
       return res.status(400).json({ error: err.message || 'Upload failed' });
     }
@@ -610,7 +629,15 @@ app.post('/api/import', (req, res) => {
           .status(400)
           .json({ error: 'No file uploaded. Use form field "file".' });
       }
-      const result = processLocalFile(req.file.buffer, req.file.originalname);
+      const user = getSessionUser(getSessionIdFromRequest(req));
+      const useWorker = process.env.USE_EXCEL_WORKER !== '0';
+      const result = useWorker
+        ? await processLocalFileIsolated(
+            req.file.buffer,
+            req.file.originalname,
+            { userId: user?.id || null }
+          )
+        : processLocalFile(req.file.buffer, req.file.originalname);
       return sendImportResult(req, res, result, req.file.originalname);
     } catch (e) {
       console.error(e);
@@ -711,8 +738,23 @@ function createSubmitClient(opts = {}) {
   });
 }
 
-/** Simple in-process rate limit (per key). */
+/**
+ * Rate limit: Redis when REDIS_URL set, else SQLite/in-process.
+ * @returns {boolean | Promise<boolean>}
+ */
 function rateLimit(key, max, windowMs) {
+  // Fire Redis path as sync-compat: callers that need async should use rateLimitAsync
+  return rateLimitAsync(key, max, windowMs);
+}
+
+/** @returns {Promise<boolean>} */
+async function rateLimitAsync(key, max, windowMs) {
+  try {
+    const redisResult = await redisRateLimit(key, max, windowMs);
+    if (redisResult !== null && redisResult !== undefined) return redisResult;
+  } catch {
+    /* fall through to DB */
+  }
   const database = getDb();
   const now = Date.now();
   const row = database
@@ -759,7 +801,7 @@ app.post('/api/submit', async (req, res) => {
       (typeof req.headers['x-forwarded-for'] === 'string'
         ? req.headers['x-forwarded-for'].split(',')[0]
         : req.socket.remoteAddress) || 'unknown';
-    if (!rateLimit(`submit:${ip}`, 30, 60_000)) {
+    if (!(await rateLimitAsync(`submit:${ip}`, 30, 60_000))) {
       return res.status(429).json({ error: 'Too many submit attempts. Try again shortly.' });
     }
 
@@ -957,9 +999,9 @@ function clientIp(req) {
 }
 
 /** Auth */
-app.post('/api/auth/register', (req, res) => {
+app.post('/api/auth/register', async (req, res) => {
   try {
-    if (!rateLimit(`register:${clientIp(req)}`, 10, 60_000)) {
+    if (!(await rateLimitAsync(`register:${clientIp(req)}`, 10, 60_000))) {
       return res
         .status(429)
         .json({ error: 'Too many registration attempts. Try again shortly.' });
@@ -998,9 +1040,9 @@ app.post('/api/auth/register', (req, res) => {
   }
 });
 
-app.post('/api/auth/login', (req, res) => {
+app.post('/api/auth/login', async (req, res) => {
   try {
-    if (!rateLimit(`login:${clientIp(req)}`, 20, 60_000)) {
+    if (!(await rateLimitAsync(`login:${clientIp(req)}`, 20, 60_000))) {
       return res
         .status(429)
         .json({ error: 'Too many login attempts. Try again shortly.' });
@@ -1064,7 +1106,7 @@ app.post('/api/auth/change-password', (req, res) => {
 });
 
 app.post('/api/auth/forgot-password', async (req, res) => {
-  if (!rateLimit(`forgot:${clientIp(req)}`, 8, 60_000)) {
+  if (!(await rateLimitAsync(`forgot:${clientIp(req)}`, 8, 60_000))) {
     return res
       .status(429)
       .json({ error: 'Too many reset requests. Try again shortly.' });

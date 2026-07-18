@@ -1,5 +1,6 @@
 /**
  * Shipped pipeline: local file buffer/text → parse → map → quarterly payloads.
+ * Excel goes through isolated worker when USE_EXCEL_WORKER is not '0'.
  */
 
 import { parseCsvText, parseFileBuffer } from './parse.js';
@@ -7,9 +8,11 @@ import { mapRowsToPeriod } from './map.js';
 import { buildQuarterlyPayloads } from './payloads.js';
 import { buildCustomerSummary } from './summary.js';
 import { validateImport } from './validation.js';
+import { processSpreadsheetIsolated } from './excel-isolated.js';
 
 /**
  * Process a local file into mapped figures and HMRC quarterly payloads.
+ * Sync path (CSV / in-process) for tests and samples.
  * @param {Buffer | string} input
  * @param {string} [filename]
  */
@@ -19,6 +22,39 @@ export function processLocalFile(input, filename = 'upload.csv') {
       ? parseCsvText(input)
       : parseFileBuffer(input, filename);
 
+  return finishPipeline(rows, filename);
+}
+
+/**
+ * Async path: quarantine + isolated Excel worker for customer uploads.
+ * @param {Buffer} buffer
+ * @param {string} [filename]
+ * @param {{ userId?: string|null, firmId?: string|null }} [opts]
+ */
+export async function processLocalFileIsolated(
+  buffer,
+  filename = 'upload.xlsx',
+  opts = {}
+) {
+  const { rows, quarantine, kind, sha256 } = await processSpreadsheetIsolated(
+    buffer,
+    filename,
+    opts
+  );
+  const result = finishPipeline(rows, filename);
+  return {
+    ...result,
+    quarantine,
+    fileKind: kind,
+    fileSha256: sha256,
+  };
+}
+
+/**
+ * @param {Record<string, string>[]} rows
+ * @param {string} filename
+ */
+function finishPipeline(rows, filename) {
   const mapped = mapRowsToPeriod(rows);
   const payloads = buildQuarterlyPayloads(mapped);
   const summary = buildCustomerSummary(mapped, payloads);
@@ -30,5 +66,6 @@ export function processLocalFile(input, filename = 'upload.csv') {
     payloads,
     summary,
     validation,
+    filename,
   };
 }
