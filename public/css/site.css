@@ -2563,6 +2563,30 @@ body.control-centre .cc-topbar-date {
 }
 
 /* Self Assessment Assist (MTD) — display HMRC message fields only */
+.assist-stage-panel {
+  border: 1px solid #d5e0ec;
+  border-radius: 12px;
+  background: #f8fbff;
+  padding: 18px 20px;
+}
+.assist-stage-panel h4 {
+  margin: 0 0 8px;
+  font-size: 1.15rem;
+  color: #12213c;
+}
+.assist-prereq ul {
+  margin: 8px 0 0;
+  padding-left: 1.2rem;
+  color: #41506a;
+}
+.assist-calc-status {
+  margin: 12px 0 0;
+  font-weight: 650;
+  color: #1765c0;
+}
+.assist-product-panel h2 {
+  letter-spacing: -0.02em;
+}
 .assist-view {
   margin: 16px 0 0;
   padding: 0;

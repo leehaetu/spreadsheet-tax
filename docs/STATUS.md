@@ -16,53 +16,45 @@
 
 ---
 
-## Truth status (2026-07-18) — product finish bar closed (customer UX)
+## Truth status (2026-07-18) — HMRC Assist customer UI (after owner call-out)
 
 ```text
-BLOCKERS (unchanged product gates — not closed by UX polish):
+BLOCKERS:
 - Capacity 200 practices / 800k customers NOT MET
 - Release gates OPEN
 - HMRC Recognised: No
-- Production HMRC access unproven for real taxpayers
-- Live host may lag until Railway redeploy of this push
+- Live host may lag until redeploy
+- Real Assist messages still require live/sandbox HMRC calculation + scopes [SANDBOX_HTTP prior only]
 
-PROVEN (customer product-finish bar):
-- Individual-only Connect HMRC; no agent CTA on taxpayer path [UNIT_TESTED + CUSTOMER_WORKFLOW]
-- Home/Sources disconnected → Connect HMRC; no false Connected; no sandbox-connected labels [UNIT_TESTED + CUSTOMER_WORKFLOW]
-- Quarterly exclusive steps + modal spreadsheet viewer (inline check panel off main path) [CUSTOMER_WORKFLOW]
-- Year-end exclusive guided cards + HMRC gate [CUSTOMER_WORKFLOW]
-- product-finish unit 21+ pass; full unit 284/284 [UNIT_TESTED]
-- product e2e pack 20/20: product-finish + taxpayer-overhaul + app-journey + smoke [CUSTOMER_WORKFLOW]
-  (HMRC connection mocked for UI gates only — not SANDBOX_HTTP)
+WAS WRONG / FIXED THIS PASS:
+- SA Assist existed as API + sandbox evidence + buried buttons — NOT as a customer step users could see
+- Now: dedicated year-end stage “HMRC Assist feedback” on checklist + work UI + primary “Get HMRC Assist report”
+- Quarterly: primary CTA routes to Year end for Assist (not a fake quarterly-only Assist product)
+
+PROVEN:
+- EOY stage list includes hmrc_assist after calculation [UNIT_TESTED]
+- Year-end checklist shows “HMRC Assist feedback”; stage opens Assist panel + primary CTA [CUSTOMER_WORKFLOW]
+- Assist generate/ack SANDBOX_HTTP still on prior ledger docs/hmrc/sa-assist-sandbox-run.json [SANDBOX_HTTP]
+- Unit 286/286; product-finish e2e includes Assist stage test [UNIT_TESTED + CUSTOMER_WORKFLOW]
 
 UNPROVEN:
-- Live production redeploy of this push
-- Owner real-sandbox OAuth walkthrough
-- Capacity / pilot / Recognised / production-ready
-- Full Figma board pixel-atlas (boards still show superseded create-business frames)
-
-EXTERNAL:
-- Agent OAuth remains for practice/API; taxpayer UI is individual-only
+- Owner browser: full Year end → calc → Assist → real HMRC messages on live host
+- Capacity / pilot / production-ready / Recognised
 ```
 
 - Stage: 2 of 5 — Sandbox engineering
-- Not claiming: production-ready · pilot-ready · HMRC Recognised · capacity met · full board pixel match
-- Customer quarterly journey: WORKS locally with mocked HMRC UI gates [CUSTOMER_WORKFLOW]
-- Latest sandbox journey: prior ledger 11/22 true 2xx [SANDBOX_HTTP] — not re-run this pass
-- Version: package `1.34.2` · product-finish closeout on `main` after this push · deployed host may lag
-
-### Capabilities (product finish closeout)
-
-| Claim | Tag | Evidence | Explicitly not claiming |
-|-------|-----|----------|-------------------------|
-| Taxpayer product-finish checklist | `CUSTOMER_WORKFLOW` | product-finish e2e 9/9 + unit | Capacity / Recognised |
-| Gate 0 quarterly path | `CUSTOMER_WORKFLOW` | app-journey + smoke + taxpayer-overhaul | Live HMRC 2xx |
-| No sandbox-connected customer labels | `UNIT_TESTED` | server me/hmrc status labels; account/settings | Mode hidden from operators |
-| E2E login rate-limit safe under suite | `UNIT_TESTED` | `E2E_RELAX_RATE_LIMIT=1` in Playwright webServer only | Production rate limit raised |
+- Not claiming: production-ready · pilot-ready · HMRC Recognised · capacity met
+- Customer Assist UI path: present in year-end [CUSTOMER_WORKFLOW]; live HMRC Assist content still needs real calc + OAuth scopes [SANDBOX_HTTP prior]
 
 ### Next honest step
 
-- Redeploy Railway if live lags; owner browser: disconnected Home → Connect HMRC (no agent).
+- Redeploy; owner walk Year end checklist → HMRC Assist feedback step (needs real calculation reference for live messages).
+
+---
+
+## Truth status (2026-07-18) — product finish bar closed (customer UX)
+
+Prior product-finish shell/connection work remains; this section superseded for Assist honesty by the status block above.
 
 ---
 

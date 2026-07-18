@@ -91,9 +91,30 @@ test.describe('Product finish checklist', () => {
     await page.locator('[data-ye-card="q4"] [data-ye-answer="losses"][data-value="no"]').click();
     await expect(page.locator('[data-ye-card="checklist"]')).toBeVisible();
     await expect(page.locator('#year-end-source-board li').first()).toBeVisible();
+    // HMRC Assist must appear as a real checklist step (not buried API-only).
+    await expect(page.locator('#year-end-source-board')).toContainText(/HMRC Assist feedback/i);
     await page.locator('#ye-start-steps').click();
     await expect(page.locator('[data-ye-card="work"]')).toBeVisible();
     await expect(page.locator('#stage-title')).not.toHaveText('—');
+  });
+
+  test('year-end Assist stage is a dedicated customer UI', async ({ page }) => {
+    await mockHmrcConnected(page);
+    await signIn(page, '/year-end');
+    await page.locator('[data-ye-card="q1"] [data-ye-answer="se"][data-value="yes"]').click();
+    await page.locator('[data-ye-card="q2"] [data-ye-answer="uk"][data-value="no"]').click();
+    await page.locator('[data-ye-card="q3"] [data-ye-answer="fp"][data-value="no"]').click();
+    await page.locator('[data-ye-card="q4"] [data-ye-answer="losses"][data-value="no"]').click();
+    await expect(page.locator('#year-end-source-board')).toContainText(/HMRC Assist feedback/i);
+    await page.locator('#year-end-source-board li', { hasText: /HMRC Assist feedback/i }).click();
+    await expect(page.locator('[data-ye-card="work"]')).toBeVisible();
+    await expect(page.locator('#stage-title')).toContainText(/HMRC Assist feedback/i);
+    await expect(page.locator('#stage-actions')).toContainText(/Get HMRC Assist report/i);
+    // Host is empty until HMRC returns messages — assert attached + stage copy, not pixel visibility.
+    await expect(page.locator('#eoy-assist-host')).toHaveCount(1);
+    await expect(page.locator('.assist-stage-panel')).toBeVisible();
+    await expect(page.locator('.assist-stage-panel')).toContainText(/Self Assessment Assist/i);
+    await expect(page.locator('#stage-actions button[data-wf="sa_assist_report"]')).toBeVisible();
   });
 
   test('quarterly exclusive steps: source → upload → map → review → send', async ({

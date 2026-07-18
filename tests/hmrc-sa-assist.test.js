@@ -145,15 +145,21 @@ describe('Self Assessment Assist (MTD)', () => {
     );
   });
 
-  it('product surfaces reference Assist in year-end registry and quarterly UI', () => {
+  it('product surfaces Assist as a year-end customer stage (not API-only)', () => {
     const yearEnd = fs.readFileSync(path.join(root, 'public/year-end.html'), 'utf8');
     assert.match(yearEnd, /data-wf="sa_assist_report"/);
     assert.match(yearEnd, /data-wf="sa_assist_acknowledge"/);
+    assert.match(yearEnd, /hmrc-assist\.js/);
+    const eoy = fs.readFileSync(path.join(root, 'src/lib/eoy-case.js'), 'utf8');
+    assert.match(eoy, /id: 'hmrc_assist'/);
     const app = fs.readFileSync(path.join(root, 'public/app.html'), 'utf8');
-    assert.match(app, /assist-report-btn|Self Assessment Assist|hmrc-assist/i);
+    assert.match(app, /Open year-end for HMRC Assist/);
+    assert.match(app, /assist-report-btn|hmrc-assist/i);
     const yeJs = fs.readFileSync(path.join(root, 'public/js/year-end.js'), 'utf8');
     assert.match(yeJs, /sa_assist_report/);
+    assert.match(yeJs, /hmrc_assist/);
     assert.match(yeJs, /renderAssistResult|HmrcAssist/);
+    assert.match(yeJs, /eoy-assist-host|assist-stage-panel/);
   });
 
   it('OAuth default scopes include assist read/write', () => {

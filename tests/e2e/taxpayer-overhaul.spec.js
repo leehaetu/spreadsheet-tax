@@ -137,10 +137,16 @@ test.describe('approved taxpayer overhaul', () => {
         type: 'self_employment',
         label: 'Self-employment',
         nickname: 'Trade',
+        businessId: 'XAIS12345678901',
       },
     ]);
     await page.reload();
+    await expect(page.locator('#quarterly-gate')).toBeHidden({ timeout: 15_000 });
+    await expect(page.locator('.quarterly-source-row').first()).toBeVisible({
+      timeout: 15_000,
+    });
     await page.locator('.quarterly-source-row').first().click();
+    await expect(page.locator('#upload-panel')).toBeVisible();
     await page.locator('#import-btn').click();
     await expect(page.locator('#upload-error')).toBeVisible();
     await expect(page.locator('#upload-error')).toContainText(/choose a spreadsheet|file/i);

@@ -72,10 +72,13 @@ Same shell on every authenticated page.
 - [x] Clearer IA (sources + drafts with role)  
 - [x] Technical business IDs under Settings advanced disclosure  
 
-### P6 — Assist (already evidenced)
-- [x] SA Assist generate + acknowledge `SANDBOX_HTTP`  
+### P6 — Assist (customer-visible)
+- [x] SA Assist generate + acknowledge `SANDBOX_HTTP` (API evidence ledger)  
 - [x] HMRC wording only in Assist renderer  
-- [x] Quarterly Assist: primary CTA + advanced calc reference only  
+- [x] **Year-end dedicated stage** `hmrc_assist` — “HMRC Assist feedback” on checklist + work UI  
+- [x] Primary CTA **Get HMRC Assist report** on that stage; messages render in-stage  
+- [x] Quarterly: primary path is **Open year-end for HMRC Assist** (Assist is post-calculation)  
+- [x] Advanced calc-reference only if customer already has a calculation ID  
 
 ### P7 — Proof
 - [x] Unit tests: `tests/product-finish.test.js`  

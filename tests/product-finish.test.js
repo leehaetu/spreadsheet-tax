@@ -115,6 +115,7 @@ describe('product finish — HMRC mirror & quarterly', () => {
     assert.match(html, /losses or other adjustments/i);
     assert.doesNotMatch(html, /connection mode remains visible/i);
     assert.doesNotMatch(html, /Tax return/);
+    assert.match(html, /hmrc-assist\.js/);
   });
 
   it('year-end JS drives exclusive cards and HMRC gate', () => {
@@ -125,6 +126,26 @@ describe('product finish — HMRC mirror & quarterly', () => {
     assert.match(js, /connection\?\.connected/);
     assert.match(js, /ye-start-steps/);
     assert.match(js, /ye-restart-guide/);
+    assert.match(js, /hmrc_assist/);
+    assert.match(js, /Get HMRC Assist report/);
+    assert.match(js, /eoy-assist-host|assist-stage-panel/);
+  });
+
+  it('EOY case includes a dedicated HMRC Assist stage after calculation', () => {
+    const src = fs.readFileSync(path.join(root, 'src/lib/eoy-case.js'), 'utf8');
+    assert.match(src, /id: 'hmrc_assist'/);
+    assert.match(src, /HMRC Assist feedback/);
+    const calcIdx = src.indexOf("id: 'calculation'");
+    const assistIdx = src.indexOf("id: 'hmrc_assist'");
+    const finalIdx = src.indexOf("id: 'final_declaration'");
+    assert.ok(calcIdx > 0 && assistIdx > calcIdx && finalIdx > assistIdx);
+  });
+
+  it('quarterly Assist points customers to year-end, not a fake in-step report', () => {
+    const html = fs.readFileSync(path.join(publicDir, 'app.html'), 'utf8');
+    assert.match(html, /Open year-end for HMRC Assist/);
+    assert.match(html, /href="\/year-end"/);
+    assert.match(html, /I already have an HMRC calculation reference/);
   });
 
   it('history is submission history; records are sources', () => {

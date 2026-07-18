@@ -229,7 +229,7 @@ async function load() {
     if (periodEl) {
       periodEl.textContent =
         nextTask.detail ||
-        'Review each active income source before anything is sent.';
+        'Review each active income source before anything is sent. Year-end includes HMRC Assist after your tax calculation.';
     }
     if (cta) {
       cta.href = nextTask.href || '/app?flow=quarterly';
@@ -237,8 +237,8 @@ async function load() {
         'Continue quarterly update <span aria-hidden="true">→</span>';
     }
     if (secondary) {
-      secondary.href = '/onboarding';
-      secondary.textContent = 'Refresh income sources';
+      secondary.href = '/year-end';
+      secondary.textContent = 'Year end & HMRC Assist';
     }
     if (lead) {
       lead.textContent = data.nextDeadline?.due

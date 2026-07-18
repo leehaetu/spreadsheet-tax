@@ -33,7 +33,9 @@ const STAGE_ACTIONS = {
   calculation: [
     { wf: 'calc', label: 'Trigger tax calculation', primary: true },
     { wf: 'calc_list', label: 'List calculations' },
-    { wf: 'sa_assist_report', label: 'Get HMRC Assist report' },
+  ],
+  hmrc_assist: [
+    { wf: 'sa_assist_report', label: 'Get HMRC Assist report', primary: true },
   ],
   bsas: [
     { wf: 'bsas_trigger', label: 'Trigger BSAS', primary: true },
@@ -43,7 +45,6 @@ const STAGE_ACTIONS = {
     { wf: 'bsas_adjust_fp', label: 'Adjust BSAS (foreign)' },
   ],
   final_declaration: [
-    { wf: 'sa_assist_report', label: 'Get HMRC Assist report' },
     { wf: 'final_calc', label: 'Intent to finalise', primary: true },
   ],
   complete: [
@@ -120,10 +121,22 @@ function showResult(data) {
   if (err) err.hidden = true;
   if (ok) ok.hidden = false;
   if (sum) {
-    // Do not surface internal mode labels (preview/sandbox) as customer theatre.
+    // Customer-facing step labels — not internal workflow codes as product theatre.
+    const labels = {
+      calc: 'Tax calculation',
+      calc_list: 'List calculations',
+      sa_assist_report: 'HMRC Assist report',
+      sa_assist_acknowledge: 'HMRC Assist confirmation',
+      final_calc: 'Final declaration',
+    };
+    const nice = labels[data.workflow] || data.workflow;
     sum.textContent = data.ok
-      ? `Step “${data.workflow}” completed.`
-      : `Step “${data.workflow}” failed or returned non-success from HMRC.`;
+      ? `${nice} completed.`
+      : `${nice} failed or HMRC returned a non-success response.`;
+    if (data.ok && data.workflow === 'calc') {
+      sum.textContent +=
+        ' Next: open HMRC Assist feedback to request HMRC’s messages for this calculation.';
+    }
   }
   const rb = data.readback;
   let rbLine = '';
@@ -169,11 +182,23 @@ function showResult(data) {
   showOut(data);
 }
 
+/** Prefer the on-stage Assist host so HMRC messages appear in the year-end step UI. */
+function assistHostEl() {
+  return (
+    document.getElementById('eoy-assist-host') ||
+    document.getElementById('assist-view')
+  );
+}
+
 /**
  * Self Assessment Assist (MTD) — only HMRC message fields (title/body/action/links/path).
  */
 function renderAssistResult(data) {
-  let root = document.getElementById('assist-view');
+  const isAssist =
+    data.workflow === 'sa_assist_report' || data.workflow === 'sa_assist_acknowledge';
+  if (!isAssist) return;
+
+  let root = assistHostEl();
   if (!root) {
     const host = document.getElementById('year-end-result');
     if (!host) return;
@@ -182,32 +207,43 @@ function renderAssistResult(data) {
     root.className = 'assist-view';
     host.appendChild(root);
   }
-  const isAssist =
-    data.workflow === 'sa_assist_report' || data.workflow === 'sa_assist_acknowledge';
-  if (!isAssist) return;
+  root.hidden = false;
+  const resultPanel = document.getElementById('year-end-result');
+  if (resultPanel) resultPanel.hidden = false;
 
   if (data.workflow === 'sa_assist_acknowledge') {
     if (window.HmrcAssist) window.HmrcAssist.renderAcknowledged(root);
     else {
-      root.hidden = false;
-      root.innerHTML = '<p class="assist-ack-done">Confirmed</p>';
+      root.innerHTML =
+        '<p class="assist-ack-done">Confirmed — you have acknowledged HMRC Assist.</p>';
     }
+    root.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     return;
   }
 
   if (!window.HmrcAssist) {
-    root.hidden = false;
-    root.textContent = '';
+    root.innerHTML =
+      '<p class="error">Assist display module failed to load. Refresh the page and try again.</p>';
     return;
   }
 
   // Prefer correlationId from HMRC response body (OAS required field)
-  const body = data.body || {};
+  const body = data.body || data.hmrcBody || {};
   if (body.correlationId && !data.correlationId) {
     data = { ...data, correlationId: body.correlationId };
   }
+  const payload = {
+    ...data,
+    body,
+    status: data.hmrcStatus ?? data.status,
+    noContent:
+      data.noContent === true ||
+      data.hmrcStatus === 204 ||
+      data.status === 204 ||
+      body === null,
+  };
 
-  window.HmrcAssist.renderAssist(root, data, {
+  window.HmrcAssist.renderAssist(root, payload, {
     onAcknowledge: async ({ reportId, correlationId }) => {
       if (!reportId || !correlationId) {
         showError('Missing reportId or correlationId from HMRC.');
@@ -216,6 +252,7 @@ function renderAssistResult(data) {
       await runWorkflow('sa_assist_acknowledge', { reportId, correlationId });
     },
   });
+  root.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 function renderCalculationResult(data) {
@@ -353,12 +390,37 @@ function renderEditor(stageId) {
   } else if (stageId === 'calculation') {
     root.innerHTML = `<div class="eoy-form">
       <h4>Year-end calculation</h4>
-      <p class="help-tip">Spreadsheet Tax requests a tax calculation from HMRC for ${esc(eoyCase?.taxYear || 'this tax year')}. It does not invent or locally calculate your final tax bill. Use the actions below when you are ready.</p>
+      <p class="help-tip">Spreadsheet Tax requests a tax calculation from HMRC for ${esc(eoyCase?.taxYear || 'this tax year')}. It does not invent or locally calculate your final tax bill.</p>
+      <p class="help-tip">After HMRC returns a calculation, the next step is <strong>HMRC Assist feedback</strong> — HMRC’s own messages about your return, not advice written by Spreadsheet Tax.</p>
+    </div>`;
+  } else if (stageId === 'hmrc_assist') {
+    const calcId =
+      document.getElementById('bsas-calc-id')?.value ||
+      sessionStorage.getItem('st_last_calculation_id') ||
+      '';
+    root.innerHTML = `<div class="eoy-form assist-stage-panel">
+      <h4>HMRC Self Assessment Assist</h4>
+      <p class="muted">This step requests HMRC’s Assist report for your tax calculation. Messages shown here are written by HMRC. Spreadsheet Tax only displays them and records that you confirmed you saw them.</p>
+      <div class="assist-prereq help-tip">
+        <strong>Before you start</strong>
+        <ul>
+          <li>HMRC must be connected for your individual account.</li>
+          <li>You need a calculation for this tax year (complete the Tax calculation step first).</li>
+          <li>If HMRC returns no messages (HTTP 204), that is still a successful empty report — not an error.</li>
+        </ul>
+      </div>
+      <p class="assist-calc-status" id="assist-calc-status">${
+        calcId
+          ? `Calculation reference ready for this request.`
+          : 'No calculation reference yet. Trigger a tax calculation on the previous step, then return here.'
+      }</p>
+      <div id="eoy-assist-host" class="assist-view" aria-live="polite"></div>
+      <p id="eoy-assist-error" class="error" hidden></p>
     </div>`;
   } else if (stageId === 'final_declaration') {
     root.innerHTML = `<div class="eoy-form declaration-box">
       <h4>Review and declare</h4>
-      <p class="muted">Please review your final figures before submitting your declaration to HMRC.</p>
+      <p class="muted">Please review your final figures before submitting your declaration to HMRC. If HMRC Assist returned messages, confirm you have considered them before declaring.</p>
       <p class="eyebrow" style="margin-top:1rem">You are declaring that:</p>
       <ul class="declaration-points">
         <li>The information provided is correct and complete to the best of your knowledge.</li>
@@ -449,6 +511,18 @@ function renderStageActions(stageId) {
           showError('Confirm the final declaration review before continuing.');
           return;
         }
+        if (a.wf === 'sa_assist_report') {
+          const calcId =
+            document.getElementById('bsas-calc-id')?.value ||
+            sessionStorage.getItem('st_last_calculation_id') ||
+            '';
+          if (!calcId) {
+            showError(
+              'HMRC Assist needs a calculation reference. Complete the Tax calculation step first, then try again.'
+            );
+            return;
+          }
+        }
         runWorkflow(a.wf);
       });
       box.appendChild(btn);
@@ -471,6 +545,7 @@ function renderSourceBoard() {
     if (id === 'uk_adjustments') return 'UK';
     if (id === 'foreign_adjustments') return 'FP';
     if (id === 'calculation') return '£';
+    if (id === 'hmrc_assist') return 'HA';
     if (id === 'final_declaration') return '✓';
     if (id === 'bsas') return 'BS';
     if (id === 'other_income_losses') return 'L';

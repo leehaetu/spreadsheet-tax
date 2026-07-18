@@ -162,21 +162,28 @@
         <button type="button" class="btn btn-primary btn-lg" id="goto-submit">Continue to declaration</button>
         <button type="button" class="btn btn-ghost" id="back-to-upload-link">Upload a different file</button>
       </div>
-      <section class="panel" id="assist-quarterly-panel" style="margin-top:1rem">
-        <h2 style="margin-top:0;font-size:1.1rem">Self Assessment Assist</h2>
-        <p class="muted">Optional HMRC guidance for this tax year after a calculation is available. Messages shown here come from HMRC only.</p>
+      <section class="panel assist-product-panel" id="assist-quarterly-panel" style="margin-top:1rem">
+        <h2 style="margin-top:0;font-size:1.1rem">HMRC Assist</h2>
+        <p class="muted">
+          HMRC Self Assessment Assist is feedback from HMRC after a <strong>tax calculation</strong> for the year.
+          That is part of <a href="/year-end">Year end</a> — not this quarterly spreadsheet step.
+        </p>
         <div class="action-bar" style="border:0;padding-top:0.5rem">
-          <button type="button" class="btn btn-primary" id="assist-report-btn">Get HMRC Assist report</button>
+          <a class="btn btn-primary" href="/year-end" id="assist-year-end-link">Open year-end for HMRC Assist</a>
         </div>
-        <details class="settings-advanced" style="margin-top:0.75rem">
-          <summary>Advanced — calculation reference</summary>
+        <details class="settings-advanced" style="margin-top:0.75rem" id="assist-advanced">
+          <summary>I already have an HMRC calculation reference</summary>
+          <p class="muted">Use this only if HMRC has already produced a calculation for this tax year and you have the reference.</p>
           <div class="form-row">
             <label>Calculation reference
-              <input type="text" id="assist-calculation-id" autocomplete="off" placeholder="Filled after HMRC calculation" />
+              <input type="text" id="assist-calculation-id" autocomplete="off" placeholder="From HMRC calculation" />
             </label>
             <label>Tax year
               <input type="text" id="assist-tax-year" autocomplete="off" />
             </label>
+          </div>
+          <div class="action-bar" style="border:0;padding-top:0.5rem">
+            <button type="button" class="btn btn-ghost" id="assist-report-btn">Get HMRC Assist report</button>
           </div>
         </details>
         <div id="assist-view" class="assist-view" hidden></div>

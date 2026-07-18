@@ -47,6 +47,12 @@ export const EOY_STAGES = [
     detail: 'Ask HMRC for a calculation and review the result carefully.',
   },
   {
+    id: 'hmrc_assist',
+    title: 'HMRC Assist feedback',
+    detail:
+      'Request HMRC’s Self Assessment Assist report for this calculation, read HMRC’s messages, then confirm you have seen them.',
+  },
+  {
     id: 'bsas',
     title: 'Adjustable summary (if needed)',
     detail: 'Only if you need to adjust the HMRC summary (BSAS).',
@@ -224,6 +230,7 @@ export function stageToWorkflow(stageId) {
     foreign_adjustments: 'fp_annual',
     other_income_losses: null, // UI offers losses + other_income
     calculation: 'calc',
+    hmrc_assist: 'sa_assist_report',
     bsas: 'bsas_trigger',
     final_declaration: 'final_calc',
   };
