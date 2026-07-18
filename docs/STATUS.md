@@ -1,10 +1,11 @@
 # Project status
 
 **Last updated:** 2026-07-18  
-**App version:** **1.27.0**  
+**App version:** **1.28.0**  
 **Screen audit pack:** [docs/audits/2026-07-18-all-screens/](./audits/2026-07-18-all-screens/) — drives UI fixes (not “image work”)  
 **Sales review + plan:** [docs/audits/2026-07-18-sales-site-review/](./audits/2026-07-18-sales-site-review/) · [AFTER-REPORT.md](./audits/2026-07-18-sales-site-review/AFTER-REPORT.md)  
 **Taxpayer overhaul gaps:** [TAXPAYER-OVERHAUL-BACKEND-GAP-REPORT.md](./TAXPAYER-OVERHAUL-BACKEND-GAP-REPORT.md)  
+**Capacity platform track:** [CAPACITY-PLATFORM-TRACK.md](./CAPACITY-PLATFORM-TRACK.md)  
 **Protocol:** [AGENT-TRUTH-PROTOCOL.md](./AGENT-TRUTH-PROTOCOL.md)  
 **Capacity gate:** [CAPACITY-REQUIREMENTS.md](./CAPACITY-REQUIREMENTS.md) — **NOT MET**  
 **Release gates:** [RELEASE-GATES.md](./RELEASE-GATES.md) — **OPEN**  
@@ -12,9 +13,37 @@
 
 ---
 
-## Truth status (2026-07-18) — v1.27.0 taxpayer overhaul checkpoint 1
+## Truth status (2026-07-18) — v1.28.0 tenant security + capacity track
 
-### Implemented in checkpoint 1 (not the completed overhaul; not pilot-ready)
+### Shipped in 1.28.0 (RBAC/ABAC/RLS/rate limits + capacity track docs)
+
+- RBAC matrix `src/lib/rbac.js` [UNIT_TESTED]
+- ABAC `src/lib/abac.js` (owner, membership, dual-control) [UNIT_TESTED]
+- Tenant firm_id guards `src/lib/tenant-context.js` [UNIT_TESTED]
+- Postgres RLS on clients/drafts/memberships/audit/object_blobs [ROUTE_ONLY until DATABASE_URL]
+- Rate limit tiers + global API middleware `src/lib/rate-limit.js` [UNIT_TESTED]
+- `GET /api/security/posture` [UNIT_TESTED]
+- ADR 0004 Accepted; `docs/CAPACITY-PLATFORM-TRACK.md`; `npm run capacity:evidence`
+- **Capacity gate remains NOT MET**
+
+```text
+BLOCKERS:
+- Capacity 200 practices / 800k customers NOT MET
+- Release gates OPEN
+- HMRC Recognised: No
+- Pen-test / tax sign-off external
+
+PROVEN:
+- npm test 231 pass including security-controls [UNIT_TESTED]
+- Tenant isolation suite still green [UNIT_TESTED]
+- Rate limit trips after max [UNIT_TESTED]
+
+UNPROVEN:
+- RLS under live Postgres multi-instance
+- Full 800k seed + deadline load claim
+```
+
+### Implemented in 1.27 taxpayer overhaul checkpoint 1 (not pilot-ready)
 
 - Multi-step `/onboarding`: manage mode, SE/UK/multi-foreign sources, details, review, save [UNIT_TESTED + e2e]
 - Quarterly source picker on `/app` (`quarterly-sources.js`) [UNIT_TESTED + e2e]
