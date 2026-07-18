@@ -21,6 +21,14 @@
 | T9 | **Sandbox submit figures presented without source** | Real HMRC 200 used **fixture** CSV + sandbox NINO/business, not a customer file | **DOCUMENTED** — must always state source |
 | T10 | **STATUS.md outdated blockers** | Still said “need Hub Client ID” after credentials existed | **FIXED this audit** |
 | T11 | **Plan flag `liveHmrc: true`** | Entitlements imply live HMRC path from plan alone; server still gates submit | **FIXED this audit** — renamed/clarified to capability, not entitlement |
+| T12 | **Agent readiness overclaim (2026-07-18)** | Status sold as strong progress toward full operational / HMRC path; treated route matrix + partial sandbox as product completion; journey “okish” counted non-2xx as success; customer app presented as usable while HTML/JS review IDs mismatched (`review-panel` vs `preview-panel`) | **ACKNOWLEDGED** — not fixed as product; control added: `docs/AGENT-TRUTH-PROTOCOL.md`, template, AGENTS.md bind. Stage reset to **2 of 5**. |
+| T13 | **Broken primary app journey after UX redesign** | HTML redesigned; JS still targets old element IDs — sample/import does not show review | **OPEN P0** — Gate 0 |
+| T14 | **Draft submit without ownership check** | `getDraft(id)` on submit/MTD without proving session user/firm owns draft | **OPEN P0** |
+| T15 | **Cross-tenant deadline reminders** | Any firm member can run job; query is all clients | **OPEN P0** |
+| T16 | **Roles not enforced server-side** | Membership treated as enough for invites/admin-ish actions | **OPEN P0** |
+| T17 | **Insecure production defaults** | Token encrypt fallback to SESSION_SECRET or hardcoded dev key; Secure cookie optional | **OPEN P0** |
+| T18 | **Vulnerable xlsx parser** | `xlsx@0.18.5` high severity; no upstream fix on package | **OPEN P0** (replace/isolate/risk-accept with controls) |
+| T19 | **Journey scorer honesty** | Steps with HMRC non-2xx marked `ok: true` / okish inflated | **OPEN** — scorer + reporting must use true HMRC status |
 
 ---
 
@@ -58,7 +66,8 @@
 
 ## Permanent rules (builders)
 
-See `AGENTS.md` § Truth-first. Code: `src/lib/fraud-headers.js` honesty rule. Tests: `tests/hmrc-oauth-fraud.test.js` asserts no invented port.
+See `AGENTS.md` § Truth-first and **`docs/AGENT-TRUTH-PROTOCOL.md`** (anti-overclaim, evidence tags, status template, consequences).  
+Code: `src/lib/fraud-headers.js` honesty rule. Tests: `tests/hmrc-oauth-fraud.test.js` asserts no invented port.
 
 ---
 

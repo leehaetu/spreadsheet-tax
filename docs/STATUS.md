@@ -1,62 +1,67 @@
 # Project status
 
-**Last updated:** 2026-07-17  
+**Last updated:** 2026-07-18  
+**Protocol:** [AGENT-TRUTH-PROTOCOL.md](./AGENT-TRUTH-PROTOCOL.md) · template: [STATUS-CLAIM-TEMPLATE.md](./STATUS-CLAIM-TEMPLATE.md)  
 **Live:** https://spreadsheet-tax-production.up.railway.app  
-**Goal:** **HMRC Recognised** · **Plan:** [PLAN-HMRC-RECOGNISED.md](./PLAN-HMRC-RECOGNISED.md)  
-**Stage map:** [STAGE-MAP.md](./STAGE-MAP.md) · **Postman:** [postman/README.md](./postman/README.md)  
-**Live app version:** `/health` → `version`  
-**Recognised status now:** **Not yet** (UI: Goal HMRC Recognised · Not yet recognised)  
-**Sandbox app ID:** `e6751be5-fd22-4447-9e77-aa51729b1b46`  
-**Production app:** not applied for  
-**Current build:** full operational **in-year** then **EOY+BSAS** in sandbox, then checklist/logs, then Production switch.  
-**Truth inventory:** [DONE-VS-NOT.md](./DONE-VS-NOT.md) ← read this before “next steps”  
+**Goal (aspirational):** HMRC Recognised — **not achieved**  
 **Truth audit:** [TRUTH-AUDIT.md](./TRUTH-AUDIT.md)  
-**Production APIs pack:** [HMRC-PRODUCTION-ACCESS.md](./HMRC-PRODUCTION-ACCESS.md) (only when sandbox evidence is enough)
+
+---
+
+## Truth status (2026-07-18)
+
+- **Stage: 2 of 5 — Sandbox engineering**
+- **Not claiming:** production-ready · pilot-ready · HMRC Recognised · full operational E2E product · HMRC walkthrough ready
+- **Open P0 blockers:**
+  - Broken customer app review journey (HTML `review-panel` vs JS `preview-panel` and related IDs)
+  - Draft submit without ownership check
+  - Cross-tenant deadline reminders
+  - Incomplete server-side role enforcement
+  - Insecure token-encryption / cookie defaults for production
+  - Vulnerable `xlsx` parser (high, no fix on package)
+  - Journey scorer can mark non-2xx as ok
+- **Customer quarterly journey:** **BROKEN** (Gate 0) — evidence: `public/app.html` vs `public/js/app.js`
+- **Practice isolation/roles:** **FAIL** (membership ≠ role checks; reminders global)
+- **Latest sandbox journey:** do **not** quote “all green”; list each step’s real HMRC status from `docs/hmrc/sandbox-journey-run.json` when reporting
+- **Version drift:** server `APP_VERSION` **1.15.0** · `package.json` **1.0.0** · older docs may say 1.10.0 — reconcile before any external claim
+- **Recognised status:** **Not yet** (must stay false until listed)
+- **Sandbox app ID:** `e6751be5-fd22-4447-9e77-aa51729b1b46`
+- **Production app:** not applied for (Lee approval required before any SDSTeam “ready” email)
+
+---
+
+## What is genuinely working (tagged)
+
+| Claim | Tag | Notes |
+|-------|-----|--------|
+| Unit/integration suite 117 pass | `UNIT_TESTED` | Not customer e2e proof |
+| Auth, firms, clients, drafts, OAuth rows in SQLite | `UNIT_TESTED` / product code | Exists; isolation incomplete |
+| HMRC sandbox OAuth | `SANDBOX_HTTP` / e2e history | Real when credentials + non-mock |
+| Many MTD routes under `/api/hmrc/mtd/*` | `ROUTE_ONLY` (+ some `SANDBOX_HTTP`) | **Not** full customer workflows |
+| SE / some property / calcs / BSAS / ITSA / BISS hits in journey file | `SANDBOX_HTTP` (per step) | Report step-by-step; never bulk “success” |
+| Practice workspace UI shell | `ROUTE_ONLY` / partial UX | Stronger than `/mtd`; not secure pilot |
+| Production host switch env-based | `UNIT_TESTED` | Code path; Production credentials **not** granted |
+| Default public submit = preview | product truth | Live submit gated |
+
+---
 
 ## Priority (Lee)
 
-Spreadsheet Tax first. Home-based (Reading area / prefer **Wokingham**). Plumbing customers deprioritised; gas licence maybe later. Both apps Railway-deployed.
-
-## Current truth (do not soften)
-
-| Fact | Value |
-|------|--------|
-| OAuth mock | **Off** (`HMRC_OAUTH_MOCK=0`) |
-| Hub credentials | **Set** on Railway (**sandbox** app) |
-| Default public submit | Preview/double unless live flag + real token |
-| Sandbox SE period submit | **Done once** (fixture plumber CSV → 200 + periodId) |
-| Sandbox UK/foreign property submit | **Code paths shipped** (`/api/hmrc/sandbox-submit-uk` / `-foreign`) — run with OAuth + draft to prove HTTP 200 |
-| Business Details | Sandbox list proven; UI “Load businesses” on `/app` |
-| Obligations | API + UI shipped (`GET /api/hmrc/obligations`) — re-test with connected token |
-| Tax estimate | **Signpost** to HMRC account — not calculated in-app |
-| FPH | **Honest omit**; not full VALID_HEADERS |
-| Production HMRC APIs | **Not granted** — Hub Production app + checklist still required |
-| Billing | Stub — no cards |
-| Email | Stub unless webhook |
-| Demo portfolio | Fictional, labelled |
+Spreadsheet Tax first. Prefer Wokingham / home hours. Both apps Railway-deployed.
 
 ## Demo product login
 
-`demo@spreadsheet-tax.example` / `DemoPass123!`
+`demo@spreadsheet-tax.example` / `DemoPass123!` — **demo/test**, not a real taxpayer.
 
-## MVP vs production APIs
+## Operator next (honest)
 
-| Track | Status |
-|-------|--------|
-| **Personal pilot MVP** | Largely in place: auth, drafts, import, review, OAuth, sandbox SE submit, history/receipts, businesses/obligations UI |
-| **HMRC Production credentials** | Operator process on Hub — see production pack |
-
-## Operator next (truthful — only open items)
-
-1. ~~VENDOR_PUBLIC_IP~~ **done** — Railway egress `195.180.20.214`  
-2. ~~In-year Hub API subscriptions~~ **you already have them**  
-3. ~~OAuth + businesses + obligations e2e~~ **Playwright 5/5 passed** (production + sandbox test user)  
-4. Property sandbox period HTTP evidence when you want SDSTeam logs for Property 6.0  
-5. **Not next yet:** Production Hub application — only after you are happy with sandbox evidence  
+1. **Gate 0:** repair app HTML/JS journey + ownership/isolation P0s  
+2. Secure pilot baseline (SECURITY-LAUNCH-GATE evidence + human sign-off)  
+3. Real customer quarterly + EOY workflows (not `/mtd` as product)  
+4. Endpoint evidence ledger with true HMRC statuses  
+5. Only then: checklist + SDSTeam with Lee approval  
 6. Never claim live taxpayer filing until Production approval + gate  
-
-See [DONE-VS-NOT.md](./DONE-VS-NOT.md).
 
 ## Honesty rule for agents
 
-**Truth first.** See `AGENTS.md` and `docs/TRUTH-AUDIT.md`. Never invent FPH or outcomes.
+Read `AGENT-TRUTH-PROTOCOL.md` first. Overclaim = protocol breach → correct immediately + row in `TRUTH-AUDIT.md`.
