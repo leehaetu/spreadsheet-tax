@@ -8,6 +8,7 @@ import multer from 'multer';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import fs from 'node:fs';
+import crypto from 'node:crypto';
 import { processLocalFile, processLocalFileIsolated } from './lib/pipeline.js';
 import { enqueueJob } from './lib/job-queue.js';
 import { evaluateCapacityPlatform, isPostgresMode } from './lib/platform-config.js';
@@ -212,6 +213,7 @@ import {
   saveTaxpayerProfile,
   listIncomeSources,
   setIncomeSources,
+  reconcileHmrcSources,
   mapHmrcBusinessesToSources,
   buildDashboard,
   buildCumulativeReview,
@@ -325,35 +327,51 @@ function sendPublicHtml(res, filename) {
   if (!fs.existsSync(file)) {
     return res.status(404).send('Not found');
   }
+  const nonce = crypto.randomBytes(16).toString('base64');
   let html = fs.readFileSync(file, 'utf8');
   if (!html.includes('/js/site-chrome.js')) {
-    const tag = '<script src="/js/site-chrome.js" defer></script>';
+    const tag = `<script nonce="${nonce}" src="/js/site-chrome.js" defer></script>`;
     if (/<\/body>/i.test(html)) {
       html = html.replace(/<\/body>/i, `${tag}\n</body>`);
     } else {
       html += `\n${tag}\n`;
     }
   }
-  // Shared sales chrome (nav/footer/CTA) for marketing + public auth entry
   if (MARKETING_HTML.has(filename) && !html.includes('/js/sales-chrome.js')) {
-    const tag = '<script src="/js/sales-chrome.js" defer></script>';
+    const tag = `<script nonce="${nonce}" src="/js/sales-chrome.js" defer></script>`;
     if (/<\/body>/i.test(html)) {
       html = html.replace(/<\/body>/i, `${tag}\n</body>`);
     } else {
       html += `\n${tag}\n`;
     }
   }
-  // SALE-12: CTA click beacon (no tax data) on marketing + public auth
   if (MARKETING_HTML.has(filename) && !html.includes('/js/analytics.js')) {
-    const tag = '<script type="module" src="/js/analytics.js"></script>';
+    const tag = `<script nonce="${nonce}" type="module" src="/js/analytics.js"></script>`;
     if (/<\/body>/i.test(html)) {
       html = html.replace(/<\/body>/i, `${tag}\n</body>`);
     } else {
       html += `\n${tag}\n`;
     }
   }
+  // CSP: no script unsafe-inline — every <script> gets this response nonce
+  html = html.replace(/<script\b(?![^>]*\bnonce=)/gi, `<script nonce="${nonce}" `);
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader(
+    'Content-Security-Policy',
+    [
+      "default-src 'self'",
+      "img-src 'self' data:",
+      // styles still use unsafe-inline (utility classes / few inline styles); scripts do not
+      "style-src 'self' 'unsafe-inline'",
+      `script-src 'self' 'nonce-${nonce}'`,
+      "connect-src 'self'",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "frame-ancestors 'self'",
+      "object-src 'none'",
+    ].join('; ')
+  );
   return res.status(200).send(html);
 }
 
@@ -447,10 +465,13 @@ app.use((req, res, next) => {
   res.setHeader('X-Frame-Options', 'SAMEORIGIN');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.setHeader('X-App-Version', APP_VERSION);
-  res.setHeader(
-    'Content-Security-Policy',
-    "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self'"
-  );
+  // Default CSP for APIs/static; HTML pages override with per-response script nonces
+  if (!res.getHeader('Content-Security-Policy')) {
+    res.setHeader(
+      'Content-Security-Policy',
+      "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'self'"
+    );
+  }
   next();
 });
 app.use(csrfProtectionMiddleware);
@@ -1039,15 +1060,17 @@ app.post('/api/import', (req, res) => {
           .status(400)
           .json({ error: 'No file uploaded. Use form field "file".' });
       }
-      const useWorker = process.env.USE_EXCEL_WORKER !== '0';
       const previousCheck = getPreviousSpreadsheetCheck(user.id);
+      // Excel always isolated or async exceljs — never vulnerable SheetJS in-process
+      const useWorker = process.env.USE_EXCEL_WORKER !== '0';
+      const { processLocalFileAsync } = await import('./lib/pipeline.js');
       const result = useWorker
         ? await processLocalFileIsolated(
             req.file.buffer,
             req.file.originalname,
             { userId: user.id, previousCheck }
           )
-        : processLocalFile(req.file.buffer, req.file.originalname, {
+        : await processLocalFileAsync(req.file.buffer, req.file.originalname, {
             previousCheck,
           });
       return sendImportResult(req, res, result, req.file.originalname);
@@ -2624,7 +2647,23 @@ app.get('/api/me/income-sources', (req, res) => {
 app.put('/api/me/income-sources', (req, res) => {
   const user = requireUser(req, res);
   if (!user) return;
-  const sources = setIncomeSources(user.id, req.body?.sources || []);
+  const conn = getActiveConnection(user.id);
+  const requested = req.body?.sources || [];
+  let sources;
+  if (conn?.accessToken && !conn.mock) {
+    const reconciled = reconcileHmrcSources(
+      listIncomeSources(user.id),
+      requested
+    );
+    if (reconciled.error) {
+      return res
+        .status(reconciled.status || 409)
+        .json({ error: reconciled.error });
+    }
+    sources = setIncomeSources(user.id, reconciled.sources, { origin: 'hmrc' });
+  } else {
+    sources = setIncomeSources(user.id, requested, { origin: 'preview' });
+  }
   writeAudit({
     userId: user.id,
     action: 'income_sources_saved',
@@ -2683,7 +2722,7 @@ app.post('/api/me/income-sources/from-hmrc', async (req, res) => {
     const list =
       result.body?.listOfBusinesses || result.body?.businesses || [];
     const proposed = mapHmrcBusinessesToSources(list);
-    const sources = setIncomeSources(user.id, proposed);
+    const sources = setIncomeSources(user.id, proposed, { origin: 'hmrc' });
     // store nino in profile meta (not log full)
     saveTaxpayerProfile(user.id, {
       meta: { ...(getTaxpayerProfile(user.id).meta || {}), nino: ninoFinal },
@@ -2960,7 +2999,7 @@ app.post('/api/me/drafts/:draftId/approve-spreadsheet', (req, res) => {
 
 /** Attach import to client (practice) */
 app.post('/api/me/clients/:clientId/import', (req, res) => {
-  upload.single('file')(req, res, (err) => {
+  upload.single('file')(req, res, async (err) => {
     if (err) {
       return res.status(400).json({ error: err.message || 'Upload failed' });
     }
@@ -2974,7 +3013,11 @@ app.post('/api/me/clients/:clientId/import', (req, res) => {
       if (!req.file) {
         return res.status(400).json({ error: 'No file uploaded.' });
       }
-      const result = processLocalFile(req.file.buffer, req.file.originalname);
+      const { processLocalFileAsync } = await import('./lib/pipeline.js');
+      const result = await processLocalFileAsync(
+        req.file.buffer,
+        req.file.originalname
+      );
       // temporarily bind user for draft ownership
       const payloads = {
         meta: result.payloads.meta,

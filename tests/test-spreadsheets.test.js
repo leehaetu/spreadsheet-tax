@@ -138,10 +138,11 @@ describe('processLocalFile on test-spreadsheets', () => {
     assert.equal(result.payloads.selfEmployment.periodIncome.turnover, sales);
   });
 
-  it('06 xlsx workbook imports through shipped path', () => {
+  it('06 xlsx workbook imports through shipped path', async () => {
     const file = path.join(testDir, '06-combined-workbook.xlsx');
     const buf = fs.readFileSync(file);
-    const result = processLocalFile(buf, path.basename(file));
+    const { processLocalFileIsolated } = await import('../src/lib/pipeline.js');
+    const result = await processLocalFileIsolated(buf, path.basename(file));
     assert.ok(
       result.mapped.selfEmployment ||
         result.mapped.ukProperty ||
