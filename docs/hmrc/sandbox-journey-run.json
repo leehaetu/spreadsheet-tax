@@ -1,5 +1,5 @@
 {
-  "at": "2026-07-18T00:05:33.662Z",
+  "at": "2026-07-18T00:24:36.722Z",
   "base": "https://spreadsheet-tax-production.up.railway.app",
   "nino": "TB****",
   "steps": [
@@ -9,7 +9,7 @@
       "status": 200,
       "label": null,
       "path": null,
-      "snippet": "{\"connected\":true,\"mock\":false,\"expired\":false,\"mode\":\"sandbox\",\"expiresAt\":\"2026-07-18T04:05:39.855Z\",\"label\":\"HMRC OAuth token stored\"}"
+      "snippet": "{\"connected\":true,\"mock\":false,\"expired\":false,\"mode\":\"sandbox\",\"expiresAt\":\"2026-07-18T04:24:43.154Z\",\"label\":\"HMRC OAuth token stored\"}"
     },
     {
       "name": "import_self_employment",
@@ -17,7 +17,7 @@
       "status": 200,
       "label": null,
       "path": null,
-      "snippet": "{\"draftId\":\"66fb7b4c-835d-475a-b2ba-b6fe8fd448dc\"}"
+      "snippet": "{\"draftId\":\"bd06f777-c8f5-49c4-aa33-15dffdea5f44\"}"
     },
     {
       "name": "import_uk_property",
@@ -25,7 +25,7 @@
       "status": 200,
       "label": null,
       "path": null,
-      "snippet": "{\"draftId\":\"6fb84e92-17db-47a7-a0cf-8ec0478f41a0\"}"
+      "snippet": "{\"draftId\":\"cfdba1ff-19ad-467d-aae9-0542dbc2f894\"}"
     },
     {
       "name": "import_foreign_property",
@@ -33,7 +33,7 @@
       "status": 200,
       "label": null,
       "path": null,
-      "snippet": "{\"draftId\":\"0a6baf81-f350-41c2-9f53-c6b5896fbbd6\"}"
+      "snippet": "{\"draftId\":\"c1e09ba5-fbca-4c18-8fc2-688ad8d37fab\"}"
     },
     {
       "name": "create_test_business_uk-property",
@@ -85,11 +85,11 @@
     },
     {
       "name": "uk_period_create",
-      "ok": true,
-      "status": 200,
+      "ok": false,
+      "status": 502,
       "label": null,
       "path": "/individuals/business/property/uk/TB116925D/XZIS09524118559/period/2024-25",
-      "snippet": "{\"ok\":true,\"status\":201,\"path\":\"/individuals/business/property/uk/TB116925D/XZIS09524118559/period/2024-25\",\"method\":\"POST\",\"label\":\"uk_property_period_create\",\"url\":\"https://test-api.service.hmrc.gov.uk/individuals/business/property/uk/TB116925D/XZIS09524118559/period/2024-25\",\"body\":{\"submissionId\":\"4557ecb5-fd32-48cc-81f5-e6acd1099f3c\"},\"requestBody\":{\"fromDate\":\"2024-04-06\",\"toDate\":\"2024-07-0"
+      "snippet": "{\"ok\":false,\"status\":429,\"path\":\"/individuals/business/property/uk/TB116925D/XZIS09524118559/period/2024-25\",\"method\":\"POST\",\"label\":\"uk_property_period_create\",\"url\":\"https://test-api.service.hmrc.gov.uk/individuals/business/property/uk/TB116925D/XZIS09524118559/period/2024-25\",\"body\":{\"code\":\"MESSAGE_THROTTLED_OUT\",\"message\":\"The request for the API is throttled as you have exceeded your quota.\""
     },
     {
       "name": "fp_period_create",
@@ -118,18 +118,18 @@
     {
       "name": "se_annual",
       "ok": true,
-      "status": 502,
+      "status": 200,
       "label": null,
       "path": "/individuals/business/self-employment/TB116925D/XBIS12345678901/annual/2024-25",
-      "snippet": "{\"ok\":false,\"status\":429,\"path\":\"/individuals/business/self-employment/TB116925D/XBIS12345678901/annual/2024-25\",\"method\":\"PUT\",\"label\":\"se_annual_put\",\"url\":\"https://test-api.service.hmrc.gov.uk/individuals/business/self-employment/TB116925D/XBIS12345678901/annual/2024-25\",\"body\":{\"code\":\"MESSAGE_THROTTLED_OUT\",\"message\":\"The request for the API is throttled as you have exceeded your quota.\"},\"re"
+      "snippet": "{\"ok\":true,\"status\":204,\"path\":\"/individuals/business/self-employment/TB116925D/XBIS12345678901/annual/2024-25\",\"method\":\"PUT\",\"label\":\"se_annual_put\",\"url\":\"https://test-api.service.hmrc.gov.uk/individuals/business/self-employment/TB116925D/XBIS12345678901/annual/2024-25\",\"body\":null,\"requestBody\":{\"allowances\":{\"annualInvestmentAllowance\":1,\"otherCapitalAllowance\":0},\"adjustments\":{\"includedNonT"
     },
     {
       "name": "bsas_trigger",
       "ok": true,
-      "status": 502,
+      "status": 200,
       "label": null,
       "path": "/individuals/self-assessment/adjustable-summary/TB116925D/trigger",
-      "snippet": "{\"ok\":false,\"status\":429,\"path\":\"/individuals/self-assessment/adjustable-summary/TB116925D/trigger\",\"method\":\"POST\",\"label\":\"bsas_trigger\",\"url\":\"https://test-api.service.hmrc.gov.uk/individuals/self-assessment/adjustable-summary/TB116925D/trigger\",\"body\":{\"code\":\"MESSAGE_THROTTLED_OUT\",\"message\":\"The request for the API is throttled as you have exceeded your quota.\"},\"requestBody\":{\"accountingPer"
+      "snippet": "{\"ok\":true,\"status\":200,\"path\":\"/individuals/self-assessment/adjustable-summary/TB116925D/trigger\",\"method\":\"POST\",\"label\":\"bsas_trigger\",\"url\":\"https://test-api.service.hmrc.gov.uk/individuals/self-assessment/adjustable-summary/TB116925D/trigger\",\"body\":{\"calculationId\":\"717f3a7a-db8e-11e9-8a34-2a2ae2dbcce4\"},\"requestBody\":{\"accountingPeriod\":{\"startDate\":\"2024-04-06\",\"endDate\":\"2025-04-05\"},\"typ"
     },
     {
       "name": "itsa_status",
@@ -157,16 +157,16 @@
     },
     {
       "name": "fraud_validate",
-      "ok": "MESSAGE_THROTTLED_OUT",
+      "ok": "INVALID_HEADERS",
       "status": 422,
       "label": null,
       "path": null,
-      "snippet": "{\"validationCode\":\"MESSAGE_THROTTLED_OUT\",\"ok\":false,\"warnings\":[],\"omitted\":[{\"header\":\"Gov-Client-Device-ID\",\"reason\":\"Client must send X-Client-Device-Id (persistent UUID). Server will not invent a device id.\"},{\"header\":\"Gov-Client-Public-Port\",\"reason\":\"Browser web apps cannot observe client public TCP port; no honest value available. Do not invent.\"},{\"header\":\"Gov-Client-Screens\",\"reason\":\""
+      "snippet": "{\"validationCode\":\"INVALID_HEADERS\",\"ok\":false,\"warnings\":[{\"code\":\"MISSING_HEADER\",\"message\":\"Header missing. This may be correct for single factor authentication, for example username and password. If this is the case, you must contact us explaining why you cannot submit this header.\",\"headers\":[\"gov-client-multi-factor\"]}],\"omitted\":[{\"header\":\"Gov-Client-Device-ID\",\"reason\":\"Client must send X"
     }
   ],
   "summary": {
     "total": 20,
     "httpTouched": 20,
-    "okish": 20
+    "okish": 19
   }
 }
