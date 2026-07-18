@@ -2,6 +2,7 @@
 
 ## Source of truth
 
+- **Universal (all Lee Hine projects):** `docs/LEE-HINE-UNIVERSAL-TRUTH-PROTOCOL.md` (canonical also at `~/.grok/LEE-HINE-UNIVERSAL-TRUTH-PROTOCOL.md`) — read first; never shrink owner complete bars  
 - **Truth / anti-overclaim (binds all status talk):** `docs/AGENT-TRUTH-PROTOCOL.md`  
 - Status claim skeleton: `docs/STATUS-CLAIM-TEMPLATE.md`  
 - Permanent failure log: `docs/TRUTH-AUDIT.md`  
