@@ -419,14 +419,33 @@ app.get('/readyz', (_req, res) => {
 });
 
 /**
- * Marketing site always available at / and /sales.
- * Product app lives under /home, /app, /workspace — never hide sales when signed in.
+ * Marketing pages: if signed in, require explicit leave-and-logout confirm first.
+ * Product app lives under /home, /app, /workspace, etc.
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ * @param {string} filename
+ * @param {string} [publicPath]
  */
-app.get('/', (_req, res) => {
-  sendPublicHtml(res, 'sales.html');
+function sendMarketingHtml(req, res, filename, publicPath) {
+  const user = getSessionUser(getSessionIdFromRequest(req));
+  if (user) {
+    const next = publicPath || req.path || '/sales';
+    const q = new URLSearchParams({ next, back: '/home' });
+    return res.redirect(302, `/leave-to-sales?${q.toString()}`);
+  }
+  return sendPublicHtml(res, filename);
+}
+
+/** Confirm leave app → marketing (signs out on confirm). */
+app.get('/leave-to-sales', (_req, res) => {
+  sendPublicHtml(res, 'leave-to-sales.html');
 });
-app.get('/sales', (_req, res) => {
-  sendPublicHtml(res, 'sales.html');
+
+app.get('/', (req, res) => {
+  sendMarketingHtml(req, res, 'sales.html', '/sales');
+});
+app.get('/sales', (req, res) => {
+  sendMarketingHtml(req, res, 'sales.html', '/sales');
 });
 
 app.get('/app', (_req, res) => {
@@ -445,20 +464,20 @@ app.get('/year-end', (_req, res) => {
   sendPublicHtml(res, 'year-end.html');
 });
 
-app.get('/self-employed', (_req, res) => {
-  sendPublicHtml(res, 'self-employed.html');
+app.get('/self-employed', (req, res) => {
+  sendMarketingHtml(req, res, 'self-employed.html', '/self-employed');
 });
 
-app.get('/landlords', (_req, res) => {
-  sendPublicHtml(res, 'landlords.html');
+app.get('/landlords', (req, res) => {
+  sendMarketingHtml(req, res, 'landlords.html', '/landlords');
 });
 
-app.get('/professionals', (_req, res) => {
-  sendPublicHtml(res, 'professionals.html');
+app.get('/professionals', (req, res) => {
+  sendMarketingHtml(req, res, 'professionals.html', '/professionals');
 });
 
-app.get('/firms', (_req, res) => {
-  sendPublicHtml(res, 'firms.html');
+app.get('/firms', (req, res) => {
+  sendMarketingHtml(req, res, 'firms.html', '/firms');
 });
 
 app.get('/accountant', (_req, res) => {
@@ -481,16 +500,17 @@ app.get('/legal', (_req, res) => {
   sendPublicHtml(res, 'legal.html');
 });
 
-app.get('/pricing', (_req, res) => {
-  sendPublicHtml(res, 'pricing.html');
+app.get('/pricing', (req, res) => {
+  sendMarketingHtml(req, res, 'pricing.html', '/pricing');
 });
 
-app.get('/how-it-works', (_req, res) => {
-  sendPublicHtml(res, 'how-it-works.html');
+app.get('/how-it-works', (req, res) => {
+  sendMarketingHtml(req, res, 'how-it-works.html', '/how-it-works');
 });
 
-app.get('/security', (_req, res) => {
-  sendPublicHtml(res, 'security.html');
+app.get('/security', (req, res) => {
+  // Public trust page — still marketing surface when signed in
+  sendMarketingHtml(req, res, 'security.html', '/security');
 });
 app.get('/integrity', (_req, res) => {
   sendPublicHtml(res, 'integrity.html');
@@ -502,12 +522,12 @@ app.get('/terms', (_req, res) => {
   sendPublicHtml(res, 'terms.html');
 });
 
-app.get('/help', (_req, res) => {
-  sendPublicHtml(res, 'help.html');
+app.get('/help', (req, res) => {
+  sendMarketingHtml(req, res, 'help.html', '/help');
 });
 
-app.get('/templates', (_req, res) => {
-  sendPublicHtml(res, 'templates.html');
+app.get('/templates', (req, res) => {
+  sendMarketingHtml(req, res, 'templates.html', '/templates');
 });
 
 app.get('/signin', (_req, res) => {

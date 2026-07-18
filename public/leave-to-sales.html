@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Leave app for marketing site — Spreadsheet Tax</title>
+  <meta name="description" content="Confirm leaving the signed-in app for the public marketing website. You will be signed out." />
+  <meta name="theme-color" content="#f4f6f9" />
+  <meta name="robots" content="noindex" />
+  <link rel="stylesheet" href="/css/site.css" />
+</head>
+<body class="theme-light app-body app-simple">
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a class="logo" href="/home"><span class="logo-mark">ST</span> Spreadsheet Tax</a>
+      <nav>
+        <a href="/home">Back to app</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap app-main" style="max-width:36rem">
+    <div class="panel" id="warn-panel">
+      <h1 style="margin-top:0">You are leaving the app</h1>
+      <p class="lead" style="margin-bottom:1rem">
+        You are about to open the <strong>public marketing website</strong>
+        (product information, pricing and audience pages).
+      </p>
+      <p class="error" style="margin:1rem 0" role="alert">
+        You will be <strong>signed out</strong> of Spreadsheet Tax. Any unfinished work in this
+        browser session stays on the server under your account — you can sign in again later.
+      </p>
+      <p class="muted" id="dest-note"></p>
+      <div class="action-bar" style="border:0;padding-top:0.75rem;display:flex;flex-wrap:wrap;gap:0.65rem">
+        <button type="button" class="btn btn-primary" id="confirm-leave">
+          Sign out and open marketing site
+        </button>
+        <a class="btn btn-ghost" href="/home" id="cancel-leave">Stay signed in — back to app</a>
+      </div>
+      <p id="err" class="error" hidden></p>
+    </div>
+    <p id="redirecting" class="muted" hidden>Opening marketing site…</p>
+  </main>
+
+  <script>
+    (function () {
+      const params = new URLSearchParams(location.search);
+      let next = params.get('next') || '/sales';
+      // Only allow relative marketing destinations (no open redirect)
+      if (!next.startsWith('/') || next.startsWith('//') || next.includes('://')) {
+        next = '/sales';
+      }
+      // Product app paths are not marketing destinations
+      const productPrefix = [
+        '/home',
+        '/app',
+        '/workspace',
+        '/account',
+        '/history',
+        '/onboarding',
+        '/records',
+        '/year-end',
+        '/connect-hmrc',
+        '/mtd',
+        '/billing',
+        '/admin',
+        '/portal',
+        '/api',
+      ];
+      if (productPrefix.some((p) => next === p || next.startsWith(p + '?'))) {
+        next = '/sales';
+      }
+
+      const destNote = document.getElementById('dest-note');
+      if (destNote) {
+        destNote.textContent = 'Destination: ' + next;
+      }
+      const cancel = document.getElementById('cancel-leave');
+      if (cancel) {
+        const back = params.get('back') || '/home';
+        cancel.href =
+          back.startsWith('/') && !back.startsWith('//') ? back : '/home';
+      }
+
+      async function boot() {
+        try {
+          const me = await fetch('/api/auth/me').then((r) => r.json());
+          if (!me.user) {
+            // Already signed out — no warning needed
+            location.replace(next);
+            return;
+          }
+        } catch {
+          /* show warning panel anyway */
+        }
+      }
+
+      document.getElementById('confirm-leave')?.addEventListener('click', async () => {
+        const err = document.getElementById('err');
+        if (err) err.hidden = true;
+        const btn = document.getElementById('confirm-leave');
+        if (btn) {
+          btn.disabled = true;
+          btn.textContent = 'Signing out…';
+        }
+        try {
+          await fetch('/api/auth/logout', { method: 'POST' });
+        } catch {
+          /* still navigate to marketing */
+        }
+        document.getElementById('warn-panel').hidden = true;
+        document.getElementById('redirecting').hidden = false;
+        location.replace(next);
+      });
+
+      boot();
+    })();
+  </script>
+  <script src="/js/cookie-banner.js"></script>
+</body>
+</html>

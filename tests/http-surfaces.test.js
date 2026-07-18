@@ -21,11 +21,26 @@ let server;
 /** @type {number} */
 let port;
 
-function request(method, urlPath) {
+/** @type {string} */
+let cookie = '';
+
+function request(method, urlPath, body) {
   return new Promise((resolve, reject) => {
+    const data = body != null ? Buffer.from(body) : null;
+    /** @type {Record<string, string|number>} */
+    const headers = {};
+    if (cookie) headers.Cookie = cookie;
+    if (data) {
+      headers['Content-Type'] = 'application/json';
+      headers['Content-Length'] = data.length;
+    }
     const req = http.request(
-      { hostname: '127.0.0.1', port, path: urlPath, method },
+      { hostname: '127.0.0.1', port, path: urlPath, method, headers },
       (res) => {
+        const sc = res.headers['set-cookie'];
+        if (sc) {
+          cookie = sc.map((c) => String(c).split(';')[0]).join('; ');
+        }
         const chunks = [];
         res.on('data', (c) => chunks.push(c));
         res.on('end', () => {
@@ -38,6 +53,7 @@ function request(method, urlPath) {
       }
     );
     req.on('error', reject);
+    if (data) req.write(data);
     req.end();
   });
 }
@@ -88,7 +104,7 @@ describe('template download', () => {
 });
 
 describe('sales site customer focus', () => {
-  it('marketing site is always at / and /sales', async () => {
+  it('marketing site is always at / and /sales when signed out', async () => {
     for (const path of ['/', '/sales']) {
       const res = await request('GET', path);
       assert.equal(res.status, 200, path);
@@ -98,6 +114,38 @@ describe('sales site customer focus', () => {
       // Must not be product home shell
       assert.doesNotMatch(html, /Your next task|id="next-task-panel"/i, path);
     }
+  });
+
+  it('signed-in users hitting marketing are warned and must leave-to-sales', async () => {
+    cookie = '';
+    const login = await request(
+      'POST',
+      '/api/auth/login',
+      JSON.stringify({
+        email: 'demo@spreadsheet-tax.example',
+        password: 'DemoPass123!',
+      })
+    );
+    assert.ok(login.status === 200 || login.status === 201, String(login.body));
+
+    const sales = await request('GET', '/sales');
+    assert.equal(sales.status, 302, String(sales.body));
+    const loc = String(sales.headers.location || '');
+    assert.match(loc, /leave-to-sales/, loc);
+    assert.match(loc, /next=/, loc);
+
+    const leave = await request('GET', '/leave-to-sales?next=/sales');
+    assert.equal(leave.status, 200);
+    const leaveHtml = leave.body.toString('utf8');
+    assert.match(leaveHtml, /signed out|marketing website|leaving the app/i);
+    assert.match(leaveHtml, /Sign out and open marketing site/i);
+
+    // After logout, sales is public again
+    await request('POST', '/api/auth/logout', '{}');
+    cookie = '';
+    const again = await request('GET', '/sales');
+    assert.equal(again.status, 200);
+    assert.match(again.body.toString('utf8'), /Making Tax Digital|quarterly tax update/i);
   });
 
   it('has conversion CTAs and firm/client audiences, no AI claims', async () => {
