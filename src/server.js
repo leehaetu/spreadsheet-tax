@@ -418,12 +418,14 @@ app.get('/readyz', (_req, res) => {
   }
 });
 
-app.get('/', (req, res) => {
-  // Product vs sales: signed-in users enter the app shell, not the marketing site
-  const user = getSessionUser(getSessionIdFromRequest(req));
-  if (user) {
-    return res.redirect(302, '/home');
-  }
+/**
+ * Marketing site always available at / and /sales.
+ * Product app lives under /home, /app, /workspace — never hide sales when signed in.
+ */
+app.get('/', (_req, res) => {
+  sendPublicHtml(res, 'sales.html');
+});
+app.get('/sales', (_req, res) => {
   sendPublicHtml(res, 'sales.html');
 });
 

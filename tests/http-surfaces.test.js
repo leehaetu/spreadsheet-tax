@@ -88,6 +88,18 @@ describe('template download', () => {
 });
 
 describe('sales site customer focus', () => {
+  it('marketing site is always at / and /sales', async () => {
+    for (const path of ['/', '/sales']) {
+      const res = await request('GET', path);
+      assert.equal(res.status, 200, path);
+      const html = res.body.toString('utf8');
+      assert.match(html, /Making Tax Digital|quarterly tax update/i, path);
+      assert.match(html, /I’m self-employed|self-employed/i, path);
+      // Must not be product home shell
+      assert.doesNotMatch(html, /Your next task|id="next-task-panel"/i, path);
+    }
+  });
+
   it('has conversion CTAs and firm/client audiences, no AI claims', async () => {
     const res = await request('GET', '/');
     assert.equal(res.status, 200);

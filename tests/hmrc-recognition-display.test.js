@@ -77,7 +77,7 @@ describe('HMRC recognition display', () => {
   });
 
   it('HTML pages inject site-chrome recognition script', async () => {
-    for (const p of ['/', '/app', '/security', '/sales.html', '/pricing']) {
+    for (const p of ['/', '/sales', '/app', '/security', '/pricing']) {
       const res = await request(p);
       assert.equal(res.status, 200, p);
       assert.match(res.body, /site-chrome\.js/, p);
