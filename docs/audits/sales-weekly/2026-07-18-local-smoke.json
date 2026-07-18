@@ -1,0 +1,61 @@
+{
+  "base": "http://127.0.0.1:3457",
+  "ok": true,
+  "days": 7,
+  "since": "2026-07-11T13:04:04.777Z",
+  "until": "2026-07-18T13:04:04.778Z",
+  "registers": 143,
+  "usersTotal": 143,
+  "ctaEvents": 231,
+  "ctaEventsAllTime": 231,
+  "ctaByEvent": [
+    {
+      "event": "app_open",
+      "count": 113
+    },
+    {
+      "event": "sign-in-submit",
+      "count": 111
+    },
+    {
+      "event": "get-started-free",
+      "count": 4
+    },
+    {
+      "event": "download-template",
+      "count": 2
+    },
+    {
+      "event": "sign-in",
+      "count": 1
+    }
+  ],
+  "ctaByPath": [
+    {
+      "path": "/app",
+      "count": 114
+    },
+    {
+      "path": "/signin",
+      "count": 112
+    },
+    {
+      "path": "/",
+      "count": 2
+    },
+    {
+      "path": "/templates",
+      "count": 1
+    },
+    {
+      "path": "/self-employed",
+      "count": 1
+    },
+    {
+      "path": "/register",
+      "count": 1
+    }
+  ],
+  "note": "Aggregates only. No tax data, emails, or NINOs. Conversion rate needs reliable unique visits (not in this table).",
+  "topCta": "app_open"
+}

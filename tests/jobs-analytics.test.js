@@ -84,4 +84,34 @@ describe('analytics and jobs', () => {
     const body = JSON.parse(ok.body);
     assert.equal(body.ok, true);
   });
+
+  it('sales-weekly requires secret and returns aggregates', async () => {
+    const denied = await request('GET', '/api/metrics/sales-weekly?days=7');
+    assert.equal(denied.status, 403);
+
+    // seed a CTA
+    await request(
+      'POST',
+      '/api/analytics/cta',
+      JSON.stringify({ event: 'get-started-free', path: '/pricing' })
+    );
+
+    const ok = await request('GET', '/api/metrics/sales-weekly?days=7', null, {
+      'x-jobs-secret': 'test-jobs',
+    });
+    assert.equal(ok.status, 200);
+    const body = JSON.parse(ok.body);
+    assert.equal(body.ok, true);
+    assert.ok(body.days === 7);
+    assert.ok(typeof body.registers === 'number');
+    assert.ok(typeof body.ctaEvents === 'number');
+    assert.ok(Array.isArray(body.ctaByEvent));
+    assert.ok(body.ctaEvents >= 1);
+    assert.ok(
+      body.ctaByEvent.some((r) => r.event === 'get-started-free' || r.event === 'test_cta')
+    );
+    // never expose email-looking keys
+    assert.equal(body.emails, undefined);
+    assert.equal(body.users, undefined);
+  });
 });

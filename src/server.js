@@ -2287,6 +2287,79 @@ app.get('/api/metrics/summary', (req, res) => {
   }
 });
 
+/**
+ * Weekly sales funnel readout — aggregates only (no emails, NINOs, or tax figures).
+ * Protected by JOBS_SECRET (header x-jobs-secret or ?secret=).
+ * Query: days=7 (default), max 90.
+ */
+app.get('/api/metrics/sales-weekly', (req, res) => {
+  const secret =
+    process.env.JOBS_SECRET ||
+    (process.env.NODE_ENV === 'production' ? null : 'dev-jobs-secret');
+  if (!secret) {
+    return res.status(503).json({ error: 'JOBS_SECRET is not configured on this server.' });
+  }
+  const provided =
+    req.headers['x-jobs-secret'] ||
+    (typeof req.query?.secret === 'string' ? req.query.secret : '');
+  if (provided !== secret) {
+    return res.status(403).json({ error: 'Jobs secret required' });
+  }
+  try {
+    const days = Math.min(90, Math.max(1, Number(req.query?.days) || 7));
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+    const database = getDb();
+    const ctaByEvent = database
+      .prepare(
+        `SELECT event_name AS event, COUNT(*) AS count
+         FROM cta_events
+         WHERE created_at >= ?
+         GROUP BY event_name
+         ORDER BY count DESC`
+      )
+      .all(since)
+      .map((r) => ({ event: r.event, count: Number(r.count) }));
+    const ctaByPath = database
+      .prepare(
+        `SELECT COALESCE(path, '(none)') AS path, COUNT(*) AS count
+         FROM cta_events
+         WHERE created_at >= ?
+         GROUP BY path
+         ORDER BY count DESC
+         LIMIT 30`
+      )
+      .all(since)
+      .map((r) => ({ path: r.path, count: Number(r.count) }));
+    const ctaTotal = database
+      .prepare(`SELECT COUNT(*) AS c FROM cta_events WHERE created_at >= ?`)
+      .get(since).c;
+    const registers = database
+      .prepare(`SELECT COUNT(*) AS c FROM users WHERE created_at >= ?`)
+      .get(since).c;
+    const usersTotal = database.prepare(`SELECT COUNT(*) AS c FROM users`).get().c;
+    const ctaAllTime = database.prepare(`SELECT COUNT(*) AS c FROM cta_events`).get().c;
+    const topCta = ctaByEvent[0]?.event || null;
+    res.json({
+      ok: true,
+      days,
+      since,
+      until: new Date().toISOString(),
+      registers: Number(registers),
+      usersTotal: Number(usersTotal),
+      ctaEvents: Number(ctaTotal),
+      ctaEventsAllTime: Number(ctaAllTime),
+      ctaByEvent,
+      ctaByPath,
+      note:
+        'Aggregates only. No tax data, emails, or NINOs. Conversion rate needs reliable unique visits (not in this table).',
+      topCta,
+    });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'sales weekly metrics failed' });
+  }
+});
+
 /** Anonymous CTA analytics — no tax data */
 app.post('/api/analytics/cta', (req, res) => {
   try {

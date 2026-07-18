@@ -1,0 +1,864 @@
+{
+  "base": "https://spreadsheet-tax-production.up.railway.app",
+  "capturedAt": "2026-07-18T13:02:20.192Z",
+  "pageCount": 34,
+  "defectCount": 0,
+  "p0": 0,
+  "p1": 0,
+  "defects": [],
+  "pages": [
+    {
+      "route": "/",
+      "viewport": "desktop",
+      "status": 200,
+      "h1": "Quarterly updates from the spreadsheet you already use",
+      "salesNav": "v1",
+      "getStarted": 5,
+      "createFree": 0,
+      "brokenImgs": [],
+      "overflowX": false,
+      "clicks": [
+        {
+          "text": "Get started free",
+          "href": "/register",
+          "ok": true,
+          "status": 200
+        },
+        {
+          "text": "Get started free",
+          "href": "/register",
+          "ok": true,
+          "status": 200
+        },
+        {
+          "text": "Get started free",
+          "href": "/register",
+          "ok": true,
+          "status": 200
+        },
+        {
+          "text": "Get started free",
+          "href": "/register",
+          "ok": true,
+          "status": 200
+        }
+      ]
+    },
+    {
+      "route": "/self-employed",
+      "viewport": "desktop",
+      "status": 200,
+      "h1": "Your trade spreadsheet, ready for each quarter",
+      "salesNav": "v1",
+      "getStarted": 5,
+      "createFree": 0,
+      "brokenImgs": [],
+      "overflowX": false,
+      "clicks": [
+        {
+          "text": "Get started free",
+          "href": "/register",
+          "ok": true,
+          "status": 200
+        },
+        {
+          "text": "Get started free",
+          "href": "/register",
+          "ok": true,
+          "status": 200
+        },
+        {
+          "text": "Get started free",
+          "href": "/register",
+          "ok": true,
+          "status": 200
+        },
+        {
+          "text": "Get started free",
+          "href": "/register",
+          "ok": true,
+          "status": 200
+        }
+      ]
+    },
+    {
+      "route": "/landlords",
+      "viewport": "desktop",
+      "status": 200,
+      "h1": "Rental figures reviewed before each quarter",
+      "salesNav": "v1",
+      "getStarted": 5,
+      "createFree": 0,
+      "brokenImgs": [],
+      "overflowX": false,
+      "clicks": [
+        {
+          "text": "Get started free",
+          "href": "/register",
+          "ok": true,
+          "status": 200
+        },
+        {
+          "text": "Get started free",
+          "href": "/register",
+          "ok": true,
+          "status": 200
+        },
+        {
+          "text": "Get started free",
+          "href": "/register",
+          "ok": true,
+          "status": 200
+        },
+        {
+          "text": "Get started free",
+          "href": "/register",
+          "ok": true,
+          "status": 200
+        }
+      ]
+    },
+    {
+      "route": "/professionals",
+      "viewport": "desktop",
+      "status": 200,
+      "h1": "Bring spreadsheet clients into one clear workflow",
+      "salesNav": "v1",
+      "getStarted": 4,
+      "createFree": 0,
+      "brokenImgs": [],
+      "overflowX": false,
+      "clicks": [
+        {
+          "text": "Get started free",
+          "href": "/register",
+          "ok": true,
+          "status": 200
+        },
+        {
+          "text": "Get started free",
+          "href": "/register",
+          "ok": true,
+          "status": 200
+        },
+        {
+          "text": "Get started free",
+          "href": "/register",
+          "ok": true,
+          "status": 200
+        }
+      ]
+    },
+    {
+      "route": "/firms",
+      "viewport": "desktop",
+      "status": 200,
+      "h1": "Spreadsheet clients without a full ledger migration",
+      "salesNav": "v1",
+      "getStarted": 5,
+      "createFree": 0,
+      "brokenImgs": [],
+      "overflowX": false,
+      "clicks": [
+        {
+          "text": "Get started free",
+          "href": "/register",
+          "ok": true,
+          "status": 200
+        },
+        {
+          "text": "Get started free",
+          "href": "/register",
+          "ok": true,
+          "status": 200
+        },
+        {
+          "text": "Get started free",
+          "href": "/register",
+          "ok": true,
+          "status": 200
+        },
+        {
+          "text": "Get started free",
+          "href": "/register",
+          "ok": true,
+          "status": 200
+        }
+      ]
+    },
+    {
+      "route": "/how-it-works",
+      "viewport": "desktop",
+      "status": 200,
+      "h1": "How it works",
+      "salesNav": "v1",
+      "getStarted": 3,
+      "createFree": 0,
+      "brokenImgs": [],
+      "overflowX": false,
+      "clicks": [
+        {
+          "text": "Get started free",
+          "href": "/register",
+          "ok": true,
+          "status": 200
+        },
+        {
+          "text": "Get started free",
+          "href": "/register",
+          "ok": true,
+          "status": 200
+        }
+      ]
+    },
+    {
+      "route": "/pricing",
+      "viewport": "desktop",
+      "status": 200,
+      "h1": "Simple to start",
+      "salesNav": "v1",
+      "getStarted": 3,
+      "createFree": 0,
+      "brokenImgs": [],
+      "overflowX": false,
+      "clicks": [
+        {
+          "text": "Get started free",
+          "href": "/register",
+          "ok": true,
+          "status": 200
+        },
+        {
+          "text": "Get started free",
+          "href": "/register",
+          "ok": true,
+          "status": 200
+        }
+      ]
+    },
+    {
+      "route": "/templates",
+      "viewport": "desktop",
+      "status": 200,
+      "h1": "Quarterly spreadsheet template",
+      "salesNav": "v1",
+      "getStarted": 3,
+      "createFree": 0,
+      "brokenImgs": [],
+      "overflowX": false,
+      "clicks": [
+        {
+          "text": "Get started free",
+          "href": "/register",
+          "ok": true,
+          "status": 200
+        },
+        {
+          "text": "Download free template",
+          "href": "/download/template",
+          "ok": true,
+          "status": 200
+        }
+      ]
+    },
+    {
+      "route": "/security",
+      "viewport": "desktop",
+      "status": 200,
+      "h1": "Security & HMRC status",
+      "salesNav": "v1",
+      "getStarted": 3,
+      "createFree": 0,
+      "brokenImgs": [],
+      "overflowX": false,
+      "clicks": [
+        {
+          "text": "Get started free",
+          "href": "/register",
+          "ok": true,
+          "status": 200
+        },
+        {
+          "text": "Get started free",
+          "href": "/register",
+          "ok": true,
+          "status": 200
+        }
+      ]
+    },
+    {
+      "route": "/help",
+      "viewport": "desktop",
+      "status": 200,
+      "h1": "Help",
+      "salesNav": "v1",
+      "getStarted": 5,
+      "createFree": 0,
+      "brokenImgs": [],
+      "overflowX": false,
+      "clicks": [
+        {
+          "text": "Get started free",
+          "href": "/register",
+          "ok": true,
+          "status": 200
+        },
+        {
+          "text": "Get started free",
+          "href": "/register",
+          "ok": true,
+          "status": 200
+        },
+        {
+          "text": "Get started free",
+          "href": "/register",
+          "ok": true,
+          "status": 200
+        },
+        {
+          "text": "Get started free",
+          "href": "/register",
+          "ok": true,
+          "status": 200
+        }
+      ]
+    },
+    {
+      "route": "/license",
+      "viewport": "desktop",
+      "status": 200,
+      "h1": "How licensing works",
+      "salesNav": "v1",
+      "getStarted": 3,
+      "createFree": 0,
+      "brokenImgs": [],
+      "overflowX": false,
+      "clicks": [
+        {
+          "text": "Get started free",
+          "href": "/register",
+          "ok": true,
+          "status": 200
+        },
+        {
+          "text": "Get started free",
+          "href": "/register",
+          "ok": true,
+          "status": 200
+        }
+      ]
+    },
+    {
+      "route": "/legal",
+      "viewport": "desktop",
+      "status": 200,
+      "h1": "Legal",
+      "salesNav": "v1",
+      "getStarted": 2,
+      "createFree": 0,
+      "brokenImgs": [],
+      "overflowX": false,
+      "clicks": [
+        {
+          "text": "Get started free",
+          "href": "/register",
+          "ok": true,
+          "status": 200
+        }
+      ]
+    },
+    {
+      "route": "/privacy",
+      "viewport": "desktop",
+      "status": 200,
+      "h1": "Privacy notice",
+      "salesNav": "v1",
+      "getStarted": 2,
+      "createFree": 0,
+      "brokenImgs": [],
+      "overflowX": false,
+      "clicks": [
+        {
+          "text": "Get started free",
+          "href": "/register",
+          "ok": true,
+          "status": 200
+        }
+      ]
+    },
+    {
+      "route": "/terms",
+      "viewport": "desktop",
+      "status": 200,
+      "h1": "Terms of use",
+      "salesNav": "v1",
+      "getStarted": 2,
+      "createFree": 0,
+      "brokenImgs": [],
+      "overflowX": false,
+      "clicks": [
+        {
+          "text": "Get started free",
+          "href": "/register",
+          "ok": true,
+          "status": 200
+        }
+      ]
+    },
+    {
+      "route": "/signin",
+      "viewport": "desktop",
+      "status": 200,
+      "h1": "Sign in",
+      "salesNav": "v1",
+      "getStarted": 2,
+      "createFree": 0,
+      "brokenImgs": [],
+      "overflowX": false,
+      "clicks": [
+        {
+          "text": "Get started free",
+          "href": "/register",
+          "ok": true,
+          "status": 200
+        },
+        {
+          "text": "Sign in",
+          "href": null,
+          "ok": true
+        }
+      ]
+    },
+    {
+      "route": "/register",
+      "viewport": "desktop",
+      "status": 200,
+      "h1": "Create account",
+      "salesNav": "v1",
+      "getStarted": 1,
+      "createFree": 0,
+      "brokenImgs": [],
+      "overflowX": false,
+      "clicks": [
+        {
+          "text": "Sign in",
+          "href": "/signin?next=/home",
+          "ok": true,
+          "status": 200
+        },
+        {
+          "text": "Get started free",
+          "href": null,
+          "ok": true
+        }
+      ]
+    },
+    {
+      "route": "/forgot-password",
+      "viewport": "desktop",
+      "status": 200,
+      "h1": "Forgot password",
+      "salesNav": "v1",
+      "getStarted": 2,
+      "createFree": 0,
+      "brokenImgs": [],
+      "overflowX": false,
+      "clicks": [
+        {
+          "text": "Get started free",
+          "href": "/register",
+          "ok": true,
+          "status": 200
+        },
+        {
+          "text": "Send reset link",
+          "href": null,
+          "ok": true
+        }
+      ]
+    },
+    {
+      "route": "/",
+      "viewport": "mobile",
+      "status": 200,
+      "h1": "Quarterly updates from the spreadsheet you already use",
+      "salesNav": "v1",
+      "getStarted": 5,
+      "createFree": 0,
+      "brokenImgs": [],
+      "overflowX": false,
+      "clicks": [
+        {
+          "text": "Get started free",
+          "href": "/register",
+          "ok": true,
+          "status": 200
+        },
+        {
+          "text": "Get started free",
+          "href": "/register",
+          "ok": true,
+          "status": 200
+        },
+        {
+          "text": "Get started free",
+          "href": "/register",
+          "ok": true,
+          "status": 200
+        }
+      ]
+    },
+    {
+      "route": "/self-employed",
+      "viewport": "mobile",
+      "status": 200,
+      "h1": "Your trade spreadsheet, ready for each quarter",
+      "salesNav": "v1",
+      "getStarted": 5,
+      "createFree": 0,
+      "brokenImgs": [],
+      "overflowX": false,
+      "clicks": [
+        {
+          "text": "Get started free",
+          "href": "/register",
+          "ok": true,
+          "status": 200
+        },
+        {
+          "text": "Get started free",
+          "href": "/register",
+          "ok": true,
+          "status": 200
+        },
+        {
+          "text": "Get started free",
+          "href": "/register",
+          "ok": true,
+          "status": 200
+        }
+      ]
+    },
+    {
+      "route": "/landlords",
+      "viewport": "mobile",
+      "status": 200,
+      "h1": "Rental figures reviewed before each quarter",
+      "salesNav": "v1",
+      "getStarted": 5,
+      "createFree": 0,
+      "brokenImgs": [],
+      "overflowX": false,
+      "clicks": [
+        {
+          "text": "Get started free",
+          "href": "/register",
+          "ok": true,
+          "status": 200
+        },
+        {
+          "text": "Get started free",
+          "href": "/register",
+          "ok": true,
+          "status": 200
+        },
+        {
+          "text": "Get started free",
+          "href": "/register",
+          "ok": true,
+          "status": 200
+        }
+      ]
+    },
+    {
+      "route": "/professionals",
+      "viewport": "mobile",
+      "status": 200,
+      "h1": "Bring spreadsheet clients into one clear workflow",
+      "salesNav": "v1",
+      "getStarted": 4,
+      "createFree": 0,
+      "brokenImgs": [],
+      "overflowX": false,
+      "clicks": [
+        {
+          "text": "Get started free",
+          "href": "/register",
+          "ok": true,
+          "status": 200
+        },
+        {
+          "text": "Get started free",
+          "href": "/register",
+          "ok": true,
+          "status": 200
+        }
+      ]
+    },
+    {
+      "route": "/firms",
+      "viewport": "mobile",
+      "status": 200,
+      "h1": "Spreadsheet clients without a full ledger migration",
+      "salesNav": "v1",
+      "getStarted": 5,
+      "createFree": 0,
+      "brokenImgs": [],
+      "overflowX": false,
+      "clicks": [
+        {
+          "text": "Get started free",
+          "href": "/register",
+          "ok": true,
+          "status": 200
+        },
+        {
+          "text": "Get started free",
+          "href": "/register",
+          "ok": true,
+          "status": 200
+        },
+        {
+          "text": "Get started free",
+          "href": "/register",
+          "ok": true,
+          "status": 200
+        }
+      ]
+    },
+    {
+      "route": "/how-it-works",
+      "viewport": "mobile",
+      "status": 200,
+      "h1": "How it works",
+      "salesNav": "v1",
+      "getStarted": 3,
+      "createFree": 0,
+      "brokenImgs": [],
+      "overflowX": false,
+      "clicks": [
+        {
+          "text": "Get started free",
+          "href": "/register",
+          "ok": true,
+          "status": 200
+        }
+      ]
+    },
+    {
+      "route": "/pricing",
+      "viewport": "mobile",
+      "status": 200,
+      "h1": "Simple to start",
+      "salesNav": "v1",
+      "getStarted": 3,
+      "createFree": 0,
+      "brokenImgs": [],
+      "overflowX": false,
+      "clicks": [
+        {
+          "text": "Get started free",
+          "href": "/register",
+          "ok": true,
+          "status": 200
+        }
+      ]
+    },
+    {
+      "route": "/templates",
+      "viewport": "mobile",
+      "status": 200,
+      "h1": "Quarterly spreadsheet template",
+      "salesNav": "v1",
+      "getStarted": 3,
+      "createFree": 0,
+      "brokenImgs": [],
+      "overflowX": false,
+      "clicks": [
+        {
+          "text": "Download free template",
+          "href": "/download/template",
+          "ok": true,
+          "status": 200
+        }
+      ]
+    },
+    {
+      "route": "/security",
+      "viewport": "mobile",
+      "status": 200,
+      "h1": "Security & HMRC status",
+      "salesNav": "v1",
+      "getStarted": 3,
+      "createFree": 0,
+      "brokenImgs": [],
+      "overflowX": false,
+      "clicks": [
+        {
+          "text": "Get started free",
+          "href": "/register",
+          "ok": true,
+          "status": 200
+        }
+      ]
+    },
+    {
+      "route": "/help",
+      "viewport": "mobile",
+      "status": 200,
+      "h1": "Help",
+      "salesNav": "v1",
+      "getStarted": 5,
+      "createFree": 0,
+      "brokenImgs": [],
+      "overflowX": false,
+      "clicks": [
+        {
+          "text": "Get started free",
+          "href": "/register",
+          "ok": true,
+          "status": 200
+        },
+        {
+          "text": "Get started free",
+          "href": "/register",
+          "ok": true,
+          "status": 200
+        },
+        {
+          "text": "Get started free",
+          "href": "/register",
+          "ok": true,
+          "status": 200
+        }
+      ]
+    },
+    {
+      "route": "/license",
+      "viewport": "mobile",
+      "status": 200,
+      "h1": "How licensing works",
+      "salesNav": "v1",
+      "getStarted": 3,
+      "createFree": 0,
+      "brokenImgs": [],
+      "overflowX": false,
+      "clicks": [
+        {
+          "text": "Get started free",
+          "href": "/register",
+          "ok": true,
+          "status": 200
+        }
+      ]
+    },
+    {
+      "route": "/legal",
+      "viewport": "mobile",
+      "status": 200,
+      "h1": "Legal",
+      "salesNav": "v1",
+      "getStarted": 2,
+      "createFree": 0,
+      "brokenImgs": [],
+      "overflowX": false,
+      "clicks": []
+    },
+    {
+      "route": "/privacy",
+      "viewport": "mobile",
+      "status": 200,
+      "h1": "Privacy notice",
+      "salesNav": "v1",
+      "getStarted": 2,
+      "createFree": 0,
+      "brokenImgs": [],
+      "overflowX": false,
+      "clicks": []
+    },
+    {
+      "route": "/terms",
+      "viewport": "mobile",
+      "status": 200,
+      "h1": "Terms of use",
+      "salesNav": "v1",
+      "getStarted": 2,
+      "createFree": 0,
+      "brokenImgs": [],
+      "overflowX": false,
+      "clicks": []
+    },
+    {
+      "route": "/signin",
+      "viewport": "mobile",
+      "status": 200,
+      "h1": "Sign in",
+      "salesNav": "v1",
+      "getStarted": 2,
+      "createFree": 0,
+      "brokenImgs": [],
+      "overflowX": false,
+      "clicks": [
+        {
+          "text": "Get started free",
+          "href": "/register",
+          "ok": true,
+          "status": 200
+        },
+        {
+          "text": "Sign in",
+          "href": null,
+          "ok": true
+        }
+      ]
+    },
+    {
+      "route": "/register",
+      "viewport": "mobile",
+      "status": 200,
+      "h1": "Create account",
+      "salesNav": "v1",
+      "getStarted": 1,
+      "createFree": 0,
+      "brokenImgs": [],
+      "overflowX": false,
+      "clicks": [
+        {
+          "text": "Sign in",
+          "href": "/signin?next=/home",
+          "ok": true,
+          "status": 200
+        },
+        {
+          "text": "Get started free",
+          "href": null,
+          "ok": true
+        }
+      ]
+    },
+    {
+      "route": "/forgot-password",
+      "viewport": "mobile",
+      "status": 200,
+      "h1": "Forgot password",
+      "salesNav": "v1",
+      "getStarted": 2,
+      "createFree": 0,
+      "brokenImgs": [],
+      "overflowX": false,
+      "clicks": [
+        {
+          "text": "Get started free",
+          "href": "/register",
+          "ok": true,
+          "status": 200
+        },
+        {
+          "text": "Send reset link",
+          "href": null,
+          "ok": true
+        }
+      ]
+    }
+  ]
+}

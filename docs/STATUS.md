@@ -1,9 +1,10 @@
 # Project status
 
 **Last updated:** 2026-07-18  
-**App version:** **1.33.0**
+**App version:** **1.33.1**
 **Screen audit pack:** [docs/audits/2026-07-18-all-screens/](./audits/2026-07-18-all-screens/) — drives UI fixes (not “image work”)  
-**Sales high-conversion stream:** [docs/audits/2026-07-18-sales-conversion-after/REPORT.md](./audits/2026-07-18-sales-conversion-after/REPORT.md) · prior audit [conversion-review](./audits/2026-07-18-sales-conversion-review/)  
+**Sales high-conversion stream:** [docs/audits/2026-07-18-sales-conversion-after/REPORT.md](./audits/2026-07-18-sales-conversion-after/REPORT.md) · [full live pack 0 defects](./audits/2026-07-18-sales-conversion-after-full/REPORT.md) · prior [conversion-review](./audits/2026-07-18-sales-conversion-review/)  
+**Sales weekly readout:** [SALES-WEEKLY-READOUT.md](./SALES-WEEKLY-READOUT.md)  
 **Sales review + plan:** [docs/audits/2026-07-18-sales-site-review/](./audits/2026-07-18-sales-site-review/) · [AFTER-REPORT.md](./audits/2026-07-18-sales-site-review/AFTER-REPORT.md)  
 **Taxpayer overhaul gaps:** [TAXPAYER-OVERHAUL-BACKEND-GAP-REPORT.md](./TAXPAYER-OVERHAUL-BACKEND-GAP-REPORT.md)  
 **Capacity platform track:** [CAPACITY-PLATFORM-TRACK.md](./CAPACITY-PLATFORM-TRACK.md)  
@@ -231,23 +232,23 @@ EXTERNAL:
 | Area | Change | Evidence tag |
 |---
 
-## Sales high-conversion visual bar (v1.33.0)
+## Sales high-conversion visual bar (v1.33.0–1.33.1)
 
-- Implemented IMPROVEMENT-PLAN Phases 0–3 locally: hero contrast, secondary CTA, clean product PNG, Free-first pricing, deadline strip, 44px CTAs, page depth, CTA analytics already live
-- After report: [docs/audits/2026-07-18-sales-conversion-after/REPORT.md](./audits/2026-07-18-sales-conversion-after/REPORT.md)
-- C1–C4, C7–C8 **MET** on local evidence; C5 full 89-route pack after live deploy; C6 pending live `/health` 1.33.0
+- IMPROVEMENT-PLAN Phases 0–3 shipped; full live recapture **0 P0 / 0 P1** [CUSTOMER_WORKFLOW]
+- Full pack: [docs/audits/2026-07-18-sales-conversion-after-full/](./audits/2026-07-18-sales-conversion-after-full/)
+- Weekly CTA + register readout: `GET /api/metrics/sales-weekly` + `scripts/sales-weekly-report.mjs` (v1.33.1) [UNIT_TESTED]
+- C1–C8 visual bar **MET** on live evidence for structure/visuals
 - **Not** measured “very high conversion %”; **not** pilot-ready; capacity gate open
 
 ```text
-PROVEN (sales visual):
-- Trust list pure white + secondary on-dark CTA [UNIT_TESTED + local screenshot]
-- Product PNG review figures without cookie/dual pills [local capture]
-- Pricing Free band + experimental accordion [UNIT_TESTED + screenshot]
-- npm test 242 pass [UNIT_TESTED]
+PROVEN (sales visual + measure path):
+- Live full audit 34 pages, 0 defects after 1.33.0 [CUSTOMER_WORKFLOW]
+- Trust / secondary CTA / Free pricing / clean product PNG [live screenshot]
+- sales-weekly aggregates endpoint + script [UNIT_TESTED]
+- npm test 243 pass [UNIT_TESTED]
 
 UNPROVEN:
-- Live production still may be pre-1.33.0 until deploy
-- Funnel conversion rate % (needs traffic weeks)
+- Funnel conversion rate % (needs traffic weeks + weekly snapshots)
 
 BLOCKERS (product):
 - Capacity NOT MET; release gates OPEN; not pilot-ready
