@@ -8,7 +8,7 @@
 | Path | What |
 |------|------|
 | `spreadsheet-tax-all-screens-audit-2026-07-18.pdf` | **52-page** illustrated audit (screenshot + P0/P1 + 3 fixes per screen) |
-| `screenshots/` | **51** full-page PNGs (signed-out + signed-in + populated review) |
+| `screenshots/` | **51** full-page PNG captures from the running app (signed-out + signed-in + populated review). Filenames end in `.png` and are true PNG (re-encoded 2026-07-18 if source was JPEG-in-disguise). |
 | `screenshots/public-captures.json` | Signed-out capture metadata |
 | `screenshots/auth-captures.json` | Signed-in capture metadata |
 | `screenshots/contact-*.jpg` | Contact sheets of captures |
