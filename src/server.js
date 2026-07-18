@@ -125,9 +125,15 @@ import {
   listCalculations,
   triggerBsas,
   listBsas,
+  submitBsasSeAdjustments,
+  createTaxLiabilityAdjustment,
   amendSePeriod,
+  createSePeriod,
+  createUkPropertyPeriod,
+  createForeignPropertyPeriod,
   defaultSeAnnualBody,
   resolveSeAnnualBody,
+  periodBodyFromDraft,
 } from './lib/hmrc-api.js';
 import {
   loadDraftForUser,
@@ -138,6 +144,7 @@ import {
   recordWorkflowReceipt,
   summariseHmrcResult,
 } from './lib/workflow-receipts.js';
+import { isKnownWorkflow, KNOWN_WORKFLOWS } from './lib/workflows.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, '..');
@@ -2185,6 +2192,13 @@ app.post('/api/workflows/run', async (req, res) => {
   if (!workflow) {
     return res.status(400).json({ error: 'workflow required' });
   }
+  // Known-name check BEFORE preview success (never invent success for typos)
+  if (!isKnownWorkflow(workflow)) {
+    return res.status(400).json({
+      error: 'Unknown workflow',
+      known: KNOWN_WORKFLOWS,
+    });
+  }
   if (!nino) {
     return res.status(400).json({ error: 'nino required' });
   }
@@ -2245,7 +2259,94 @@ app.post('/api/workflows/run', async (req, res) => {
       taxYear,
     };
 
+    // Optional draft body for period creates
+    let draftBody = null;
+    if (req.body?.draftId) {
+      const loaded = loadDraftForUser(String(req.body.draftId), user, {
+        forSubmit: true,
+      });
+      if (loaded.error || !loaded.draft) {
+        return res
+          .status(loaded.status || 403)
+          .json({ error: loaded.error || 'Draft not allowed' });
+      }
+      draftBody = loaded.draft;
+    }
+
     switch (workflow) {
+      case 'se_period': {
+        if (!req.body?.businessIdSe) {
+          return res.status(400).json({ error: 'businessIdSe required' });
+        }
+        const body =
+          req.body?.body ||
+          periodBodyFromDraft(draftBody, 'self_employment') ||
+          {
+            periodDates: {
+              periodStartDate: '2024-04-06',
+              periodEndDate: '2024-07-05',
+            },
+            periodIncome: { turnover: 1, other: 0 },
+            periodExpenses: { consolidatedExpenses: 0 },
+          };
+        hmrcResult = await createSePeriod({
+          ...o,
+          businessId: req.body.businessIdSe,
+          body,
+        });
+        break;
+      }
+      case 'uk_period': {
+        if (!req.body?.businessIdUk) {
+          return res.status(400).json({ error: 'businessIdUk required' });
+        }
+        const body =
+          req.body?.body ||
+          periodBodyFromDraft(draftBody, 'uk_property') || {
+            fromDate: '2024-04-06',
+            toDate: '2024-07-05',
+            ukOtherProperty: {
+              income: { periodAmount: 1 },
+              expenses: { consolidatedExpenses: 0 },
+            },
+          };
+        hmrcResult = await createUkPropertyPeriod({
+          ...o,
+          businessId: req.body.businessIdUk,
+          taxYear:
+            taxYear ||
+            taxYearFromPeriodStart(body.fromDate || body.periodDates?.periodStartDate),
+          body,
+        });
+        break;
+      }
+      case 'fp_period': {
+        if (!req.body?.businessIdForeign) {
+          return res.status(400).json({ error: 'businessIdForeign required' });
+        }
+        const body =
+          req.body?.body ||
+          periodBodyFromDraft(draftBody, 'foreign_property') || {
+            fromDate: '2024-04-06',
+            toDate: '2024-07-05',
+            foreignProperty: [
+              {
+                countryCode: 'ESP',
+                income: { rentIncome: { rentAmount: 1 }, foreignTaxCreditRelief: false },
+                expenses: { consolidatedExpenses: 0 },
+              },
+            ],
+          };
+        hmrcResult = await createForeignPropertyPeriod({
+          ...o,
+          businessId: req.body.businessIdForeign,
+          taxYear:
+            taxYear ||
+            taxYearFromPeriodStart(body.fromDate || body.periodDates?.periodStartDate),
+          body,
+        });
+        break;
+      }
       case 'final_obligations':
         hmrcResult = await listFinalDeclarationObligations(o);
         break;
@@ -2278,6 +2379,16 @@ app.post('/api/workflows/run', async (req, res) => {
           businessId: req.body.businessIdForeign,
           body: req.body?.body || {
             foreignProperty: [{ countryCode: 'ESP', adjustments: {} }],
+          },
+        });
+        break;
+      case 'other_income':
+        // Tax liability adjustments path for other-income style EOY adjustments
+        hmrcResult = await createTaxLiabilityAdjustment({
+          ...o,
+          body: req.body?.body || {
+            adjustmentAmount: 1,
+            typeOfAdjustment: req.body?.typeOfAdjustment || 'otherIncome',
           },
         });
         break;
@@ -2318,6 +2429,24 @@ app.post('/api/workflows/run', async (req, res) => {
       case 'bsas_list':
         hmrcResult = await listBsas(o);
         break;
+      case 'bsas_adjust': {
+        const calculationId =
+          req.body?.calculationId || req.body?.bsasCalculationId;
+        if (!calculationId) {
+          return res.status(400).json({
+            error: 'calculationId required (from BSAS trigger/list)',
+          });
+        }
+        hmrcResult = await submitBsasSeAdjustments({
+          ...o,
+          calculationId,
+          body: req.body?.body || {
+            income: { turnover: 1 },
+            expenses: { consolidatedExpenses: 0 },
+          },
+        });
+        break;
+      }
       case 'final_calc':
         hmrcResult = await triggerCalculation({
           ...o,
@@ -2348,19 +2477,7 @@ app.post('/api/workflows/run', async (req, res) => {
       default:
         return res.status(400).json({
           error: 'Unknown workflow',
-          known: [
-            'final_obligations',
-            'se_annual',
-            'uk_annual',
-            'fp_annual',
-            'losses',
-            'calc',
-            'calc_list',
-            'bsas_trigger',
-            'bsas_list',
-            'final_calc',
-            'se_amend',
-          ],
+          known: KNOWN_WORKFLOWS,
         });
     }
 

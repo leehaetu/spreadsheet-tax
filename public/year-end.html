@@ -63,6 +63,13 @@
       <h2 style="margin-top:0">Guided checklist</h2>
       <ol class="flow" style="max-width:40rem">
         <li>
+          <strong>Quarterly periods (if not already sent)</strong>
+          <p class="muted">Same adapter as the quarterly app. Prefer <a href="/app">/app</a> for spreadsheet import.</p>
+          <button type="button" class="btn btn-ghost" data-wf="se_period">SE period</button>
+          <button type="button" class="btn btn-ghost" data-wf="uk_period">UK property period</button>
+          <button type="button" class="btn btn-ghost" data-wf="fp_period">Foreign property period</button>
+        </li>
+        <li>
           <strong>Open year-end obligations</strong>
           <p class="muted">See final declaration / crystallisation obligations for this tax year.</p>
           <button type="button" class="btn btn-primary" data-wf="final_obligations">Load obligations</button>
@@ -81,7 +88,12 @@
           <button type="button" class="btn btn-primary" data-wf="fp_annual">Submit foreign annual</button>
         </li>
         <li>
-          <strong>Other income / losses</strong>
+          <strong>Other income adjustments</strong>
+          <p class="muted">Tax liability adjustments for other income where applicable.</p>
+          <button type="button" class="btn btn-primary" data-wf="other_income">Submit other income adjustment</button>
+        </li>
+        <li>
+          <strong>Losses</strong>
           <p class="muted">Brought-forward losses where applicable.</p>
           <button type="button" class="btn btn-primary" data-wf="losses">Create brought-forward loss</button>
         </li>
@@ -92,8 +104,12 @@
         </li>
         <li>
           <strong>BSAS (adjustable summary)</strong>
+          <label>BSAS calculation ID
+            <input type="text" id="bsas-calc-id" placeholder="From trigger/list response" />
+          </label>
           <button type="button" class="btn btn-primary" data-wf="bsas_trigger">Trigger BSAS</button>
           <button type="button" class="btn btn-ghost" data-wf="bsas_list">List BSAS</button>
+          <button type="button" class="btn btn-primary" data-wf="bsas_adjust">Adjust BSAS (SE)</button>
         </li>
         <li>
           <strong>Final declaration intent</strong>

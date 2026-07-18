@@ -49,6 +49,7 @@ function ids() {
     businessIdUk: document.getElementById('bid-uk')?.value || '',
     businessIdForeign: document.getElementById('bid-fp')?.value || '',
     periodId: document.getElementById('period-id')?.value || '',
+    calculationId: document.getElementById('bsas-calc-id')?.value || '',
   };
 }
 
