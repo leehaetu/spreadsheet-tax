@@ -1,5 +1,6 @@
 let historyItems = [];
 let deleteDraftId = '';
+let historyExpanded = false;
 
 const esc = (value) => String(value ?? '')
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
@@ -13,7 +14,8 @@ function formatDate(value) {
 
 function renderHistory() {
   const filter = document.getElementById('history-filter').value;
-  const items = historyItems.filter((item) => filter === 'all' || item.status === filter);
+  const filtered = historyItems.filter((item) => filter === 'all' || item.status === filter);
+  const items = historyExpanded ? filtered : filtered.slice(0, 7);
   const root = document.getElementById('history-list');
   if (!items.length) {
     root.innerHTML = '<div class="empty-setup"><strong>No matching history</strong><span>Change the filter or start a quarterly update.</span></div>';
@@ -34,6 +36,9 @@ function renderHistory() {
       document.getElementById('delete-draft-dialog').showModal();
     });
   });
+  const more = document.getElementById('history-more');
+  more.hidden = filtered.length <= 7;
+  more.textContent = historyExpanded ? 'Show recent only' : `Show all history (${filtered.length})`;
 }
 
 function renderRecovery(connection, service, failedReceipts) {
@@ -108,6 +113,10 @@ async function load() {
 }
 
 document.getElementById('history-filter').addEventListener('change', renderHistory);
+document.getElementById('history-more').addEventListener('click', () => {
+  historyExpanded = !historyExpanded;
+  renderHistory();
+});
 document.getElementById('delete-draft-dialog').addEventListener('close', async (event) => {
   if (event.target.returnValue !== 'confirm' || !deleteDraftId) return;
   const response = await fetch(`/api/drafts/${encodeURIComponent(deleteDraftId)}`, { method: 'DELETE' });

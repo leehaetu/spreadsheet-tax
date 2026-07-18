@@ -252,6 +252,7 @@
   }
 
   function boot() {
+    if (document.body.classList.contains('auth-product-shell')) return;
     if (!isSalesChromePage()) return;
     forceLightTheme();
     ensureSkipLink();

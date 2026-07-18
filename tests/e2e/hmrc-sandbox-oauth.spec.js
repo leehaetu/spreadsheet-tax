@@ -23,8 +23,10 @@ const TEST_PASS =
 const DEMO_EMAIL =
   process.env.ST_DEMO_EMAIL || 'demo@spreadsheet-tax.example';
 const DEMO_PASS = process.env.ST_DEMO_PASSWORD || 'DemoPass123!';
+const RUN_REAL_SANDBOX = process.env.RUN_HMRC_SANDBOX_E2E === '1';
 
 test.describe('REAL HMRC sandbox evidence (no mock)', () => {
+  test.skip(!RUN_REAL_SANDBOX, 'Set RUN_HMRC_SANDBOX_E2E=1 for operator-run external HMRC evidence.');
   test('direct HMRC: client_credentials + hello/world + hello/application', async ({
     request,
   }) => {
@@ -95,12 +97,22 @@ test.describe('REAL HMRC sandbox evidence (no mock)', () => {
     expect(String(user.password)).not.toMatch(/^mock-/);
   });
 
-  test('production app sandbox-check is real HMRC and mock=false', async ({
+  test('production app sandbox-check is operator-protected', async ({
     request,
   }) => {
-    const res = await request.get(`${BASE}/api/hmrc/sandbox-check`);
-    expect(res.ok(), await res.text()).toBeTruthy();
+    const headers = process.env.JOBS_SECRET
+      ? { 'x-jobs-secret': process.env.JOBS_SECRET }
+      : {};
+    const res = await request.get(`${BASE}/api/hmrc/sandbox-check`, { headers });
     const j = await res.json();
+
+    if (!process.env.JOBS_SECRET) {
+      expect(res.status()).toBe(403);
+      expect(j.error).toMatch(/jobs secret required/i);
+      return;
+    }
+
+    expect(res.ok(), JSON.stringify(j)).toBeTruthy();
     expect(j.ok).toBe(true);
     expect(j.mock).toBe(false);
     expect(j.environment).toBe('sandbox');
@@ -110,21 +122,22 @@ test.describe('REAL HMRC sandbox evidence (no mock)', () => {
     expect(j.application?.body).toMatch(/Hello Application/);
   });
 
-  test('production health: oauthMock false, version present', async ({
+  test('production public health is redacted and versioned', async ({
     request,
   }) => {
     const res = await request.get(`${BASE}/health`);
     expect(res.ok()).toBeTruthy();
     const j = await res.json();
-    expect(j.oauthMock).toBe(false);
     expect(j.ok).toBe(true);
-    // liveSubmit may be 0 (preview-only) or 1 (sandbox HTTP allowed) — both valid pilot configs
-    expect(typeof j.liveSubmitEnabled).toBe('boolean');
     expect(j.version).toMatch(/^\d+\.\d+\.\d+$/);
+    expect(j.oauthMock).toBeUndefined();
+    expect(j.liveSubmitEnabled).toBeUndefined();
+    expect(res.headers()['x-app-version']).toBe(j.version);
   });
 });
 
 test.describe('Playwright OAuth journey against production + HMRC sandbox', () => {
+  test.skip(!RUN_REAL_SANDBOX, 'Set RUN_HMRC_SANDBOX_E2E=1 for operator-run external HMRC evidence.');
   test.setTimeout(180_000);
 
   test('sign in, start HMRC connect, complete sandbox user OAuth if UI allows', async ({
@@ -140,7 +153,7 @@ test.describe('Playwright OAuth journey against production + HMRC sandbox', () =
     // May land on home or stay on signin — go to connect
     await page.goto(`${BASE}/connect-hmrc`);
     await expect(
-      page.getByRole('heading', { name: 'Connect to HMRC', exact: true })
+      page.getByRole('heading', { name: 'Connect HMRC', exact: true })
     ).toBeVisible({ timeout: 20_000 });
 
     // Sandbox check button if present
@@ -154,7 +167,7 @@ test.describe('Playwright OAuth journey against production + HMRC sandbox', () =
     }
 
     // Start OAuth — must leave our origin for real HMRC sandbox
-    const connectBtn = page.locator('#connect-btn');
+    const connectBtn = page.locator('#connect-individual-btn');
     await expect(connectBtn).toBeVisible();
     await connectBtn.click();
 
@@ -238,5 +251,3 @@ test.describe('Playwright OAuth journey against production + HMRC sandbox', () =
     expect(obligations.body).toBeTruthy();
   });
 });
-
-

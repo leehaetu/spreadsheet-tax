@@ -8,26 +8,17 @@
   <meta name="theme-color" content="#f4f6f9" />
   <link rel="stylesheet" href="/css/site.css" />
 </head>
-<body class="theme-light app-body app-simple">
-  <header class="site-header">
-    <div class="wrap header-inner">
-      <a class="logo" href="/home">
-        <span class="logo-mark">ST</span>
-        Spreadsheet Tax
-      </a>
-      <nav>
-        <a href="/home">Home</a>
-        <a href="/app?flow=quarterly" class="active">Quarterly</a>
-        <a href="/records">Records</a>
-        <a href="/history">Receipts</a>
-        <a href="/connect-hmrc">HMRC</a>
-        <a href="/account">Settings</a>
-        <span id="connection-status" class="badge">Checking…</span>
-      </nav>
-    </div>
-  </header>
+<body class="theme-light app-body app-simple cc-page journey-page">
+  <button class="cc-menu-toggle" id="cc-menu-toggle" type="button" aria-controls="cc-sidebar" aria-expanded="false">Menu</button>
+  <aside class="cc-sidebar" id="cc-sidebar">
+    <a class="cc-brand" href="/home"><span class="logo-mark">ST</span><span><strong>Spreadsheet Tax</strong><small>Making Tax Digital</small></span></a>
+    <nav class="cc-nav" aria-label="Tax account">
+      <a href="/home">Home</a><a class="active" href="/app?flow=quarterly">Quarterly updates</a><a href="/year-end">Tax return</a><a href="/records">Records</a><a href="/history">Messages</a><a href="/account">Settings</a>
+    </nav>
+    <div class="cc-sidebar-bottom"><a class="cc-connection" href="/connect-hmrc"><span class="cc-status-dot" aria-hidden="true"></span><span><small>HMRC connection</small><strong id="connection-status">Checking mode…</strong><em>MTD for Income Tax</em></span></a><a class="cc-person" href="/account"><span class="cc-avatar">JS</span><span><strong>Your account</strong><small>Taxpayer</small></span></a></div>
+  </aside>
 
-  <main class="wrap app-main">
+  <main class="cc-main journey-main">
     <div class="app-hero">
       <h1>Quarterly update</h1>
       <p class="lead">
@@ -43,10 +34,9 @@
     </div>
 
     <div class="wizard-steps" id="wizard-steps" aria-label="Progress">
-      <div class="wizard-step active" data-step="1"><span class="num">1</span><span class="label-hide-sm">Add records</span></div>
-      <div class="wizard-step" data-step="2"><span class="num">2</span><span class="label-hide-sm">Map &amp; check</span></div>
-      <div class="wizard-step" data-step="3"><span class="num">3</span><span class="label-hide-sm">Review figures</span></div>
-      <div class="wizard-step" data-step="4"><span class="num">4</span><span class="label-hide-sm">Declare &amp; submit</span></div>
+      <div class="wizard-step active" data-step="1"><span class="num">1</span><span class="label-hide-sm">Add spreadsheet</span></div>
+      <div class="wizard-step" data-step="2"><span class="num">2</span><span class="label-hide-sm">Check figures</span></div>
+      <div class="wizard-step" data-step="3"><span class="num">3</span><span class="label-hide-sm">Review &amp; send</span></div>
     </div>
 
     <section class="panel quarterly-source-panel" id="quarterly-source-panel">
@@ -78,10 +68,7 @@
       </form>
       <p id="upload-error" class="error" hidden></p>
 
-      <div class="manual-entry-launch">
-        <button type="button" class="btn btn-ghost" id="open-manual-entry">Enter figures manually</button>
-        <span class="muted">Useful when you do not have a spreadsheet for this period.</span>
-      </div>
+      <div class="digital-link-notice"><strong>Your spreadsheet is the digital record</strong><span>Correct transactions in your spreadsheet, then upload the corrected file again. Uploading the file creates the digital link into this bridging workflow; quarterly totals cannot be typed in manually.</span></div>
 
       <details id="samples" style="margin-top:1rem">
         <summary class="muted" style="cursor:pointer">Try a sample first (fictional figures — not sent to HMRC)</summary>
@@ -109,18 +96,20 @@
     <section class="panel" id="review-panel" hidden>
       <div class="panel-header">
         <div>
-          <h2>2. Check these figures</h2>
+          <h2>2. Check your figures</h2>
           <p class="muted">
-            Approve the <strong>year-to-date</strong> column (what HMRC will hold).
-            The “this period” column shows what your new file contributed.
-            Tax adjustments belong at year end — not in quarterly updates.
+            We have read your spreadsheet and prepared the quarterly figures.
+            Fix only the items marked as needing attention, then check the totals.
           </p>
         </div>
       </div>
       <div id="validation-panel"></div>
-      <div id="summary-cards" class="stat-cards"></div>
-      <div id="cumulative-review" class="panel" style="margin:0.75rem 0;padding:0.75rem" hidden></div>
+      <div class="quarterly-state-heading" data-quarterly-state="figures" hidden><p class="eyebrow">Figures ready</p><h3>Income, expenses and profit</h3><p>These figures came from the spreadsheet you uploaded.</p></div>
+      <div id="summary-cards" class="stat-cards" data-quarterly-state="figures" hidden></div>
+      <div id="cumulative-review" class="panel" data-quarterly-state="figures" style="margin:0.75rem 0;padding:0.75rem" hidden></div>
 
+      <details class="quarterly-advanced" id="quarterly-advanced">
+        <summary>Advanced details: mappings, source cells and audit evidence</summary>
       <div class="panel" id="spreadsheet-check-panel" style="margin:0.75rem 0;padding:0.75rem" hidden>
         <h3 style="margin-top:0;font-size:1.1rem">Check your spreadsheet</h3>
         <p class="muted" id="ss-security-note" style="margin-top:0"></p>
@@ -177,8 +166,9 @@
       </div>
 
       <div id="mapping-table-wrap" class="table-wrap"></div>
-      <div class="action-bar">
-        <button type="button" class="btn btn-primary btn-lg" id="goto-submit">Looks right — continue</button>
+      </details>
+      <div class="action-bar" data-quarterly-state="figures" hidden>
+        <button type="button" class="btn btn-primary btn-lg" id="goto-submit">Review and send</button>
         <button type="button" class="btn btn-ghost" id="back-to-upload">Upload a different file</button>
         <button type="button" class="btn btn-ghost" id="nil-update-btn">Confirm nil (no activity)</button>
       </div>
@@ -194,6 +184,9 @@
           </p>
         </div>
       </div>
+      <div id="declaration-summary" class="declaration-summary" aria-live="polite"></div>
+      <div class="submission-identifiers">
+        <div class="submission-identifiers-heading"><strong>Submission identifiers</strong><span>Loaded from your saved account or HMRC connection where available.</span></div>
       <div class="form-row">
         <label>National Insurance number
           <input type="text" id="nino" placeholder="e.g. QQ 12 34 56 C" autocomplete="off" />
@@ -223,6 +216,7 @@
         After you connect HMRC, use “Fill business IDs” so you do not have to type them.
         For a tax estimate, use your HMRC online account — we do not invent a tax bill.
       </p>
+      </div>
       <div id="hmrc-businesses-panel" class="panel" hidden style="margin:0.75rem 0;padding:0.75rem">
         <h3 style="margin-top:0;font-size:1rem">Your HMRC businesses</h3>
         <ul id="hmrc-businesses-list" class="result-list"></ul>
@@ -237,41 +231,32 @@
         <label style="display:flex;gap:0.5rem;align-items:flex-start;cursor:pointer">
           <input type="checkbox" id="approve-cells" style="margin-top:0.35rem" />
           <span>
-            I have checked the spreadsheet cells and mappings shown above.
-            The cumulative figures displayed are the figures I authorise Spreadsheet Tax to send to HMRC.
+            I have checked the figures and any issues shown above.
+            These are the figures I authorise Spreadsheet Tax to send to HMRC.
           </span>
         </label>
       </div>
       <div class="action-bar">
         <button type="button" class="btn btn-primary btn-lg" id="submit-btn" disabled>Send quarterly update</button>
-        <button type="button" class="btn btn-ghost" id="back-to-review">Back to figures</button>
+        <button type="button" class="btn btn-ghost" id="back-to-review">Back to check figures</button>
       </div>
       <p id="submit-error" class="error" hidden></p>
       <div id="submit-success" class="success-box" hidden>
-        <h3>Result</h3>
+        <div class="receipt-mark" aria-hidden="true">✓</div>
+        <div class="receipt-copy"><p class="eyebrow">Submission receipt</p><h3>Update processed</h3>
         <p id="submit-summary" class="muted" style="margin:0"></p>
         <ul id="submit-result-list" class="result-list"></ul>
         <div class="action-bar" style="border:0;padding-top:0.5rem">
           <button type="button" class="btn btn-primary" id="another-file">Do another period</button>
           <a class="btn btn-ghost" href="/history">View my submissions</a>
         </div>
+        </div>
       </div>
     </section>
   </main>
 
-  <dialog id="manual-entry-dialog" class="manual-entry-dialog">
-    <form method="dialog" id="manual-entry-form">
-      <header><div><h2>Enter quarterly figures manually</h2><p>Enter totals in GBP. You will review the mapped figures before any submission.</p></div><button type="button" class="btn btn-ghost btn-sm" id="close-manual-entry">Close</button></header>
-      <div class="detail-grid manual-period"><label>Period start<input type="date" id="manual-period-start" value="2026-04-06" required></label><label>Period end<input type="date" id="manual-period-end" value="2026-07-05" required></label></div>
-      <div id="manual-entry-rows" class="manual-entry-rows"></div>
-      <button type="button" class="btn btn-ghost" id="add-manual-row">Add another figure</button>
-      <p id="manual-entry-error" class="error" hidden></p>
-      <footer><button type="button" class="btn btn-ghost" id="cancel-manual-entry">Cancel</button><button type="submit" class="btn btn-primary">Review these figures</button></footer>
-    </form>
-  </dialog>
-
-  <footer class="site-footer">
-    <div class="wrap footer-bottom" style="border:0;padding:0">
+  <footer class="journey-footer">
+    <div class="footer-bottom" style="border:0;padding:0">
       <p class="muted">
         Your books stay in your spreadsheet. We only use the file you upload for this quarter’s update.
         <a href="/help">Help</a> · <a href="/">Home</a>
@@ -288,6 +273,11 @@
   <script src="/js/quarterly-sources.js"></script>
   <script src="/js/cookie-banner.js"></script>
   <script>
+    document.getElementById('cc-menu-toggle')?.addEventListener('click', () => {
+      const side = document.getElementById('cc-sidebar');
+      const open = side.classList.toggle('open');
+      document.getElementById('cc-menu-toggle').setAttribute('aria-expanded', String(open));
+    });
     (function () {
       const mode = new URLSearchParams(location.search).get('mode') || '';
       document.querySelectorAll('.audience-pills a').forEach((a) => {

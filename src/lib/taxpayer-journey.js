@@ -114,21 +114,28 @@ export function listIncomeSources(userId) {
  * Replace or upsert sources from HMRC business list + user nicknames.
  * @param {string} userId
  * @param {Array<object>} sources
+ * @param {{ origin?: 'preview'|'hmrc' }} [options]
  */
-export function setIncomeSources(userId, sources) {
+export function setIncomeSources(userId, sources, options = {}) {
   const database = getDb();
   const now = new Date().toISOString();
+  const origin = options.origin === 'hmrc' ? 'hmrc' : 'preview';
   database.prepare(`DELETE FROM income_sources WHERE user_id = ?`).run(userId);
   const usedIds = new Set();
+  const usedPropertyTypes = new Set();
   const ins = database.prepare(
     `INSERT INTO income_sources (
       id, user_id, type, business_id, label, nickname, country_code, joint, ownership_share,
-      spreadsheet_hint, status, created_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      spreadsheet_hint, status, origin, created_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   );
   for (const s of sources || []) {
     const type = s.type || 'self_employment';
     if (!SOURCE_TYPES.includes(type)) continue;
+    if (type === 'uk_property' || type === 'foreign_property') {
+      if (usedPropertyTypes.has(type)) continue;
+      usedPropertyTypes.add(type);
+    }
     let sourceId = String(s.id || '').trim() || newId();
     const occupied = database
       .prepare(`SELECT user_id FROM income_sources WHERE id = ?`)
@@ -142,11 +149,12 @@ export function setIncomeSources(userId, sources) {
       s.businessId || null,
       s.label || type,
       s.nickname || null,
-      s.countryCode || null,
+      type === 'foreign_property' ? null : s.countryCode || null,
       s.joint ? 1 : 0,
       s.ownershipShare != null ? Number(s.ownershipShare) : null,
       s.spreadsheetHint || null,
       s.status || 'active',
+      origin,
       now,
       now
     );
@@ -154,25 +162,64 @@ export function setIncomeSources(userId, sources) {
   return listIncomeSources(userId);
 }
 
+export function reconcileHmrcSources(existing, incoming) {
+  const allowed = new Map(
+    (existing || [])
+      .filter((source) => source.origin === 'hmrc' && source.businessId)
+      .map((source) => [String(source.businessId), source])
+  );
+  if (!allowed.size) {
+    return { error: 'Retrieve your businesses from HMRC before saving income sources.', status: 409 };
+  }
+  const seen = new Set();
+  const sources = [];
+  for (const candidate of incoming || []) {
+    const businessId = String(candidate.businessId || '');
+    const source = allowed.get(businessId);
+    if (!source || seen.has(businessId) || candidate.type !== source.type) {
+      return { error: 'Income sources must match businesses retrieved from HMRC.', status: 409 };
+    }
+    seen.add(businessId);
+    sources.push({
+      ...source,
+      nickname: candidate.nickname || source.nickname,
+      countryCode: candidate.countryCode || source.countryCode,
+      joint: Boolean(candidate.joint),
+      ownershipShare: candidate.ownershipShare != null ? Number(candidate.ownershipShare) : source.ownershipShare,
+      spreadsheetHint: candidate.spreadsheetHint || source.spreadsheetHint,
+      status: candidate.status || source.status,
+    });
+  }
+  return { sources };
+}
+
 /**
  * Map HMRC listOfBusinesses into income source drafts (user confirms).
  * @param {Array<object>} businesses
  */
 export function mapHmrcBusinessesToSources(businesses) {
-  return (businesses || []).map((b) => {
+  const propertyTypes = new Set();
+  return (businesses || []).flatMap((b) => {
     const t = String(b.typeOfBusiness || b.type || '').toLowerCase();
     let type = 'self_employment';
     if (t.includes('uk') && t.includes('property')) type = 'uk_property';
     else if (t.includes('foreign') && t.includes('property'))
       type = 'foreign_property';
     else if (t.includes('self')) type = 'self_employment';
-    return {
+    // HMRC has one UK property business and one foreign property business.
+    // Individual properties/countries remain spreadsheet records, not HMRC
+    // income sources. Ignore duplicate property rows defensively.
+    if ((type === 'uk_property' || type === 'foreign_property') && propertyTypes.has(type)) {
+      return [];
+    }
+    if (type === 'uk_property' || type === 'foreign_property') propertyTypes.add(type);
+    return [{
       type,
       businessId: b.businessId || b.id || null,
       label: b.tradingName || b.trading_name || type.replace(/_/g, ' '),
       nickname: b.tradingName || null,
       status: 'active',
-    };
+    }];
   });
 }
 
@@ -211,7 +258,7 @@ export function buildDashboard(userId, hmrc = {}) {
             detail:
               total > 0
                 ? `${ready} of ${total} income source${total === 1 ? '' : 's'} ready`
-                : 'Add income sources',
+                : 'Retrieve HMRC income sources',
             href: '/app?flow=quarterly',
           },
     nav: taxpayerNav(),
@@ -456,6 +503,7 @@ function hydrateSource(row) {
     ownershipShare: row.ownership_share,
     spreadsheetHint: row.spreadsheet_hint,
     status: row.status,
+    origin: row.origin || 'preview',
   };
 }
 

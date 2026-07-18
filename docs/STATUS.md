@@ -1,7 +1,7 @@
 # Project status
 
 **Last updated:** 2026-07-18  
-**App version:** **1.33.1**
+**App version:** **1.34.2** (branch; deployed host reported 1.33.5 on 2026-07-18)
 **Screen audit pack:** [docs/audits/2026-07-18-all-screens/](./audits/2026-07-18-all-screens/) — drives UI fixes (not “image work”)  
 **Sales high-conversion stream:** [docs/audits/2026-07-18-sales-conversion-after/REPORT.md](./audits/2026-07-18-sales-conversion-after/REPORT.md) · [full live pack 0 defects](./audits/2026-07-18-sales-conversion-after-full/REPORT.md) · prior [conversion-review](./audits/2026-07-18-sales-conversion-review/)  
 **Sales weekly readout:** [SALES-WEEKLY-READOUT.md](./SALES-WEEKLY-READOUT.md)  
@@ -12,6 +12,45 @@
 **Capacity gate:** [CAPACITY-REQUIREMENTS.md](./CAPACITY-REQUIREMENTS.md) — **NOT MET**  
 **Release gates:** [RELEASE-GATES.md](./RELEASE-GATES.md) — **OPEN**  
 **Live:** https://spreadsheet-tax-production.up.railway.app  
+
+---
+
+## Truth status (2026-07-18) — v1.34.2 spreadsheet-only HMRC source correction
+
+- Stage: 2 of 5 — Sandbox engineering
+- Not claiming: production-ready · pilot-ready · HMRC Recognised · full operational E2E
+- Open P0 blockers: capacity gate NOT MET; release gates OPEN; latest HMRC run throttled 7 calls; SA Test Support property-business reconciliation remains open
+- Customer quarterly journey: WORKS locally on merged `main` — 26/26 ordinary Playwright tests passed; 6 external operator tests skipped [CUSTOMER_WORKFLOW]
+- Practice isolation/roles: PASS in automated security tests only [UNIT_TESTED]
+- Latest sandbox journey: 11/22 true 2xx [SANDBOX_HTTP]
+  - `create_uk-property` → 400 → `RULE_PROPERTY_BUSINESS_ADDED`
+  - `create_foreign-property` → 400 → `RULE_PROPERTY_BUSINESS_ADDED`
+  - `ensure_property_businesses` → app 502 after the two conflicts
+  - UK period, foreign period, calculation, BSAS, ITSA status, BISS and Accounts → 429 → `MESSAGE_THROTTLED_OUT`
+  - FPH validation → 422 with underlying `MESSAGE_THROTTLED_OUT`
+- Version: deployed `X-App-Version=1.34.0` before this merge · `main` package `1.34.2` · STATUS `1.34.2`
+
+### Capabilities
+
+| Claim | Tag | Evidence | Explicitly not claiming |
+|-------|-----|----------|-------------------------|
+| Three approved visual boards implemented as the taxpayer workflow | `CUSTOMER_WORKFLOW` | `design-qa.md`; taxpayer Playwright suite | Production deployment or tax sign-off |
+| Income sources retrieved from HMRC; no arbitrary local source creation in onboarding | `UNIT_TESTED` + `CUSTOMER_WORKFLOW` | onboarding and HMRC-business route tests | HMRC property-business reconciliation complete |
+| Spreadsheet/digital-record quarterly path; no manual quarterly total entry | `UNIT_TESTED` + `CUSTOMER_WORKFLOW` | quarterly workflow tests | Universal digital-link compliance sign-off |
+| Clean spreadsheet journey reduced to Add spreadsheet → Check figures → Review and send; mappings and cell evidence remain available as advanced details | `CUSTOMER_WORKFLOW` | taxpayer Playwright suite and in-app browser verification | Independent usability study |
+| Real-HMRC accounts cannot save invented income-source identities through the authenticated API | `UNIT_TESTED` | taxpayer journey reconciliation tests | HMRC business-list inconsistency resolved |
+| Spreadsheet is the only customer record source; setup keeps one UK-property and one foreign-property HMRC business, with countries derived from uploaded spreadsheet records | `UNIT_TESTED` | taxpayer journey and year-end workflow tests | Independent HMRC compliance or tax-domain sign-off |
+| Real HMRC sandbox OAuth and application-origin traffic | `SANDBOX_HTTP` | `docs/hmrc/sandbox-journey-run.json` | Every HMRC endpoint green |
+
+### What is unknown
+
+- Whether throttled endpoints will all return 2xx after the sandbox quota resets.
+- Why SA Test Support says both property businesses already exist while Business Details lists only self-employment.
+- Production-like capacity, DR, independent security, accessibility and tax-domain acceptance.
+
+### Next honest step
+
+- Rerun the throttled HMRC steps after quota reset and record exact statuses.
 
 ---
 

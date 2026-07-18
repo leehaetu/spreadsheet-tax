@@ -76,6 +76,7 @@ export function getEoyCase(userId, taxYear) {
     )
     .get(userId, ty);
   const sources = listIncomeSources(userId);
+  const foreignPropertyRecords = latestForeignPropertyRecords(userId);
   if (!row) {
     return {
       userId,
@@ -86,6 +87,7 @@ export function getEoyCase(userId, taxYear) {
       notes: {},
       data: {},
       sources,
+      foreignPropertyRecords,
       stages: EOY_STAGES,
     };
   }
@@ -106,9 +108,42 @@ export function getEoyCase(userId, taxYear) {
     notes: row.notes_json ? JSON.parse(row.notes_json) : {},
     data: row.data_json ? JSON.parse(row.data_json) : {},
     sources,
+    foreignPropertyRecords,
     stages: EOY_STAGES,
     updatedAt: row.updated_at,
   };
+}
+
+function latestForeignPropertyRecords(userId) {
+  const rows = getDb()
+    .prepare(
+      `SELECT payloads_json FROM drafts WHERE user_id = ? ORDER BY created_at DESC LIMIT 20`
+    )
+    .all(userId);
+  const records = new Map();
+  for (const row of rows) {
+    let payloads;
+    try {
+      payloads = JSON.parse(row.payloads_json);
+    } catch {
+      continue;
+    }
+    const list =
+      payloads?.foreignProperty?.foreignProperty ||
+      payloads?.foreignProperty?.foreignNonFhlProperty ||
+      [];
+    for (const entry of Array.isArray(list) ? list : []) {
+      const countryCode = String(entry.countryCode || '').toUpperCase();
+      if (/^[A-Z]{3}$/.test(countryCode) && !records.has(countryCode)) {
+        records.set(countryCode, {
+          id: `country-${countryCode}`,
+          countryCode,
+          label: countryCode,
+        });
+      }
+    }
+  }
+  return [...records.values()];
 }
 
 /**

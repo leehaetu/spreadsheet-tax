@@ -19,6 +19,7 @@ const {
   buildCumulativeReview,
   buildNilPayload,
   mapHmrcBusinessesToSources,
+  reconcileHmrcSources,
 } = await import('../src/lib/taxpayer-journey.js');
 
 let server;
@@ -83,12 +84,34 @@ describe('taxpayer journey pages', () => {
     assert.match((await request('GET', '/home')).body, /next task|Income sources/i);
     assert.match(
       (await request('GET', '/onboarding')).body,
-      /Who will manage this account/i
+      /Retrieve businesses from HMRC/i
     );
   });
 });
 
 describe('taxpayer journey APIs', () => {
+  it('rejects invented or mutated businesses for a real-HMRC source update', () => {
+    const existing = [
+      { id: 'hmrc-se', origin: 'hmrc', type: 'self_employment', businessId: 'XBIS123', label: 'Design services', nickname: 'Design services' },
+      { id: 'preview-only', origin: 'preview', type: 'uk_property', businessId: 'FAKE123', label: 'Preview fixture' },
+    ];
+    const accepted = reconcileHmrcSources(existing, [
+      { type: 'self_employment', businessId: 'XBIS123', nickname: 'My design trade' },
+    ]);
+    assert.equal(accepted.error, undefined);
+    assert.equal(accepted.sources[0].id, 'hmrc-se');
+    assert.equal(accepted.sources[0].nickname, 'My design trade');
+    for (const candidate of [
+      { type: 'uk_property', businessId: 'XBIS123' },
+      { type: 'uk_property', businessId: 'FAKE123' },
+      { type: 'foreign_property', businessId: 'INVENTED' },
+    ]) {
+      const rejected = reconcileHmrcSources(existing, [candidate]);
+      assert.equal(rejected.status, 409);
+      assert.match(rejected.error, /retrieved from HMRC/i);
+    }
+  });
+
   it('saves profile and income sources for SE + UK + foreign', async () => {
     const prof = await request(
       'PUT',
@@ -131,7 +154,8 @@ describe('taxpayer journey APIs', () => {
     assert.equal(sources.status, 200);
     const list = JSON.parse(sources.body).sources;
     assert.equal(list.length, 3);
-    assert.ok(list.some((s) => s.type === 'foreign_property' && s.countryCode === 'ESP'));
+    assert.ok(list.every((source) => source.origin === 'preview'));
+    assert.ok(list.some((s) => s.type === 'foreign_property' && s.countryCode === null));
 
     const dash = await request('GET', '/api/me/dashboard');
     assert.equal(dash.status, 200);
@@ -197,6 +221,16 @@ describe('taxpayer journey APIs', () => {
     assert.equal(mapped[0].type, 'self_employment');
     assert.equal(mapped[1].type, 'uk_property');
     assert.equal(mapped[2].type, 'foreign_property');
+  });
+
+  it('keeps one HMRC property business while spreadsheet countries remain records', () => {
+    const mapped = mapHmrcBusinessesToSources([
+      { typeOfBusiness: 'uk-property', businessId: 'UK-1' },
+      { typeOfBusiness: 'uk-property', businessId: 'UK-2' },
+      { typeOfBusiness: 'foreign-property', businessId: 'FP-1' },
+      { typeOfBusiness: 'foreign-property', businessId: 'FP-2' },
+    ]);
+    assert.deepEqual(mapped.map((source) => source.businessId), ['UK-1', 'FP-1']);
   });
 
   it('buildCumulativeReview adds previous into YTD', () => {

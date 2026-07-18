@@ -14,7 +14,6 @@ import {
   processLocalFileIsolated,
   processLocalFileAsync,
 } from './lib/pipeline.js';
-
 import { enqueueJob } from './lib/job-queue.js';
 import { evaluateCapacityPlatform, isPostgresMode } from './lib/platform-config.js';
 import {
@@ -218,6 +217,7 @@ import {
   saveTaxpayerProfile,
   listIncomeSources,
   setIncomeSources,
+  reconcileHmrcSources,
   mapHmrcBusinessesToSources,
   buildDashboard,
   buildCumulativeReview,
@@ -468,6 +468,7 @@ app.use((req, res, next) => {
   res.setHeader('X-Frame-Options', 'SAMEORIGIN');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.setHeader('X-App-Version', APP_VERSION);
+  // Default CSP for APIs/static; HTML pages override with per-response script nonces
   if (!res.getHeader('Content-Security-Policy')) {
     res.setHeader(
       'Content-Security-Policy',
@@ -2647,7 +2648,23 @@ app.get('/api/me/income-sources', (req, res) => {
 app.put('/api/me/income-sources', (req, res) => {
   const user = requireUser(req, res);
   if (!user) return;
-  const sources = setIncomeSources(user.id, req.body?.sources || []);
+  const conn = getActiveConnection(user.id);
+  const requested = req.body?.sources || [];
+  let sources;
+  if (conn?.accessToken && !conn.mock) {
+    const reconciled = reconcileHmrcSources(
+      listIncomeSources(user.id),
+      requested
+    );
+    if (reconciled.error) {
+      return res
+        .status(reconciled.status || 409)
+        .json({ error: reconciled.error });
+    }
+    sources = setIncomeSources(user.id, reconciled.sources, { origin: 'hmrc' });
+  } else {
+    sources = setIncomeSources(user.id, requested, { origin: 'preview' });
+  }
   writeAudit({
     userId: user.id,
     action: 'income_sources_saved',
@@ -2706,7 +2723,7 @@ app.post('/api/me/income-sources/from-hmrc', async (req, res) => {
     const list =
       result.body?.listOfBusinesses || result.body?.businesses || [];
     const proposed = mapHmrcBusinessesToSources(list);
-    const sources = setIncomeSources(user.id, proposed);
+    const sources = setIncomeSources(user.id, proposed, { origin: 'hmrc' });
     // store nino in profile meta (not log full)
     saveTaxpayerProfile(user.id, {
       meta: { ...(getTaxpayerProfile(user.id).meta || {}), nino: ninoFinal },

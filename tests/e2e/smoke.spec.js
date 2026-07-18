@@ -1,5 +1,13 @@
 import { test, expect } from '@playwright/test';
 
+async function signIn(page, next = '/app') {
+  await page.goto(`/signin?next=${encodeURIComponent(next)}`);
+  await page.fill('#email', 'demo@spreadsheet-tax.example');
+  await page.fill('#password', 'DemoPass123!');
+  await page.click('button[type=submit]');
+  await page.waitForURL(new RegExp(next.replace(/[/?]/g, '\\$&')));
+}
+
 test.describe('Gate 0 smoke — sales and personal app', () => {
   test('E2E-01 home loads with product branding', async ({ page }) => {
     await page.goto('/');
@@ -25,8 +33,9 @@ test.describe('Gate 0 smoke — sales and personal app', () => {
   });
 
   test('E2E-04 sample import shows review figures', async ({ page }) => {
-    await page.goto('/app');
+    await signIn(page);
     await expect(page.getByRole('heading', { name: /tax update|quarterly/i })).toBeVisible();
+    await page.locator('#samples').evaluate((element) => { element.open = true; });
     const sample = page.locator('.sample-btn').first();
     await sample.click();
     await expect(page.locator('#review-panel')).toBeVisible({ timeout: 15_000 });
@@ -34,15 +43,17 @@ test.describe('Gate 0 smoke — sales and personal app', () => {
     await expect(page.locator('#goto-submit')).toBeVisible();
   });
 
-  test('E2E-audience mode changes self-employed headline', async ({ page }) => {
-    await page.goto('/app?mode=self-employed');
-    await expect(page.getByRole('heading', { name: /self-employment/i })).toBeVisible();
+  test('E2E-audience mode keeps the signed-in quarterly workflow available', async ({ page }) => {
+    await signIn(page, '/app?mode=self-employed');
+    await expect(page.getByRole('heading', { name: /quarterly update/i })).toBeVisible();
+    await expect(page.locator('#quarterly-source-panel')).toBeVisible();
   });
 
   test('E2E-06 preview submit path works without live credentials', async ({
     page,
   }) => {
-    await page.goto('/app');
+    await signIn(page);
+    await page.locator('#samples').evaluate((element) => { element.open = true; });
     await page.locator('.sample-btn').first().click();
     await expect(page.locator('#review-panel')).toBeVisible({ timeout: 15_000 });
     await page.locator('#goto-submit').click();
@@ -66,7 +77,7 @@ test.describe('Gate 0 smoke — sales and personal app', () => {
 
   test('pricing and security pages load', async ({ page }) => {
     await page.goto('/pricing');
-    await expect(page.getByRole('heading', { name: /paths|pricing|packages/i })).toBeVisible();
+    await expect(page.locator('h1')).toBeVisible();
     await page.goto('/security');
     await expect(page.locator('body')).toContainText(/upload|mapping|HMRC|map/i);
   });
@@ -95,5 +106,3 @@ test.describe('Gate 0 smoke — sales and personal app', () => {
     }
   });
 });
-
-

@@ -78,12 +78,11 @@ after(async () => {
 });
 
 describe('taxpayer overhaul HTML surfaces', () => {
-  it('onboarding ships multi-step setup with manage modes and source picker', () => {
+  it('onboarding retrieves HMRC businesses without local source creation', () => {
     const html = fs.readFileSync(path.join(root, 'public/onboarding.html'), 'utf8');
-    assert.match(html, /Who will manage this account/);
-    assert.match(html, /data-add-type="self_employment"/);
-    assert.match(html, /data-add-type="uk_property"/);
-    assert.match(html, /data-add-type="foreign_property"/);
+    assert.match(html, /Retrieve businesses from HMRC/);
+    assert.doesNotMatch(html, /Who will manage this account/);
+    assert.doesNotMatch(html, /data-add-type=/);
     assert.match(html, /Save setup and go home/);
     assert.match(html, /onboarding\.js/);
   });
@@ -172,9 +171,10 @@ describe('taxpayer overhaul authenticated APIs', () => {
 
     const get = await request('GET', '/api/me/income-sources');
     assert.equal(get.status, 200);
-    assert.equal((get.json.sources || []).length, 4);
+    assert.equal((get.json.sources || []).length, 3);
     const foreign = (get.json.sources || []).filter((s) => s.type === 'foreign_property');
-    assert.equal(foreign.length, 2);
+    assert.equal(foreign.length, 1);
+    assert.equal(foreign[0].countryCode, null);
 
     const pages = ['/onboarding', '/history', '/app', '/year-end'];
     for (const p of pages) {

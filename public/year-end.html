@@ -9,20 +9,21 @@
   <link rel="stylesheet" href="/css/site.css" />
   <style>
     .eoy-progress {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.4rem;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.55rem;
       margin: 1rem 0 1.25rem;
     }
     .eoy-chip {
       border: 1px solid var(--border);
       background: var(--surface);
       color: var(--muted);
-      border-radius: 999px;
-      padding: 0.35rem 0.75rem;
-      font-size: 0.82rem;
+      border-radius: 8px;
+      padding: 0.7rem 0.8rem;
+      font-size: 0.84rem;
       font-weight: 600;
       cursor: pointer;
+      text-align: left;
     }
     .eoy-chip.active {
       background: var(--primary-soft);
@@ -58,35 +59,26 @@
     .eoy-advanced .flow { margin-top: 0.5rem; }
   </style>
 </head>
-<body class="theme-light app-body app-simple">
-  <header class="site-header">
-    <div class="wrap header-inner">
-      <a class="logo" href="/home"><span class="logo-mark">ST</span> Spreadsheet Tax</a>
-      <nav>
-        <a href="/home">Home</a>
-        <a href="/app?flow=quarterly">Quarterly</a>
-        <a href="/year-end" class="active">Year end</a>
-        <a href="/history">Receipts</a>
-        <span id="connection-status" class="badge">…</span>
-      </nav>
-    </div>
-  </header>
+<body class="theme-light app-body app-simple cc-page journey-page">
+  <button class="cc-menu-toggle" id="cc-menu-toggle" type="button" aria-controls="cc-sidebar" aria-expanded="false">Menu</button>
+  <aside class="cc-sidebar" id="cc-sidebar">
+    <a class="cc-brand" href="/home"><span class="logo-mark">ST</span><span><strong>Spreadsheet Tax</strong><small>Making Tax Digital</small></span></a>
+    <nav class="cc-nav" aria-label="Tax account"><a href="/home">Home</a><a href="/app?flow=quarterly">Quarterly updates</a><a class="active" href="/year-end">Tax return</a><a href="/records">Records</a><a href="/history">Messages</a><a href="/account">Settings</a></nav>
+    <div class="cc-sidebar-bottom"><a class="cc-connection" href="/connect-hmrc"><span class="cc-status-dot" aria-hidden="true"></span><span><small>HMRC connection</small><strong id="connection-status">Checking mode…</strong><em>MTD for Income Tax</em></span></a><a class="cc-person" href="/account"><span class="cc-avatar">JS</span><span><strong>Your account</strong><small>Taxpayer</small></span></a></div>
+  </aside>
 
-  <main class="wrap app-main">
+  <main class="cc-main journey-main year-end-main">
     <div class="app-hero">
       <h1>Year end</h1>
-      <p class="lead">
-        Guided stages for the tax year. Prefer completing quarterly updates first.
-        Advanced HMRC actions stay under each stage — not a raw API console.
-      </p>
-      <p class="muted">Live HMRC outcomes need OAuth + flags. Preview steps do not file.</p>
+      <p class="lead">Complete the final checks, annual adjustments, calculation and declaration for this tax year.</p>
+      <p class="muted">Your current connection mode remains visible before any HMRC action.</p>
     </div>
 
     <p id="gate" class="error" hidden></p>
 
-    <section class="panel">
-      <h2 style="margin-top:0">Tax year &amp; businesses</h2>
-      <p class="muted">IDs prefer your saved income sources and HMRC connection.</p>
+    <details class="panel year-end-connection">
+      <summary>Connection and business identifiers</summary>
+      <div class="year-end-connection-body"><p class="muted">These are loaded from your saved income sources and HMRC connection where available.</p>
       <div class="form-row">
         <label>National Insurance number
           <input type="text" id="nino" autocomplete="off" />
@@ -112,10 +104,11 @@
       </div>
       <p class="muted" id="biz-note"></p>
       <ul class="eoy-source-list" id="source-list" aria-live="polite"></ul>
-    </section>
+      </div>
+    </details>
 
     <section class="panel eoy-stage-panel">
-      <h2 style="margin-top:0">Your tax return progress</h2>
+      <h2 style="margin-top:0">Year-end checklist</h2>
       <p class="muted" id="case-meta">Loading guided case…</p>
       <div class="eoy-progress" id="eoy-progress" role="list" aria-label="Year-end stages"></div>
 
@@ -136,7 +129,7 @@
       </div>
     </section>
 
-    <section class="panel">
+    <section class="panel" id="year-end-result" hidden>
       <h2 style="margin-top:0">Result &amp; receipt</h2>
       <p id="wf-error" class="error" hidden></p>
       <div id="wf-success" class="success-box" hidden>
@@ -145,7 +138,7 @@
         <div id="calculation-view" class="calculation-view" hidden></div>
         <a class="btn btn-ghost" id="wf-receipt-link" href="/history">View submissions</a>
       </div>
-      <pre id="wf-out" class="code-block" style="max-height:20rem;overflow:auto">Connect HMRC, confirm sources, then run the current step.</pre>
+      <details class="eoy-response"><summary>Technical response details</summary><pre id="wf-out" class="code-block" style="max-height:20rem;overflow:auto">No response recorded yet.</pre></details>
     </section>
 
     <section class="panel eoy-advanced">
@@ -229,5 +222,6 @@
   </dialog>
   <script src="/js/year-end.js"></script>
   <script src="/js/cookie-banner.js"></script>
+  <script>document.getElementById('cc-menu-toggle')?.addEventListener('click',()=>{const side=document.getElementById('cc-sidebar');const open=side.classList.toggle('open');document.getElementById('cc-menu-toggle').setAttribute('aria-expanded',String(open))});</script>
 </body>
 </html>

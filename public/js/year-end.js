@@ -108,6 +108,8 @@ function showOut(obj) {
 }
 
 function showResult(data) {
+  const resultPanel = document.getElementById('year-end-result');
+  if (resultPanel) resultPanel.hidden = false;
   const err = document.getElementById('wf-error');
   const ok = document.getElementById('wf-success');
   const sum = document.getElementById('wf-summary');
@@ -170,6 +172,8 @@ function renderCalculationResult(data) {
 }
 
 function showError(msg) {
+  const resultPanel = document.getElementById('year-end-result');
+  if (resultPanel) resultPanel.hidden = false;
   const err = document.getElementById('wf-error');
   const ok = document.getElementById('wf-success');
   if (ok) ok.hidden = true;
@@ -211,8 +215,8 @@ function workflowPayload(name) {
     return { body: { ukOtherProperty: { adjustments: { privateUseAdjustment: money('eoy-uk-private'), balancingCharge: money('eoy-uk-balancing') }, allowances: { annualInvestmentAllowance: money('eoy-uk-aia'), otherCapitalAllowance: money('eoy-uk-other-allowance') } } } };
   }
   if (name === 'fp_annual') {
-    const countries = (eoyCase?.sources || []).filter((source) => source.type === 'foreign_property');
-    return { body: { foreignProperty: countries.map((source) => ({ countryCode: source.countryCode || 'ESP', adjustments: { privateUseAdjustment: money(`eoy-fp-private-${source.id}`), balancingCharge: money(`eoy-fp-balancing-${source.id}`) }, allowances: { annualInvestmentAllowance: money(`eoy-fp-aia-${source.id}`), otherCapitalAllowance: money(`eoy-fp-other-${source.id}`) } })) } };
+    const countries = (eoyCase?.foreignPropertyRecords || []).filter((record) => /^[A-Z]{3}$/.test(record.countryCode || ''));
+    return { body: { foreignProperty: countries.map((record) => ({ countryCode: record.countryCode, adjustments: { privateUseAdjustment: money(`eoy-fp-private-${record.id}`), balancingCharge: money(`eoy-fp-balancing-${record.id}`) }, allowances: { annualInvestmentAllowance: money(`eoy-fp-aia-${record.id}`), otherCapitalAllowance: money(`eoy-fp-other-${record.id}`) } })) } };
   }
   if (name === 'losses') {
     return { body: { businessId: ids().businessIdSe, typeOfLoss: 'self-employment', lossAmount: money('eoy-loss'), taxYearBroughtForwardFrom: ids().taxYear } };
@@ -233,8 +237,8 @@ function renderEditor(stageId) {
     const uk = (eoyCase?.sources || []).find((source) => source.type === 'uk_property');
     root.innerHTML = `<div class="eoy-form"><h4>UK property annual adjustments</h4>${uk?.joint ? `<p class="help-tip">Jointly owned source · saved ownership share ${esc(uk.ownershipShare || 50)}%. Check that uploaded records already represent the reportable share.</p>` : ''}<div class="detail-grid">${field('eoy-uk-private','Private-use adjustment')}${field('eoy-uk-balancing','Balancing charge')}${field('eoy-uk-aia','Annual investment allowance')}${field('eoy-uk-other-allowance','Other capital allowance')}</div></div>`;
   } else if (stageId === 'foreign_adjustments') {
-    const foreign = (eoyCase?.sources || []).filter((source) => source.type === 'foreign_property');
-    root.innerHTML = foreign.length ? `<div class="eoy-form"><h4>Foreign property annual adjustments</h4><p class="help-tip">Enter GBP values only. Keep evidence of the exchange-rate method with your digital records.</p>${foreign.map((source) => `<section class="foreign-adjustment"><h5>${esc(source.nickname || source.label)} · ${esc(source.countryCode || 'Country not set')}</h5><div class="detail-grid">${field(`eoy-fp-private-${source.id}`,'Private-use adjustment')}${field(`eoy-fp-balancing-${source.id}`,'Balancing charge')}${field(`eoy-fp-aia-${source.id}`,'Annual investment allowance')}${field(`eoy-fp-other-${source.id}`,'Other capital allowance')}<label>Exchange-rate evidence<select id="eoy-fp-rate-${source.id}"><option>HMRC monthly average rate</option><option>HMRC annual average rate</option><option>Transaction-date rate with evidence</option></select><small>Saved as evidence; it is not itself an HMRC annual adjustment field.</small></label>${field(`eoy-fp-tax-${source.id}`,'Foreign tax paid (evidence only)','Saved with this case. The annual adjustment request does not silently add this to an unsupported field.')}</div></section>`).join('')}</div>` : '<p class="help-tip">No foreign-property sources are configured. Add them in Settings before continuing.</p>';
+    const foreign = (eoyCase?.foreignPropertyRecords || []).filter((record) => /^[A-Z]{3}$/.test(record.countryCode || ''));
+    root.innerHTML = foreign.length ? `<div class="eoy-form"><h4>Foreign property annual adjustments</h4><div class="foreign-tabs" role="tablist" aria-label="Foreign property countries">${foreign.map((record,index) => `<button type="button" role="tab" data-foreign-tab="${esc(record.id)}" aria-selected="${index === 0}">${esc(record.label || record.countryCode)} <span>${esc(record.countryCode)}</span></button>`).join('')}</div><p class="help-tip">Enter GBP values only. Keep evidence of the exchange-rate method and foreign tax with your digital records.</p>${foreign.map((record,index) => `<section class="foreign-adjustment" data-foreign-panel="${esc(record.id)}" ${index === 0 ? '' : 'hidden'}><div class="foreign-heading"><div><h5>${esc(record.label || record.countryCode)} adjustments</h5><p>For tax year ${esc(eoyCase?.taxYear || '')}</p></div><strong>${esc(record.countryCode)}</strong></div><div class="detail-grid">${field(`eoy-fp-private-${record.id}`,'Private-use adjustment')}${field(`eoy-fp-balancing-${record.id}`,'Balancing charge')}${field(`eoy-fp-aia-${record.id}`,'Annual investment allowance')}${field(`eoy-fp-other-${record.id}`,'Other capital allowance')}<label>Exchange-rate evidence<select id="eoy-fp-rate-${record.id}"><option>HMRC monthly average rate</option><option>HMRC annual average rate</option><option>Transaction-date rate with evidence</option></select><small>Saved as evidence; this choice is not silently sent as an annual adjustment.</small></label>${field(`eoy-fp-tax-${record.id}`,'Foreign tax paid (evidence only)','Saved with this case. It is not added to an unsupported HMRC field.')}</div></section>`).join('')}</div>` : '<div class="eoy-form"><h4>Foreign property annual adjustments</h4><p class="help-tip">No country records have been carried forward from an uploaded spreadsheet. Spreadsheet Tax will not invent a country or create a separate HMRC income source. Upload and review the foreign-property spreadsheet before this step.</p><a class="btn btn-primary" href="/app?flow=quarterly">Upload foreign-property spreadsheet</a></div>';
   } else if (stageId === 'other_income_losses') {
     root.innerHTML = `<div class="eoy-form"><h4>Losses and other income</h4><div class="detail-grid">${field('eoy-loss','Brought-forward self-employment loss','Use only a loss supported by earlier records.')}</div></div>`;
   } else if (stageId === 'calculation') {
@@ -252,6 +256,13 @@ function renderEditor(stageId) {
     }
     input.addEventListener('input', () => { eoyDirty = true; });
     input.addEventListener('change', () => { eoyDirty = true; });
+  });
+  root.querySelectorAll('[data-foreign-tab]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const id = button.dataset.foreignTab;
+      root.querySelectorAll('[data-foreign-tab]').forEach((tab) => tab.setAttribute('aria-selected', String(tab === button)));
+      root.querySelectorAll('[data-foreign-panel]').forEach((panel) => { panel.hidden = panel.dataset.foreignPanel !== id; });
+    });
   });
 }
 
@@ -307,6 +318,10 @@ function renderStageActions(stageId) {
       btn.setAttribute('data-wf', a.wf);
       btn.textContent = a.label;
       btn.addEventListener('click', () => {
+        if (a.wf === 'fp_annual' && !(eoyCase?.foreignPropertyRecords || []).some((record) => /^[A-Z]{3}$/.test(record.countryCode || ''))) {
+          showError('Upload and review foreign-property spreadsheet records first. No country will be invented or typed in as an HMRC income source.');
+          return;
+        }
         if (a.wf === 'final_calc' && !document.getElementById('eoy-declaration')?.checked) {
           showError('Confirm the final declaration review before continuing.');
           return;
@@ -350,9 +365,7 @@ function renderCase() {
       list.innerHTML = sources
         .map(
           (s) =>
-            `<li><strong>${esc(s.label || s.type)}</strong> · ${esc(
-              s.type || ''
-            )}${s.businessId ? ` · ${esc(s.businessId)}` : ''}</li>`
+            `<li><span class="source-avatar">${s.type === 'self_employment' ? 'SE' : s.type === 'uk_property' ? 'UK' : 'FP'}</span><span><strong>${esc(s.nickname || s.label || s.type)}</strong><small>${esc(s.label || s.type || '')}${s.businessId ? ` · ${esc(s.businessId)}` : ''}</small></span><b>${s.type === 'foreign_property' ? 'Countries come from spreadsheet' : 'Review adjustments'}</b></li>`
         )
         .join('');
     }
