@@ -15,7 +15,11 @@ import {
   sha256Buffer,
   setScanStatus,
 } from './object-store.js';
-import { parseCsvText, parseFileBuffer, XLSX_MAX_BYTES } from './parse.js';
+import {
+  parseCsvText,
+  parseWorkbookBuffer,
+  XLSX_MAX_BYTES,
+} from './parse.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const WORKER = path.join(__dirname, '..', 'workers', 'excel-parse-worker.js');
@@ -148,12 +152,10 @@ function runExcelWorker(buffer, filename, kind, timeoutMs) {
       });
     } catch (e) {
       clearTimeout(timer);
-      // Fallback in-process with hard limits (still first-class Excel)
-      try {
-        resolve(parseFileBuffer(buffer, filename.endsWith('.csv') ? 'x.xlsx' : filename));
-      } catch (err) {
-        reject(err);
-      }
+      // Fallback in-process exceljs (async)
+      parseWorkbookBuffer(buffer, filename)
+        .then(resolve)
+        .catch(reject);
     }
   });
 }

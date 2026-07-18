@@ -140,8 +140,19 @@ describe('security hardening complete', () => {
     assert.ok(!powered, `expected no x-powered-by, got ${powered}`);
   });
 
-  it('file-type is not a dependency', () => {
+  it('file-type and sheetjs xlsx are not dependencies', () => {
     const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
     assert.equal(pkg.dependencies['file-type'], undefined);
+    assert.equal(pkg.dependencies.xlsx, undefined);
+    assert.ok(pkg.dependencies.exceljs);
+  });
+
+  it('HTML CSP uses script nonces without script unsafe-inline', async () => {
+    const res = await request('GET', '/');
+    assert.equal(res.status, 200);
+    const csp = String(res.headers['content-security-policy'] || '');
+    assert.match(csp, /script-src[^;]*'nonce-/);
+    assert.doesNotMatch(csp, /script-src[^;]*'unsafe-inline'/);
+    assert.match(res.body, /nonce="[A-Za-z0-9+/=]+"/);
   });
 });

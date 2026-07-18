@@ -1,16 +1,10 @@
 /**
  * Parse local spreadsheet / CSV files into raw row records.
- * Supports CSV text and XLSX workbooks (first sheet or named sheets).
+ * CSV: sync pure JS. XLSX: exceljs (SheetJS removed — CVE residual closed).
+ * Legacy .xls is not supported (save as .xlsx or CSV).
  */
 
-import * as XLSX from 'xlsx';
-
-/**
- * SheetJS community build has known CVEs with no npm fix (prototype pollution / ReDoS).
- * Mitigation: prefer isolated worker path, size caps, magic-byte check, no formula execution.
- * Kill-switch: EXCEL_KILL_SWITCH=1 rejects workbook parses (CSV still works).
- * @see GHSA-4r6h-8v6p-xvw6
- */
+import ExcelJS from 'exceljs';
 
 /**
  * Normalize a header cell to a stable key.
@@ -26,8 +20,6 @@ export function normalizeHeader(h) {
 
 /**
  * Parse CSV text into array of objects keyed by header row.
- * Uses a plain parser so date-like values (e.g. 2024-04-06) are not
- * coerced into Excel serials.
  * @param {string} text
  * @returns {Record<string, string>[]}
  */
@@ -46,12 +38,11 @@ export function parseCsvText(text) {
     /** @type {Record<string, string>} */
     const obj = {
       _sheet: 'Sheet1',
-      _row: String(i + 1), // Excel-style 1-based row (header is row 1)
+      _row: String(i + 1),
     };
     headers.forEach((h, idx) => {
-      if (!h) return;
+      if (!h || h === '__proto__' || h === 'constructor' || h === 'prototype') return;
       obj[h] = (cells[idx] ?? '').trim();
-      // Column letter for this field (A=0)
       obj[`_col_${h}`] = colLetters(idx);
     });
     rows.push(obj);
@@ -108,14 +99,11 @@ function splitCsvLine(line) {
 
 /** Max workbook size (bytes) for XLSX path — untrusted upload control. */
 export const XLSX_MAX_BYTES = 2 * 1024 * 1024;
-/** Max sheets / rows to reduce DoS surface of xlsx parser. */
 export const XLSX_MAX_SHEETS = 8;
 export const XLSX_MAX_ROWS_PER_SHEET = 5000;
 
 /**
- * Excel is a first-class customer format (.xlsx / .xls).
- * Only incident kill-switch EXCEL_KILL_SWITCH=1 or ALLOW_XLSX_PARSE=0 disables.
- * Prefer isolated worker (processLocalFileIsolated) in production web path.
+ * Excel parse enabled unless kill-switched.
  * @param {NodeJS.ProcessEnv} [env]
  */
 export function isXlsxParseEnabled(env = process.env) {
@@ -125,21 +113,48 @@ export function isXlsxParseEnabled(env = process.env) {
 }
 
 /**
- * Parse a Buffer (CSV or XLSX) into rows.
- * Compensating controls for vulnerable xlsx: size/sheet/row limits, optional disable.
- * Prefer CSV for untrusted production uploads.
+ * Sync buffer parse: **CSV only**. Excel must use {@link parseWorkbookBuffer} (async exceljs).
  * @param {Buffer} buffer
  * @param {string} [filename]
  * @returns {Record<string, string>[]}
  */
 export function parseFileBuffer(buffer, filename = '') {
-  const lower = filename.toLowerCase();
-  const isCsv = lower.endsWith('.csv') || looksLikeCsv(buffer);
-
-  if (isCsv && !lower.endsWith('.xlsx') && !lower.endsWith('.xls')) {
-    return parseCsvText(buffer.toString('utf8'));
+  const lower = String(filename || '').toLowerCase();
+  if (lower.endsWith('.xls') && !lower.endsWith('.xlsx')) {
+    throw new Error(
+      'Legacy .xls is not supported. Save as .xlsx or CSV and upload again.'
+    );
   }
+  if (
+    lower.endsWith('.xlsx') ||
+    (!looksLikeCsv(buffer) && !lower.endsWith('.csv'))
+  ) {
+    // Keep kill-switch behaviour for sync callers (tests)
+    if (!isXlsxParseEnabled()) {
+      throw new Error(
+        'Excel processing disabled (EXCEL_KILL_SWITCH or ALLOW_XLSX_PARSE=0).'
+      );
+    }
+    throw new Error(
+      'Excel files require async parseWorkbookBuffer / processLocalFileIsolated (exceljs). Use CSV for sync parse.'
+    );
+  }
+  return parseCsvText(buffer.toString('utf8'));
+}
 
+/**
+ * Async XLSX parse via exceljs (replaces vulnerable SheetJS/xlsx package).
+ * @param {Buffer} buffer
+ * @param {string} [filename]
+ * @returns {Promise<Record<string, string>[]>}
+ */
+export async function parseWorkbookBuffer(buffer, filename = '') {
+  const lower = String(filename || '').toLowerCase();
+  if (lower.endsWith('.xls') && !lower.endsWith('.xlsx')) {
+    throw new Error(
+      'Legacy .xls is not supported. Save as .xlsx or CSV and upload again.'
+    );
+  }
   if (!isXlsxParseEnabled()) {
     throw new Error(
       'Excel processing disabled (EXCEL_KILL_SWITCH or ALLOW_XLSX_PARSE=0).'
@@ -151,23 +166,19 @@ export function parseFileBuffer(buffer, filename = '') {
     );
   }
 
-  const workbook = XLSX.read(buffer, {
-    type: 'buffer',
-    raw: false,
-    cellDates: false,
-    // dense/sheetRows limits reduce work on hostile workbooks
-    sheetRows: XLSX_MAX_ROWS_PER_SHEET + 1,
-  });
+  const workbook = new ExcelJS.Workbook();
+  // exceljs loads OOXML only — no macro execution
+  await workbook.xlsx.load(buffer);
+
   /** @type {Record<string, string>[]} */
   const all = [];
-  const names = (workbook.SheetNames || []).slice(0, XLSX_MAX_SHEETS);
-  for (const name of names) {
-    const rows = sheetToRows(workbook.Sheets[name]);
-    const sectionHint = normalizeHeader(name);
+  const sheets = workbook.worksheets.slice(0, XLSX_MAX_SHEETS);
+  for (const sheet of sheets) {
+    const sectionHint = normalizeHeader(sheet.name);
+    const rows = worksheetToRows(sheet);
     for (const row of rows) {
-      // Prototype-pollution guard: only own enumerable string keys, stringify values
       const safe = sanitizeRow(row);
-      safe._sheet = name;
+      safe._sheet = sheet.name || '';
       if (!safe.section && isKnownSection(sectionHint)) {
         all.push({ ...safe, section: sectionHint });
       } else {
@@ -176,6 +187,41 @@ export function parseFileBuffer(buffer, filename = '') {
     }
   }
   return all;
+}
+
+/**
+ * @param {import('exceljs').Worksheet} sheet
+ * @returns {Record<string, string>[]}
+ */
+function worksheetToRows(sheet) {
+  /** @type {Record<string, string>[]} */
+  const rows = [];
+  /** @type {string[]} */
+  let headers = [];
+  let rowCount = 0;
+  sheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+    if (rowCount >= XLSX_MAX_ROWS_PER_SHEET + 1) return;
+    rowCount++;
+    const values = /** @type {unknown[]} */ (row.values || []);
+    // exceljs row.values is 1-indexed
+    const cells = values.slice(1);
+    if (rowNumber === 1 || headers.length === 0) {
+      headers = cells.map((c) => normalizeHeader(cellToString(c)));
+      return;
+    }
+    if (cells.every((c) => !String(cellToString(c) || '').trim())) return;
+    /** @type {Record<string, string>} */
+    const obj = Object.create(null);
+    obj._row = String(rowNumber);
+    headers.forEach((h, idx) => {
+      if (!h || h === '__proto__' || h === 'constructor' || h === 'prototype')
+        return;
+      obj[h] = cellToString(cells[idx]);
+      obj[`_col_${h}`] = colLetters(idx);
+    });
+    rows.push(obj);
+  });
+  return rows;
 }
 
 /**
@@ -195,81 +241,6 @@ function sanitizeRow(row) {
 }
 
 /**
- * @param {XLSX.WorkSheet} sheet
- * @returns {Record<string, string>[]}
- */
-function sheetToRows(sheet) {
-  // Prefer cell objects so we can capture formula text (f) + cached value (v)
-  // without executing macros or external links.
-  const ref = sheet['!ref'];
-  if (ref) {
-    try {
-      const range = XLSX.utils.decode_range(ref);
-      const headers = [];
-      for (let c = range.s.c; c <= range.e.c; c++) {
-        const addr = XLSX.utils.encode_cell({ r: range.s.r, c });
-        const cell = sheet[addr];
-        headers.push(normalizeHeader(cell?.v ?? colLetters(c - range.s.c)));
-      }
-      /** @type {Record<string, string>[]} */
-      const rows = [];
-      for (let r = range.s.r + 1; r <= range.e.r; r++) {
-        /** @type {Record<string, string>} */
-        const obj = {
-          _sheet: '',
-          _row: String(r + 1),
-        };
-        let empty = true;
-        headers.forEach((h, idx) => {
-          if (!h) return;
-          const c = range.s.c + idx;
-          const addr = XLSX.utils.encode_cell({ r, c });
-          const cell = sheet[addr];
-          const val = cellToString(cell?.v);
-          if (val) empty = false;
-          obj[h] = val;
-          obj[`_col_${h}`] = colLetters(idx);
-          if (cell?.f) {
-            obj[`_formula_${h}`] = String(cell.f);
-          }
-        });
-        if (!empty) rows.push(obj);
-      }
-      return rows;
-    } catch {
-      /* fall through */
-    }
-  }
-
-  const matrix = XLSX.utils.sheet_to_json(sheet, {
-    header: 1,
-    defval: '',
-    raw: true,
-  });
-  if (!matrix.length) return [];
-
-  const headers = /** @type {unknown[]} */ (matrix[0]).map(normalizeHeader);
-  /** @type {Record<string, string>[]} */
-  const rows = [];
-  for (let i = 1; i < matrix.length; i++) {
-    const cells = /** @type {unknown[]} */ (matrix[i]);
-    if (!cells || cells.every((c) => String(c ?? '').trim() === '')) continue;
-    /** @type {Record<string, string>} */
-    const obj = {
-      _sheet: '',
-      _row: String(i + 1),
-    };
-    headers.forEach((h, idx) => {
-      if (!h) return;
-      obj[h] = cellToString(cells[idx]);
-      obj[`_col_${h}`] = colLetters(idx);
-    });
-    rows.push(obj);
-  }
-  return rows;
-}
-
-/**
  * @param {unknown} cell
  * @returns {string}
  */
@@ -281,25 +252,18 @@ function cellToString(cell) {
     const d = String(cell.getUTCDate()).padStart(2, '0');
     return `${y}-${m}-${d}`;
   }
+  if (typeof cell === 'object' && cell !== null && 'text' in cell) {
+    return String(/** @type {{ text?: unknown }} */ (cell).text ?? '').trim();
+  }
+  if (typeof cell === 'object' && cell !== null && 'result' in cell) {
+    return cellToString(/** @type {{ result?: unknown }} */ (cell).result);
+  }
   if (typeof cell === 'number' && Number.isFinite(cell)) {
-    // Excel serial date heuristic (days since 1899-12-30), incl. fractional time
-    if (cell > 20000 && cell < 60000) {
-      const epoch = Date.UTC(1899, 11, 30);
-      const wholeDays = Math.floor(cell);
-      const dt = new Date(epoch + wholeDays * 86400000);
-      const y = dt.getUTCFullYear();
-      const m = String(dt.getUTCMonth() + 1).padStart(2, '0');
-      const d = String(dt.getUTCDate()).padStart(2, '0');
-      return `${y}-${m}-${d}`;
-    }
     return String(cell);
   }
   return String(cell).trim();
 }
 
-/**
- * @param {Buffer} buffer
- */
 function looksLikeCsv(buffer) {
   const sample = buffer.slice(0, 200).toString('utf8');
   return sample.includes(',') || sample.includes(';') || sample.includes('\n');
@@ -317,11 +281,9 @@ const KNOWN_SECTIONS = new Set([
   'foreignproperty',
   'meta',
   'metadata',
+  'period_summary',
 ]);
 
-/**
- * @param {string} name
- */
 function isKnownSection(name) {
   return KNOWN_SECTIONS.has(name);
 }
@@ -335,16 +297,13 @@ const DATE_META_KEYS = new Set([
 
 /**
  * Normalize spreadsheet date cells to YYYY-MM-DD when possible.
- * xlsx may emit locale short dates (e.g. 4/6/24) for ISO-looking values.
  * @param {string} raw
  * @returns {string}
  */
 export function normalizeDateValue(raw) {
   const s = String(raw ?? '').trim();
   if (!s) return s;
-  // Already ISO-like
   if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
-  // Excel serial as string/number
   const serial = Number(s);
   if (Number.isFinite(serial) && serial > 20000 && serial < 60000) {
     const epoch = Date.UTC(1899, 11, 30);
@@ -354,7 +313,6 @@ export function normalizeDateValue(raw) {
     const d = String(dt.getUTCDate()).padStart(2, '0');
     return `${y}-${m}-${d}`;
   }
-  // M/D/YY or M/D/YYYY (xlsx default for some locales)
   const mdy = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
   if (mdy) {
     let year = Number(mdy[3]);
@@ -363,7 +321,6 @@ export function normalizeDateValue(raw) {
     const day = String(Number(mdy[2])).padStart(2, '0');
     return `${year}-${month}-${day}`;
   }
-  // D/M/YYYY common UK
   const dmy = s.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
   if (dmy) {
     const day = String(Number(dmy[1])).padStart(2, '0');
@@ -391,7 +348,6 @@ export function extractMetadata(rows) {
       }
       continue;
     }
-    // Also accept columns like tax_year, period_start on any row
     for (const key of [
       'tax_year',
       'period_start',
@@ -409,3 +365,5 @@ export function extractMetadata(rows) {
   }
   return meta;
 }
+
+export { looksLikeCsv };
