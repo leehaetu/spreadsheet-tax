@@ -71,10 +71,17 @@ function showResult(data) {
       ? `Step “${data.workflow}” completed (mode: ${data.mode}).`
       : `Step “${data.workflow}” failed or returned non-success from HMRC.`;
   }
+  const rb = data.readback;
+  let rbLine = '';
+  if (rb && rb.attempted) {
+    rbLine = ` Readback attempted (HMRC ${rb.hmrcStatus ?? '—'}${rb.ok === false ? ', not OK' : rb.ok ? ', OK' : ''}).`;
+  } else if (rb && rb.note) {
+    rbLine = ` Readback: ${rb.note}`;
+  }
   if (rec) {
     rec.textContent = data.receiptId
-      ? `Receipt id: ${data.receiptId}`
-      : 'No receipt id (check error output).';
+      ? `Receipt id: ${data.receiptId}.${rbLine}`
+      : `No receipt id (check error output).${rbLine}`;
   }
   if (link && data.receiptId) {
     link.href = `/api/receipts/${encodeURIComponent(data.receiptId)}`;

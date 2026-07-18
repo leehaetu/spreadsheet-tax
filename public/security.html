@@ -41,17 +41,27 @@
     <section class="panel">
       <h2>What this software covers (and what it does not)</h2>
       <p>
-        <strong>In-year bridging only:</strong> quarterly updates for self-employment, UK property and foreign property
-        from a customer’s spreadsheet digital records.
+        <strong>Customer product journeys (sandbox / pilot when HMRC live submit is enabled):</strong>
+      </p>
+      <ul>
+        <li><strong>Quarterly updates</strong> — self-employment, UK property and foreign property from a spreadsheet (<a href="/app">/app</a>).</li>
+        <li><strong>Corrections</strong> — amend an SE period after submit (<a href="/year-end">/year-end</a>).</li>
+        <li><strong>Year-end steps</strong> — annual summaries, losses, other-income adjustments, tax calculation trigger/list, BSAS trigger/list/adjust, final-declaration obligations and intent-to-finalise (<a href="/year-end">/year-end</a>).</li>
+        <li><strong>Practice book</strong> — client list, import, status (<a href="/workspace">/workspace</a>).</li>
+      </ul>
+      <p>
+        Default public mode is <strong>preview only</strong> (no HMRC HTTP). External HMRC calls need sign-in,
+        real OAuth, and server flags. This is <strong>not</strong> HMRC-recognised software for live production filing.
       </p>
       <p>
-        <strong>Not supported in this product stage:</strong> final declaration / end-of-year, losses, BSAS,
-        and other non-mandated income sources. Customers needing those should use other software from
+        <strong>Not claimed:</strong> full in-product tax bill calculation (trigger/list only; use your
+        <a href="https://www.gov.uk/log-in-register-hmrc-online-services">HMRC online account</a> for the estimate view),
+        EOPS, agent multi-client production authority beyond firm roles we implement, or Production APIs until HMRC grants them.
+      </p>
+      <p>
+        Capability evidence tags and exact sandbox HTTP outcomes: see the integrity page and operator docs.
+        If you need software already on HMRC’s list for live use today, use
         <a href="https://www.gov.uk/guidance/find-software-thats-compatible-with-making-tax-digital-for-income-tax">HMRC’s compatible software list</a>.
-      </p>
-      <p>
-        Tax calculations are not calculated inside Spreadsheet Tax; customers are signposted to their
-        <a href="https://www.gov.uk/log-in-register-hmrc-online-services">HMRC online account</a>.
       </p>
     </section>
     <section class="panel">

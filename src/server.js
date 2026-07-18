@@ -131,9 +131,15 @@ import {
   createSePeriod,
   createUkPropertyPeriod,
   createForeignPropertyPeriod,
+  retrieveSePeriod,
+  retrieveUkPropertyPeriod,
+  retrieveForeignPropertyPeriod,
+  retrieveBsasSelfEmployment,
+  retrieveCalculation,
   defaultSeAnnualBody,
   resolveSeAnnualBody,
   periodBodyFromDraft,
+  taxYearFromPeriodId,
 } from './lib/hmrc-api.js';
 import {
   loadDraftForUser,
@@ -144,6 +150,7 @@ import {
   recordWorkflowReceipt,
   summariseHmrcResult,
 } from './lib/workflow-receipts.js';
+import { performWorkflowReadback } from './lib/workflow-readback.js';
 import { isKnownWorkflow, KNOWN_WORKFLOWS } from './lib/workflows.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -2220,6 +2227,10 @@ app.post('/api/workflows/run', async (req, res) => {
   try {
     if (!canExternal) {
       // Preview receipt only — same shape, no HMRC HTTP
+      const previewReadback = {
+        attempted: false,
+        note: 'Preview mode — no HMRC retrieve/readback HTTP',
+      };
       const receipt = recordWorkflowReceipt({
         userId: user.id,
         workflow,
@@ -2231,6 +2242,7 @@ app.post('/api/workflows/run', async (req, res) => {
           message:
             'Preview only — not sent to HMRC. Connect OAuth and set HMRC_ALLOW_LIVE_SUBMIT=1 for external calls.',
         },
+        readback: previewReadback,
       });
       writeAudit({
         userId: user.id,
@@ -2244,6 +2256,7 @@ app.post('/api/workflows/run', async (req, res) => {
         mode: 'double',
         previewOnly: true,
         receiptId: receipt.receiptId,
+        readback: previewReadback,
         message: receipt.receiptId
           ? 'Preview receipt stored. No HMRC call made.'
           : 'Preview complete.',
@@ -2482,6 +2495,19 @@ app.post('/api/workflows/run', async (req, res) => {
     }
 
     const summary = summariseHmrcResult(hmrcResult);
+    /** @type {object} */
+    let readback = { attempted: false };
+    if (summary.ok) {
+      readback = await performWorkflowReadback({
+        workflow,
+        hmrcResult,
+        o,
+        body: req.body || {},
+        taxYear,
+      });
+    } else {
+      readback = { attempted: false, note: 'skipped — primary HMRC call not 2xx' };
+    }
     const receipt = recordWorkflowReceipt({
       userId: user.id,
       workflow,
@@ -2492,9 +2518,7 @@ app.post('/api/workflows/run', async (req, res) => {
       path: summary.path,
       request: { workflow, taxYear, nino: nino.slice(0, 2) + '****' },
       response: hmrcResult?.body ?? hmrcResult,
-      readback: summary.ok
-        ? { attempted: true, note: 'Use list/retrieve endpoints for full readback' }
-        : { attempted: false },
+      readback,
     });
     writeAudit({
       userId: user.id,
@@ -2505,6 +2529,7 @@ app.post('/api/workflows/run', async (req, res) => {
         ok: summary.ok,
         hmrcStatus: summary.hmrcStatus,
         hmrcCode: summary.hmrcCode,
+        readbackAttempted: Boolean(readback.attempted),
       },
     });
     res.status(summary.ok ? 200 : 502).json({
@@ -2517,6 +2542,7 @@ app.post('/api/workflows/run', async (req, res) => {
       hmrcCode: summary.hmrcCode,
       path: summary.path,
       body: hmrcResult?.body,
+      readback,
     });
   } catch (e) {
     console.error(e);
