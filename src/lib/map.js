@@ -256,6 +256,12 @@ export function canonicalizeField(field, section = null) {
  * @property {number} value
  * @property {IncomeSource} section
  * @property {string} [country]
+ * @property {string} [sheet]
+ * @property {number} [row]
+ * @property {string} [col]
+ * @property {string} [cell] - e.g. Plumbing!C8
+ * @property {'included'|'needs_review'|'ignored'|'invalid'|'duplicate'} [mapState]
+ * @property {string} [reason]
  */
 
 /**
@@ -291,14 +297,21 @@ export function mapRowsToPeriod(rows) {
     const section = normalizeSection(row.section || '');
     if (!section) continue;
 
+    const sheet = row._sheet || 'Sheet1';
+    const rowNum = Number(row._row) || null;
+
     const sourceField = row.field || row.key || row.category || '';
     if (!sourceField) {
       // Wide format: each numeric column is a field
       for (const [col, val] of Object.entries(row)) {
-        if (['section', 'country', 'country_code', 'business_id'].includes(col))
+        if (
+          ['section', 'country', 'country_code', 'business_id'].includes(col) ||
+          col.startsWith('_')
+        )
           continue;
         const money = parseMoney(val);
         if (money === undefined) continue;
+        const colLetter = row[`_col_${col}`] || null;
         applyFigure(
           section,
           col,
@@ -310,7 +323,8 @@ export function mapRowsToPeriod(rows) {
           ukFigures,
           ukTrace,
           foreignByCountry,
-          allTraces
+          allTraces,
+          { sheet, row: rowNum, col: colLetter }
         );
       }
       continue;
@@ -319,6 +333,9 @@ export function mapRowsToPeriod(rows) {
     const money = parseMoney(row.value ?? row.amount ?? row.total);
     if (money === undefined) continue;
 
+    // Prefer value/amount/total column for cell letter
+    const valueKey = row.value != null ? 'value' : row.amount != null ? 'amount' : 'total';
+    const colLetter = row[`_col_${valueKey}`] || row[`_col_field`] || null;
     applyFigure(
       section,
       sourceField,
@@ -330,7 +347,8 @@ export function mapRowsToPeriod(rows) {
       ukFigures,
       ukTrace,
       foreignByCountry,
-      allTraces
+      allTraces,
+      { sheet, row: rowNum, col: colLetter }
     );
   }
 
@@ -379,15 +397,27 @@ function applyFigure(
   ukFigures,
   ukTrace,
   foreignByCountry,
-  allTraces
+  allTraces,
+  loc = {}
 ) {
   const canonical = canonicalizeField(rawCanonical, section);
+  const sheet = loc.sheet || 'Sheet1';
+  const row = loc.row || null;
+  const col = loc.col || null;
+  const cell =
+    row && col ? `${sheet}!${col}${row}` : row ? `${sheet}!R${row}` : null;
   /** @type {FieldTrace} */
   const trace = {
     sourceField: String(sourceField),
     canonicalField: canonical,
     value: money,
     section,
+    sheet,
+    row: row || undefined,
+    col: col || undefined,
+    cell: cell || undefined,
+    mapState: 'included',
+    reason: `Column “${sourceField}” mapped to ${canonical}`,
   };
 
   if (section === 'self_employment') {

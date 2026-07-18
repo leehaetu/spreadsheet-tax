@@ -37,14 +37,30 @@ export function parseCsvText(text) {
     const cells = splitCsvLine(line);
     if (cells.every((c) => !c.trim())) continue;
     /** @type {Record<string, string>} */
-    const obj = {};
+    const obj = {
+      _sheet: 'Sheet1',
+      _row: String(i + 1), // Excel-style 1-based row (header is row 1)
+    };
     headers.forEach((h, idx) => {
       if (!h) return;
       obj[h] = (cells[idx] ?? '').trim();
+      // Column letter for this field (A=0)
+      obj[`_col_${h}`] = colLetters(idx);
     });
     rows.push(obj);
   }
   return rows;
+}
+
+/** 0-based column index → Excel letters */
+export function colLetters(index) {
+  let n = index;
+  let s = '';
+  do {
+    s = String.fromCharCode(65 + (n % 26)) + s;
+    n = Math.floor(n / 26) - 1;
+  } while (n >= 0);
+  return s;
 }
 
 /**
@@ -144,6 +160,7 @@ export function parseFileBuffer(buffer, filename = '') {
     for (const row of rows) {
       // Prototype-pollution guard: only own enumerable string keys, stringify values
       const safe = sanitizeRow(row);
+      safe._sheet = name;
       if (!safe.section && isKnownSection(sectionHint)) {
         all.push({ ...safe, section: sectionHint });
       } else {
@@ -191,10 +208,14 @@ function sheetToRows(sheet) {
     const cells = /** @type {unknown[]} */ (matrix[i]);
     if (!cells || cells.every((c) => String(c ?? '').trim() === '')) continue;
     /** @type {Record<string, string>} */
-    const obj = {};
+    const obj = {
+      _sheet: '',
+      _row: String(i + 1),
+    };
     headers.forEach((h, idx) => {
       if (!h) return;
       obj[h] = cellToString(cells[idx]);
+      obj[`_col_${h}`] = colLetters(idx);
     });
     rows.push(obj);
   }

@@ -8,6 +8,8 @@ let lastFieldLinks = null;
 let lastSources = null;
 let lastFilename = null;
 let lastRowCount = null;
+/** @type {object|null} */
+let lastSpreadsheetCheck = null;
 
 /**
  * Honest client metadata for FPH — only real browser-reported values.
@@ -228,7 +230,9 @@ function handleImportSuccess(data) {
   lastSources = data.sources || null;
   lastFilename = data.filename || null;
   lastRowCount = data.rowCount ?? null;
+  lastSpreadsheetCheck = data.spreadsheetCheck || null;
   showReview(data);
+  renderSpreadsheetCheck(lastSpreadsheetCheck);
 
   if (data.payloads?.meta?.taxYear) {
     const ty = document.getElementById('tax-year');
@@ -246,6 +250,123 @@ function handleImportSuccess(data) {
   setWizardStep(2);
   panel('review-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   loadCumulativeReview(data.draftId);
+}
+
+/**
+ * "Check your spreadsheet" — sanitised cell↔HMRC category proof (not raw Excel).
+ * @param {object|null} model
+ */
+function renderSpreadsheetCheck(model) {
+  const panel = document.getElementById('spreadsheet-check-panel');
+  if (!panel) return;
+  if (!model || !(model.gridRows || []).length) {
+    panel.hidden = true;
+    return;
+  }
+  panel.hidden = false;
+  const note = document.getElementById('ss-security-note');
+  if (note) note.textContent = model.securityNote || '';
+  const meta = document.getElementById('ss-meta');
+  if (meta) {
+    meta.textContent = [
+      model.filename ? `File: ${model.filename}` : null,
+      model.fileSha256 ? `Hash: ${model.fileSha256.slice(0, 12)}…` : null,
+      model.mappingVersion ? `Mapping: ${model.mappingVersion}` : null,
+      `${model.gridRows.length} mapped cells`,
+    ]
+      .filter(Boolean)
+      .join(' · ');
+  }
+
+  const sel = document.getElementById('ss-category');
+  if (sel) {
+    sel.innerHTML =
+      '<option value="">All included cells</option>' +
+      (model.categories || [])
+        .map(
+          (c) =>
+            `<option value="${esc(c.id)}">${esc(c.label)} (${esc(
+              formatMoney(c.total)
+            )}, ${c.cellCount} cells)</option>`
+        )
+        .join('');
+  }
+
+  const paint = (filterId) => {
+    const body = document.getElementById('ss-grid-body');
+    if (!body) return;
+    body.innerHTML = '';
+    let rows = model.gridRows || [];
+    if (filterId) rows = rows.filter((r) => r.categoryId === filterId);
+    for (const r of rows) {
+      const tr = document.createElement('tr');
+      tr.className = 'ss-row';
+      tr.dataset.cellId = r.id;
+      tr.style.cursor = 'pointer';
+      if (filterId && r.categoryId === filterId) {
+        tr.style.background = 'var(--primary-soft, #e8f2ff)';
+      }
+      const state = r.mapState || 'included';
+      tr.innerHTML = `<td><span class="tag ${
+        state === 'included' ? 'green' : state === 'invalid' ? '' : 'amber'
+      }">${esc(state)}</span></td>
+        <td><code>${esc(r.cell || '—')}</code></td>
+        <td>${esc(r.description || '—')}</td>
+        <td class="amount-cell">${esc(formatMoney(r.value))}</td>
+        <td>${esc(r.hmrcPath || '—')}</td>`;
+      tr.addEventListener('click', () => showCellDetail(r, model));
+      body.appendChild(tr);
+    }
+  };
+
+  paint('');
+  sel?.addEventListener('change', () => {
+    const id = sel.value;
+    paint(id);
+    const proof = document.getElementById('ss-total-proof');
+    if (!proof) return;
+    if (!id) {
+      proof.hidden = true;
+      return;
+    }
+    const cat = (model.categories || []).find((c) => c.id === id);
+    if (!cat) {
+      proof.hidden = true;
+      return;
+    }
+    proof.hidden = false;
+    proof.innerHTML = `<strong>${esc(cat.label)}</strong> sent to HMRC category total:
+      <strong>${esc(formatMoney(cat.total))}</strong><br/>
+      ${cat.cellCount} spreadsheet cell${cat.cellCount === 1 ? '' : 's'} contribute.
+      Select a row below for cell-level proof.`;
+  });
+
+  document.getElementById('ss-show-cells')?.addEventListener('click', () => {
+    const id = sel?.value;
+    if (id) paint(id);
+    document.getElementById('ss-grid')?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'nearest',
+    });
+  });
+}
+
+/**
+ * @param {object} r
+ * @param {object} model
+ */
+function showCellDetail(r, model) {
+  const box = document.getElementById('ss-cell-detail');
+  if (!box) return;
+  box.hidden = false;
+  box.innerHTML = `
+    <strong>Cell:</strong> <code>${esc(r.cell || '—')}</code><br/>
+    <strong>Value:</strong> ${esc(formatMoney(r.value))}<br/>
+    <strong>Description:</strong> ${esc(r.description || '—')}<br/>
+    <strong>Included in:</strong> ${esc(r.hmrcPath || '—')}<br/>
+    <strong>Reason:</strong> ${esc(r.reason || 'Mapped by column/field rules')}<br/>
+    <span class="muted">${esc(model.securityNote || '')}</span>
+  `;
 }
 
 /**
@@ -643,7 +764,17 @@ document.getElementById('goto-submit')?.addEventListener('click', () => {
   if (lastValidation && !lastValidation.ready) return;
   showPanels({ upload: false, review: true, submit: true });
   setWizardStep(3);
+  const approve = document.getElementById('approve-cells');
+  const submitBtn = document.getElementById('submit-btn');
+  if (approve && submitBtn) {
+    submitBtn.disabled = !approve.checked;
+  }
   panel('submit-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+
+document.getElementById('approve-cells')?.addEventListener('change', (e) => {
+  const submitBtn = document.getElementById('submit-btn');
+  if (submitBtn) submitBtn.disabled = !e.target.checked;
 });
 
 document.getElementById('back-to-review')?.addEventListener('click', () => {
@@ -663,6 +794,16 @@ document.getElementById('submit-btn')?.addEventListener('click', async () => {
   if (!lastDraftId && !lastPayloads) {
     if (errEl) {
       errEl.textContent = 'Please upload your spreadsheet first.';
+      errEl.hidden = false;
+    }
+    return;
+  }
+
+  const approved = document.getElementById('approve-cells');
+  if (approved && !approved.checked) {
+    if (errEl) {
+      errEl.textContent =
+        'Please confirm you have checked the spreadsheet cells and mappings before sending.';
       errEl.hidden = false;
     }
     return;

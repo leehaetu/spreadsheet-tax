@@ -633,6 +633,7 @@ function sendImportResult(req, res, result, filename) {
     fieldLinks: result.payloads.linkIndex,
     fileSha256: result.fileSha256 || null,
     fileKind: result.fileKind || null,
+    spreadsheetCheck: result.spreadsheetCheck || null,
     // payloads still returned for UI preview; submit prefers draftId
     payloads,
   });

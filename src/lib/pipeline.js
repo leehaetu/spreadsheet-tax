@@ -9,6 +9,7 @@ import { buildQuarterlyPayloads } from './payloads.js';
 import { buildCustomerSummary } from './summary.js';
 import { validateImport } from './validation.js';
 import { processSpreadsheetIsolated } from './excel-isolated.js';
+import { buildSpreadsheetCheckModel } from './spreadsheet-view.js';
 
 /**
  * Process a local file into mapped figures and HMRC quarterly payloads.
@@ -41,7 +42,7 @@ export async function processLocalFileIsolated(
     filename,
     opts
   );
-  const result = finishPipeline(rows, filename);
+  const result = finishPipeline(rows, filename, { fileSha256: sha256 });
   return {
     ...result,
     quarantine,
@@ -54,11 +55,16 @@ export async function processLocalFileIsolated(
  * @param {Record<string, string>[]} rows
  * @param {string} filename
  */
-function finishPipeline(rows, filename) {
+function finishPipeline(rows, filename, extra = {}) {
   const mapped = mapRowsToPeriod(rows);
   const payloads = buildQuarterlyPayloads(mapped);
   const summary = buildCustomerSummary(mapped, payloads);
   const validation = validateImport(mapped, payloads);
+  const spreadsheetCheck = buildSpreadsheetCheckModel(mapped, payloads, {
+    filename,
+    fileSha256: extra.fileSha256 || null,
+    mappingVersion: 'v1-deterministic',
+  });
 
   return {
     rowCount: rows.length,
@@ -67,5 +73,6 @@ function finishPipeline(rows, filename) {
     summary,
     validation,
     filename,
+    spreadsheetCheck,
   };
 }

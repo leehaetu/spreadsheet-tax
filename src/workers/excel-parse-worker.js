@@ -25,7 +25,17 @@ function cellToString(cell) {
   return String(cell).trim();
 }
 
-function sheetToRows(sheet) {
+function colLetters(index) {
+  let n = index;
+  let s = '';
+  do {
+    s = String.fromCharCode(65 + (n % 26)) + s;
+    n = Math.floor(n / 26) - 1;
+  } while (n >= 0);
+  return s;
+}
+
+function sheetToRows(sheet, sheetName) {
   const matrix = XLSX.utils.sheet_to_json(sheet, {
     header: 1,
     defval: '',
@@ -41,9 +51,12 @@ function sheetToRows(sheet) {
     if (!cells || cells.every((c) => String(c ?? '').trim() === '')) continue;
     /** @type {Record<string, string>} */
     const obj = Object.create(null);
+    obj._sheet = sheetName || '';
+    obj._row = String(i + 1);
     headers.forEach((h, idx) => {
       if (!h || h === '__proto__' || h === 'constructor') return;
       obj[h] = cellToString(cells[idx]);
+      obj[`_col_${h}`] = colLetters(idx);
     });
     rows.push(obj);
   }
@@ -69,9 +82,10 @@ process.on('message', (msg) => {
     const all = [];
     const names = (workbook.SheetNames || []).slice(0, MAX_SHEETS);
     for (const name of names) {
-      const rows = sheetToRows(workbook.Sheets[name]);
+      const rows = sheetToRows(workbook.Sheets[name], name);
       const sectionHint = normalizeHeader(name);
       for (const row of rows) {
+        row._sheet = name;
         if (!row.section && /self_employment|uk_property|foreign/.test(sectionHint)) {
           all.push({ ...row, section: sectionHint });
         } else {

@@ -121,6 +121,35 @@
       <div id="validation-panel"></div>
       <div id="summary-cards" class="stat-cards"></div>
       <div id="cumulative-review" class="panel" style="margin:0.75rem 0;padding:0.75rem" hidden></div>
+
+      <div class="panel" id="spreadsheet-check-panel" style="margin:0.75rem 0;padding:0.75rem" hidden>
+        <h3 style="margin-top:0;font-size:1.1rem">Check your spreadsheet</h3>
+        <p class="muted" id="ss-security-note" style="margin-top:0"></p>
+        <div class="form-row" style="align-items:end">
+          <label>HMRC category
+            <select id="ss-category"></select>
+          </label>
+          <button type="button" class="btn btn-ghost btn-sm" id="ss-show-cells">Show contributing cells</button>
+        </div>
+        <div id="ss-total-proof" class="help-tip" hidden></div>
+        <div id="ss-cell-detail" class="panel" style="margin:0.5rem 0;padding:0.65rem" hidden></div>
+        <div class="table-wrap" style="max-height:280px;overflow:auto">
+          <table class="data-table" id="ss-grid">
+            <thead>
+              <tr>
+                <th>State</th>
+                <th>Cell</th>
+                <th>Description</th>
+                <th>Value</th>
+                <th>Included in</th>
+              </tr>
+            </thead>
+            <tbody id="ss-grid-body"></tbody>
+          </table>
+        </div>
+        <p class="muted" id="ss-meta" style="font-size:0.85rem"></p>
+      </div>
+
       <div id="mapping-table-wrap" class="table-wrap"></div>
       <div class="action-bar">
         <button type="button" class="btn btn-primary btn-lg" id="goto-submit">Looks right — continue</button>
@@ -178,8 +207,17 @@
         <ul id="hmrc-obligations-list" class="result-list"></ul>
         <p id="hmrc-obligations-error" class="error" hidden></p>
       </div>
+      <div class="help-tip" id="approval-box">
+        <label style="display:flex;gap:0.5rem;align-items:flex-start;cursor:pointer">
+          <input type="checkbox" id="approve-cells" style="margin-top:0.35rem" />
+          <span>
+            I have checked the spreadsheet cells and mappings shown above.
+            The cumulative figures displayed are the figures I authorise Spreadsheet Tax to send to HMRC.
+          </span>
+        </label>
+      </div>
       <div class="action-bar">
-        <button type="button" class="btn btn-primary btn-lg" id="submit-btn">Send quarterly update</button>
+        <button type="button" class="btn btn-primary btn-lg" id="submit-btn" disabled>Send quarterly update</button>
         <button type="button" class="btn btn-ghost" id="back-to-review">Back to figures</button>
       </div>
       <p id="submit-error" class="error" hidden></p>
