@@ -418,8 +418,48 @@ app.get('/readyz', (_req, res) => {
   }
 });
 
+const MARKETING_VIEW_COOKIE = 'st_mkt_view';
+
 /**
- * Marketing pages: if signed in, require explicit leave-and-logout confirm first.
+ * Parse a single cookie value from request.
+ * @param {import('express').Request} req
+ * @param {string} name
+ */
+function getCookieValue(req, name) {
+  const raw = req.headers.cookie || '';
+  for (const part of raw.split(';')) {
+    const [k, ...rest] = part.trim().split('=');
+    if (k === name) return decodeURIComponent(rest.join('=') || '');
+  }
+  return null;
+}
+
+/**
+ * Allow signed-in browsing of marketing pages for a short window (new-tab option).
+ * @param {import('express').Response} res
+ */
+function setMarketingViewCookie(res) {
+  const secure = process.env.COOKIE_SECURE === '1' ? '; Secure' : '';
+  // 2 hours — long enough to read pricing/audience pages without re-prompting
+  res.append(
+    'Set-Cookie',
+    `${MARKETING_VIEW_COOKIE}=1; Path=/; SameSite=Lax; Max-Age=${2 * 3600}${secure}`
+  );
+}
+
+/**
+ * @param {import('express').Response} res
+ */
+function clearMarketingViewCookie(res) {
+  const secure = process.env.COOKIE_SECURE === '1' ? '; Secure' : '';
+  res.append(
+    'Set-Cookie',
+    `${MARKETING_VIEW_COOKIE}=; Path=/; SameSite=Lax; Max-Age=0${secure}`
+  );
+}
+
+/**
+ * Marketing pages: if signed in without marketing-view cookie, warn first.
  * Product app lives under /home, /app, /workspace, etc.
  * @param {import('express').Request} req
  * @param {import('express').Response} res
@@ -429,16 +469,33 @@ app.get('/readyz', (_req, res) => {
 function sendMarketingHtml(req, res, filename, publicPath) {
   const user = getSessionUser(getSessionIdFromRequest(req));
   if (user) {
-    const next = publicPath || req.path || '/sales';
-    const q = new URLSearchParams({ next, back: '/home' });
-    return res.redirect(302, `/leave-to-sales?${q.toString()}`);
+    const allowView = getCookieValue(req, MARKETING_VIEW_COOKIE) === '1';
+    if (!allowView) {
+      const next = publicPath || req.path || '/sales';
+      const q = new URLSearchParams({ next, back: '/home' });
+      return res.redirect(302, `/leave-to-sales?${q.toString()}`);
+    }
   }
   return sendPublicHtml(res, filename);
 }
 
-/** Confirm leave app → marketing (signs out on confirm). */
+/** Confirm leave app → marketing (sign out, or stay signed in in a new tab). */
 app.get('/leave-to-sales', (_req, res) => {
   sendPublicHtml(res, 'leave-to-sales.html');
+});
+
+/**
+ * Allow this browser session to view marketing pages while remaining signed in.
+ * Used by “open in new tab” — does not end the app session.
+ */
+app.post('/api/me/allow-marketing-view', (req, res) => {
+  const user = requireUser(req, res);
+  if (!user) return;
+  setMarketingViewCookie(res);
+  res.json({
+    ok: true,
+    note: 'Marketing pages allowed for ~2 hours while you stay signed in.',
+  });
 });
 
 app.get('/', (req, res) => {
@@ -1271,7 +1328,11 @@ app.post('/api/auth/login', async (req, res) => {
 app.post('/api/auth/logout', (req, res) => {
   const sid = getSessionIdFromRequest(req);
   destroySession(sid);
-  res.setHeader('Set-Cookie', clearSessionCookieHeader());
+  const secure = process.env.COOKIE_SECURE === '1' ? '; Secure' : '';
+  res.setHeader('Set-Cookie', [
+    clearSessionCookieHeader(),
+    `${MARKETING_VIEW_COOKIE}=; Path=/; SameSite=Lax; Max-Age=0${secure}`,
+  ]);
   res.json({ ok: true });
 });
 

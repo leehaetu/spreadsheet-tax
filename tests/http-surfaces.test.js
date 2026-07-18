@@ -21,15 +21,38 @@ let server;
 /** @type {number} */
 let port;
 
-/** @type {string} */
-let cookie = '';
+/** @type {Map<string, string>} */
+const cookieJar = new Map();
+
+function cookieHeader() {
+  return [...cookieJar.entries()].map(([k, v]) => `${k}=${v}`).join('; ');
+}
+
+function storeSetCookies(setCookie) {
+  if (!setCookie) return;
+  const list = Array.isArray(setCookie) ? setCookie : [setCookie];
+  for (const raw of list) {
+    const pair = String(raw).split(';')[0];
+    const eq = pair.indexOf('=');
+    if (eq === -1) continue;
+    const name = pair.slice(0, eq).trim();
+    const val = pair.slice(eq + 1).trim();
+    if (!name) continue;
+    if (val === '' || /Max-Age=0/i.test(String(raw))) {
+      cookieJar.delete(name);
+    } else {
+      cookieJar.set(name, val);
+    }
+  }
+}
 
 function request(method, urlPath, body) {
   return new Promise((resolve, reject) => {
     const data = body != null ? Buffer.from(body) : null;
     /** @type {Record<string, string|number>} */
     const headers = {};
-    if (cookie) headers.Cookie = cookie;
+    const c = cookieHeader();
+    if (c) headers.Cookie = c;
     if (data) {
       headers['Content-Type'] = 'application/json';
       headers['Content-Length'] = data.length;
@@ -37,10 +60,7 @@ function request(method, urlPath, body) {
     const req = http.request(
       { hostname: '127.0.0.1', port, path: urlPath, method, headers },
       (res) => {
-        const sc = res.headers['set-cookie'];
-        if (sc) {
-          cookie = sc.map((c) => String(c).split(';')[0]).join('; ');
-        }
+        storeSetCookies(res.headers['set-cookie']);
         const chunks = [];
         res.on('data', (c) => chunks.push(c));
         res.on('end', () => {
@@ -117,7 +137,7 @@ describe('sales site customer focus', () => {
   });
 
   it('signed-in users hitting marketing are warned and must leave-to-sales', async () => {
-    cookie = '';
+    cookieJar.clear();
     const login = await request(
       'POST',
       '/api/auth/login',
@@ -137,12 +157,25 @@ describe('sales site customer focus', () => {
     const leave = await request('GET', '/leave-to-sales?next=/sales');
     assert.equal(leave.status, 200);
     const leaveHtml = leave.body.toString('utf8');
-    assert.match(leaveHtml, /signed out|marketing website|leaving the app/i);
+    assert.match(leaveHtml, /signed out|marketing website|Open the marketing/i);
     assert.match(leaveHtml, /Sign out and open marketing site/i);
+    assert.match(leaveHtml, /new tab|stay signed in/i);
+
+    // Stay signed in path: grant marketing view cookie → sales loads without logout
+    const allow = await request('POST', '/api/me/allow-marketing-view', '{}');
+    assert.equal(allow.status, 200, String(allow.body));
+    const stay = await request('GET', '/sales');
+    assert.equal(stay.status, 200, String(stay.headers.location || stay.body));
+    assert.match(stay.body.toString('utf8'), /Making Tax Digital|quarterly tax update/i);
+
+    // Session still valid
+    const me = await request('GET', '/api/auth/me');
+    assert.equal(me.status, 200);
+    assert.ok(JSON.parse(me.body.toString('utf8')).user);
 
     // After logout, sales is public again
     await request('POST', '/api/auth/logout', '{}');
-    cookie = '';
+    cookieJar.clear();
     const again = await request('GET', '/sales');
     assert.equal(again.status, 200);
     assert.match(again.body.toString('utf8'), /Making Tax Digital|quarterly tax update/i);

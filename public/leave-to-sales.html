@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Leave app for marketing site — Spreadsheet Tax</title>
-  <meta name="description" content="Confirm leaving the signed-in app for the public marketing website. You will be signed out." />
+  <title>Open marketing site — Spreadsheet Tax</title>
+  <meta name="description" content="Choose how to open the public marketing website: stay signed in in a new tab, or sign out and open here." />
   <meta name="theme-color" content="#f4f6f9" />
   <meta name="robots" content="noindex" />
   <link rel="stylesheet" href="/css/site.css" />
@@ -19,24 +19,40 @@
     </div>
   </header>
 
-  <main class="wrap app-main" style="max-width:36rem">
+  <main class="wrap app-main" style="max-width:38rem">
     <div class="panel" id="warn-panel">
-      <h1 style="margin-top:0">You are leaving the app</h1>
+      <h1 style="margin-top:0">Open the marketing website</h1>
       <p class="lead" style="margin-bottom:1rem">
         You are about to open the <strong>public marketing website</strong>
         (product information, pricing and audience pages).
       </p>
-      <p class="error" style="margin:1rem 0" role="alert">
-        You will be <strong>signed out</strong> of Spreadsheet Tax. Any unfinished work in this
-        browser session stays on the server under your account — you can sign in again later.
-      </p>
-      <p class="muted" id="dest-note"></p>
-      <div class="action-bar" style="border:0;padding-top:0.75rem;display:flex;flex-wrap:wrap;gap:0.65rem">
-        <button type="button" class="btn btn-primary" id="confirm-leave">
-          Sign out and open marketing site
+
+      <div class="panel" style="margin:1rem 0;padding:1rem;background:var(--surface-2, #f0f4f8);border:1px solid var(--border)">
+        <h2 style="margin:0 0 0.5rem;font-size:1.05rem">Stay signed in (recommended for a quick look)</h2>
+        <p class="muted" style="margin:0 0 0.75rem">
+          Opens the marketing site in a <strong>new tab</strong>. This app tab stays open and
+          <strong>you remain signed in</strong>. You can keep working here.
+        </p>
+        <button type="button" class="btn btn-primary" id="open-new-tab">
+          Open marketing site in new tab — stay signed in
         </button>
-        <a class="btn btn-ghost" href="/home" id="cancel-leave">Stay signed in — back to app</a>
       </div>
+
+      <div class="panel" style="margin:1rem 0;padding:1rem;border:1px solid var(--border)">
+        <h2 style="margin:0 0 0.5rem;font-size:1.05rem">Leave the app in this tab</h2>
+        <p class="error" style="margin:0 0 0.75rem" role="status">
+          You will be <strong>signed out</strong> in this browser, then the marketing site opens here.
+          You can sign in again later; account data is kept on the server.
+        </p>
+        <button type="button" class="btn btn-ghost" id="confirm-leave">
+          Sign out and open marketing site here
+        </button>
+      </div>
+
+      <p class="muted" id="dest-note"></p>
+      <p style="margin-top:1rem">
+        <a class="btn btn-ghost" href="/home" id="cancel-leave">Cancel — stay in the app</a>
+      </p>
       <p id="err" class="error" hidden></p>
     </div>
     <p id="redirecting" class="muted" hidden>Opening marketing site…</p>
@@ -46,11 +62,9 @@
     (function () {
       const params = new URLSearchParams(location.search);
       let next = params.get('next') || '/sales';
-      // Only allow relative marketing destinations (no open redirect)
       if (!next.startsWith('/') || next.startsWith('//') || next.includes('://')) {
         next = '/sales';
       }
-      // Product app paths are not marketing destinations
       const productPrefix = [
         '/home',
         '/app',
@@ -66,15 +80,15 @@
         '/admin',
         '/portal',
         '/api',
+        '/leave-to-sales',
       ];
       if (productPrefix.some((p) => next === p || next.startsWith(p + '?'))) {
         next = '/sales';
       }
 
       const destNote = document.getElementById('dest-note');
-      if (destNote) {
-        destNote.textContent = 'Destination: ' + next;
-      }
+      if (destNote) destNote.textContent = 'Marketing destination: ' + next;
+
       const cancel = document.getElementById('cancel-leave');
       if (cancel) {
         const back = params.get('back') || '/home';
@@ -82,22 +96,73 @@
           back.startsWith('/') && !back.startsWith('//') ? back : '/home';
       }
 
+      function showErr(msg) {
+        const err = document.getElementById('err');
+        if (!err) return;
+        err.textContent = msg;
+        err.hidden = false;
+      }
+
       async function boot() {
         try {
           const me = await fetch('/api/auth/me').then((r) => r.json());
           if (!me.user) {
-            // Already signed out — no warning needed
             location.replace(next);
-            return;
           }
         } catch {
-          /* show warning panel anyway */
+          /* show options anyway */
         }
       }
 
+      // Stay signed in: grant marketing-view cookie, open new tab, keep this tab on app
+      document.getElementById('open-new-tab')?.addEventListener('click', async () => {
+        const btn = document.getElementById('open-new-tab');
+        if (btn) {
+          btn.disabled = true;
+          btn.textContent = 'Opening…';
+        }
+        try {
+          const res = await fetch('/api/me/allow-marketing-view', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: '{}',
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) {
+            showErr(data.error || 'Could not open marketing site while signed in.');
+            if (btn) {
+              btn.disabled = false;
+              btn.textContent =
+                'Open marketing site in new tab — stay signed in';
+            }
+            return;
+          }
+          const w = window.open(next, '_blank', 'noopener,noreferrer');
+          if (!w) {
+            showErr(
+              'Pop-up blocked. Allow pop-ups for this site, or use “Sign out and open here”.'
+            );
+            if (btn) {
+              btn.disabled = false;
+              btn.textContent =
+                'Open marketing site in new tab — stay signed in';
+            }
+            return;
+          }
+          // This tab returns to the app; session stays active
+          location.href = document.getElementById('cancel-leave')?.href || '/home';
+        } catch (e) {
+          showErr(e.message || 'Something went wrong.');
+          if (btn) {
+            btn.disabled = false;
+            btn.textContent =
+              'Open marketing site in new tab — stay signed in';
+          }
+        }
+      });
+
+      // Sign out and open marketing in this tab
       document.getElementById('confirm-leave')?.addEventListener('click', async () => {
-        const err = document.getElementById('err');
-        if (err) err.hidden = true;
         const btn = document.getElementById('confirm-leave');
         if (btn) {
           btn.disabled = true;
@@ -106,7 +171,7 @@
         try {
           await fetch('/api/auth/logout', { method: 'POST' });
         } catch {
-          /* still navigate to marketing */
+          /* still navigate */
         }
         document.getElementById('warn-panel').hidden = true;
         document.getElementById('redirecting').hidden = false;
