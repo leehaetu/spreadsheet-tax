@@ -33,7 +33,7 @@
     line.innerHTML =
       FOOTER_LEGAL +
       ' <a href="/security">Security &amp; privacy</a>' +
-      (isSalesSurface() ? '' : ' · <a href="/integrity">For HMRC review</a>');
+      '';
 
     const footer = document.querySelector('.site-footer');
     if (footer) {

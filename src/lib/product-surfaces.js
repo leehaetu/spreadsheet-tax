@@ -32,7 +32,13 @@ export const PRODUCT_SURFACES = [
   { path: '/privacy', role: 'legal', class: 'KEEP', nav: false, note: 'Legal' },
   { path: '/terms', role: 'legal', class: 'KEEP', nav: false, note: 'Legal' },
   { path: '/legal', role: 'legal', class: 'KEEP', nav: false, note: 'Legal hub' },
-  { path: '/integrity', role: 'internal', class: 'KEEP', nav: false, note: 'HMRC review surface' },
+  {
+    path: '/integrity',
+    role: 'internal',
+    class: 'HIDE',
+    nav: false,
+    note: 'Not public HTTP — honesty map in src/lib/integrity-map.js only',
+  },
 
   { path: '/signin', role: 'app', class: 'KEEP', nav: true, note: 'Auth' },
   { path: '/register', role: 'app', class: 'KEEP', nav: true, note: 'Auth' },

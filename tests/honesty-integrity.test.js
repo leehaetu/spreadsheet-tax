@@ -77,15 +77,20 @@ describe('honesty and integrity', () => {
     assert.doesNotMatch(src, /1920x1080/);
   });
 
-  it('exposes machine-readable integrity map', async () => {
-    const res = await request('GET', '/api/integrity');
-    assert.equal(res.status, 200);
-    const j = JSON.parse(res.body);
+  it('integrity map lives in code only — not public HTTP', async () => {
+    const { buildIntegrityMap } = await import('../src/lib/integrity-map.js');
+    const j = buildIntegrityMap();
     assert.equal(j.layers.spreadsheetImportMapping.real, true);
     assert.equal(j.layers.submitPreviewDouble.isHmrcFiling, false);
     assert.equal(j.layers.publicDemoPracticePortfolio.fictional, true);
     assert.equal(j.layers.billing.cardPayments, false);
     assert.equal(j.layers.email.delivered, false);
+    assert.equal(j.publicHttp, false);
+
+    const api = await request('GET', '/api/integrity');
+    assert.equal(api.status, 404);
+    const page = await request('GET', '/integrity');
+    assert.equal(page.status, 404);
   });
 
   it('demo practice APIs are labelled fictional', async () => {
@@ -96,10 +101,7 @@ describe('honesty and integrity', () => {
     assert.equal(j.fictional, true);
   });
 
-  it('integrity page and app copy do not claim fake acceptance', async () => {
-    const page = await request('GET', '/integrity');
-    assert.equal(page.status, 200);
-    assert.match(page.body, /not call HMRC|not sent to HMRC|preview/i);
+  it('sales and app copy do not claim fake acceptance', async () => {
     const sales = fs.readFileSync(path.join(root, 'public/sales.html'), 'utf8');
     assert.match(sales, /illustrative|example scenario|not customer reviews/i);
     assert.doesNotMatch(sales, /Submit with confidence/);

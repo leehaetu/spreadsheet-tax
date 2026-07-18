@@ -2,8 +2,9 @@
 
 **Purpose:** Anyone reviewing this codebase (including HMRC) can separate **real bridging software** from **preview / mock / demo** layers.
 
-**Live map:** https://spreadsheet-tax-production.up.railway.app/integrity  
-**API:** `GET /api/integrity` · `GET /api/status`
+**Honesty map (code only — not on the public internet):**  
+`src/lib/integrity-map.js` · run `node scripts/print-integrity-map.mjs`  
+**Public ops status (limited):** `GET /api/status` · `GET /health`
 
 ## Real product (inspectable)
 

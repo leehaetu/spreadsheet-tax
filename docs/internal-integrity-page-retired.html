@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Integrity — Spreadsheet Tax</title>
+  <meta name="description" content="Machine-readable honesty map for HMRC and security review." />
+  <link rel="stylesheet" href="/css/site.css" />
+</head>
+<body class="theme-light app-body">
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a class="logo" href="/"><span class="logo-mark">ST</span> Spreadsheet Tax</a>
+      <nav>
+        <a href="/security">Customer security page</a>
+        <a href="/">Home</a>
+      </nav>
+    </div>
+  </header>
+  <main class="wrap app-main">
+    <p class="eyebrow">Reviewer surface</p>
+    <h1>Software integrity</h1>
+    <p class="lead">
+      For HMRC and security reviewers. Customers should start at
+      <a href="/security">Security &amp; HMRC status</a>.
+      Default public submit is <strong>preview</strong> (not sent to HMRC).
+    </p>
+    <section class="panel">
+      <h2>Live machine map</h2>
+      <p class="muted">JSON from this deployment — not a static claim sheet.</p>
+      <pre id="map" class="code-block">Loading /api/integrity…</pre>
+    </section>
+    <section class="panel">
+      <h2>How to read evidence tags</h2>
+      <ul class="outcome-list">
+        <li><code>ROUTE_ONLY</code> — UI or handler exists</li>
+        <li><code>UNIT_TESTED</code> — automated test</li>
+        <li><code>SANDBOX_HTTP</code> — real HMRC sandbox status recorded</li>
+        <li><code>CUSTOMER_WORKFLOW</code> — browser path works</li>
+        <li>Non-2xx HMRC responses are failures</li>
+      </ul>
+    </section>
+  </main>
+  <script>
+    fetch('/api/integrity')
+      .then((r) => r.json())
+      .then((j) => {
+        document.getElementById('map').textContent = JSON.stringify(j, null, 2);
+      })
+      .catch((e) => {
+        document.getElementById('map').textContent = String(e);
+      });
+  </script>
+</body>
+</html>

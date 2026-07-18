@@ -30,7 +30,7 @@ export const HMRC_RECOGNITION_NOTE = HMRC_RECOGNISED_SOFTWARE
   : 'Programme goal is HMRC Recognised. Spreadsheet Tax is not yet on HMRC’s recognised list. Sandbox/pilot development only. Do not market as recognised until granted.';
 
 /**
- * Machine-readable block for /health, /api/integrity, /api/status.
+ * Machine-readable block for /health, /api/status, and code-only integrity map.
  */
 export function hmrcRecognitionPublic() {
   return {

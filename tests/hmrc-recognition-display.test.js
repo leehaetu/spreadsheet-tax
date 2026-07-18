@@ -62,15 +62,18 @@ describe('HMRC recognition display', () => {
     assert.match(HMRC_RECOGNITION_SHORT, /not yet recognised/i);
   });
 
-  it('health and integrity expose hmrcRecognisedSoftware false + goal', async () => {
+  it('health and status expose hmrcRecognisedSoftware false + goal; integrity API is not public', async () => {
     const health = JSON.parse((await request('/health')).body);
     assert.equal(health.hmrcRecognisedSoftware, false);
     assert.ok(health.appVersion);
     assert.match(health.hmrcRecognisedLabel || '', /HMRC Recognised/i);
     assert.equal(health.hmrcRecognisedGoal, 'HMRC Recognised');
 
-    const integrity = JSON.parse((await request('/api/integrity')).body);
-    assert.equal(integrity.hmrcRecognisedSoftware, false);
+    const { buildIntegrityMap } = await import('../src/lib/integrity-map.js');
+    assert.equal(buildIntegrityMap().hmrcRecognisedSoftware, false);
+
+    const integrityHttp = await request('/api/integrity');
+    assert.equal(integrityHttp.status, 404);
 
     const status = JSON.parse((await request('/api/status')).body);
     assert.equal(status.hmrcRecognisedSoftware, false);
