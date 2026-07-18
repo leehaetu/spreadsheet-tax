@@ -242,7 +242,7 @@ const root = path.join(__dirname, '..');
 const publicDir = path.join(root, 'public');
 const templatesDir = path.join(root, 'templates');
 const testSpreadsheetsDir = path.join(root, 'test-spreadsheets');
-const APP_VERSION = '1.23.0';
+const APP_VERSION = '1.23.1';
 
 /**
  * Serve HTML with site-chrome (HMRC recognition banner/footer) injected once.
@@ -1534,13 +1534,24 @@ app.get('/api/auth/me', (req, res) => {
   });
 });
 
-/** HMRC OAuth */
+/** HMRC OAuth — individual and agent are separate journeys */
 app.get('/api/hmrc/connect', (req, res) => {
   const user = requireUser(req, res);
   if (!user) return;
   try {
-    const result = buildAuthorizeUrl({ userId: user.id });
-    res.json({ ok: true, ...result, config: { mock: oauthConfig().mock } });
+    const authorityType = String(
+      req.query.authorityType || req.query.authority || 'individual'
+    );
+    const result = buildAuthorizeUrl({ userId: user.id, authorityType });
+    res.json({
+      ok: true,
+      ...result,
+      config: {
+        mock: oauthConfig().mock,
+        authorityType: result.authorityType,
+        agentClientConfigured: Boolean(process.env.HMRC_AGENT_CLIENT_ID),
+      },
+    });
   } catch (e) {
     res.status(500).json({
       error: e instanceof Error ? e.message : 'Could not start HMRC connect',
@@ -1560,9 +1571,15 @@ app.get('/api/hmrc/callback', async (req, res) => {
       action: 'hmrc_connected',
       entityType: 'hmrc_connection',
       entityId: conn.id,
-      meta: { mode: conn.mode, mock: conn.mock },
+      meta: {
+        mode: conn.mode,
+        mock: conn.mock,
+        authorityType: conn.authorityType,
+      },
     });
-    res.redirect('/connect-hmrc?connected=1');
+    res.redirect(
+      `/connect-hmrc?connected=1&authority=${encodeURIComponent(conn.authorityType || 'individual')}`
+    );
   } catch (e) {
     console.error(e);
     res.redirect(

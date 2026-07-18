@@ -51,6 +51,13 @@ export function evaluateProductionSafety(env = process.env) {
     errors.push('COOKIE_SECURE=1 is required in production (Secure session cookies)');
   }
 
+  // CSRF is auto-enforced when NODE_ENV=production unless explicitly disabled
+  if (env.CSRF_ENFORCE === '0') {
+    errors.push(
+      'CSRF_ENFORCE=0 is not allowed in production — omit the var or set CSRF_ENFORCE=1'
+    );
+  }
+
   if (
     env.HMRC_ALLOW_LIVE_SUBMIT === '1' &&
     env.HMRC_OAUTH_ENV === 'production' &&

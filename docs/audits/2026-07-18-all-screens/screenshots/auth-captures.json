@@ -1,0 +1,152 @@
+[
+  {
+    "step": 36,
+    "route": "/home",
+    "file": "36-home-signed-in.png",
+    "bodyClass": "theme-light app-body app-simple",
+    "h1": "2026-27 tax year",
+    "height": 1162,
+    "title": "Your tax updates — Spreadsheet Tax",
+    "url": "/home"
+  },
+  {
+    "step": 37,
+    "route": "/onboarding",
+    "file": "37-onboarding-signed-in.png",
+    "bodyClass": "theme-light app-body app-simple",
+    "h1": "Set up your updates",
+    "height": 2024,
+    "title": "Get set up — Spreadsheet Tax",
+    "url": "/onboarding"
+  },
+  {
+    "step": 38,
+    "route": "/records",
+    "file": "38-records-signed-in.png",
+    "bodyClass": "theme-light app-body app-simple",
+    "h1": "Records",
+    "height": 1347,
+    "title": "Records — Spreadsheet Tax",
+    "url": "/records"
+  },
+  {
+    "step": 39,
+    "route": "/year-end",
+    "file": "39-year-end-signed-in.png",
+    "bodyClass": "theme-light app-body app-simple",
+    "h1": "Tax return (year end)",
+    "height": 1830,
+    "title": "Tax return / year end — Spreadsheet Tax",
+    "url": "/year-end"
+  },
+  {
+    "step": 40,
+    "route": "/app",
+    "file": "40-app-signed-in.png",
+    "bodyClass": "theme-light app-body app-simple",
+    "h1": "Quarterly update",
+    "height": 1399,
+    "title": "Send your quarterly update — Spreadsheet Tax",
+    "url": "/app"
+  },
+  {
+    "step": 41,
+    "route": "/accountant",
+    "file": "41-accountant-signed-in.png",
+    "bodyClass": "app-body",
+    "h1": "Accountant & bookkeeper workspace (demo)",
+    "height": 1390,
+    "title": "Accountant & bookkeeper workspace — Spreadsheet Tax",
+    "url": "/accountant"
+  },
+  {
+    "step": 42,
+    "route": "/practice",
+    "file": "42-practice-signed-in.png",
+    "bodyClass": "app-body",
+    "h1": "Practice / firm dashboard (demo)",
+    "height": 1962,
+    "title": "Multi-accountant practice dashboard — Spreadsheet Tax",
+    "url": "/practice"
+  },
+  {
+    "step": 43,
+    "route": "/portal",
+    "file": "43-portal-signed-in.png",
+    "bodyClass": "app-body",
+    "h1": "Client portal",
+    "height": 720,
+    "title": "Client portal — Spreadsheet Tax",
+    "url": "/portal"
+  },
+  {
+    "step": 44,
+    "route": "/workspace",
+    "file": "44-workspace-signed-in.png",
+    "bodyClass": "practice-shell",
+    "h1": "Clients",
+    "height": 1103,
+    "title": "Practice workspace — Spreadsheet Tax",
+    "url": "/workspace"
+  },
+  {
+    "step": 45,
+    "route": "/connect-hmrc",
+    "file": "45-connect-hmrc-signed-in.png",
+    "bodyClass": "app-body",
+    "h1": "Connect to HMRC",
+    "height": 1834,
+    "title": "Connect HMRC — Spreadsheet Tax",
+    "url": "/connect-hmrc"
+  },
+  {
+    "step": 46,
+    "route": "/mtd",
+    "file": "46-mtd-signed-in.png",
+    "bodyClass": "app-body",
+    "h1": "MTD workspace (internal)",
+    "height": 1907,
+    "title": "MTD workspace — Spreadsheet Tax",
+    "url": "/mtd"
+  },
+  {
+    "step": 47,
+    "route": "/billing",
+    "file": "47-billing-signed-in.png",
+    "bodyClass": "app-body",
+    "h1": "Plan selection",
+    "height": 977,
+    "title": "Billing — Spreadsheet Tax",
+    "url": "/billing"
+  },
+  {
+    "step": 48,
+    "route": "/account",
+    "file": "48-account-signed-in.png",
+    "bodyClass": "app-body",
+    "h1": "Your account",
+    "height": 2481,
+    "title": "Account — Spreadsheet Tax",
+    "url": "/account"
+  },
+  {
+    "step": 49,
+    "route": "/history",
+    "file": "49-history-signed-in.png",
+    "bodyClass": "app-body",
+    "h1": "Your drafts & submissions",
+    "height": 1154,
+    "title": "History — Spreadsheet Tax",
+    "url": "/history"
+  },
+  {
+    "step": 50,
+    "route": "/admin",
+    "file": "50-admin-signed-in.png",
+    "bodyClass": "app-body",
+    "h1": "Ops metrics",
+    "height": 976,
+    "title": "Admin metrics — Spreadsheet Tax",
+    "url": "/admin"
+  }
+]

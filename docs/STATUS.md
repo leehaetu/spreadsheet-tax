@@ -1,7 +1,8 @@
 # Project status
 
 **Last updated:** 2026-07-18  
-**App version:** **1.23.0**  
+**App version:** **1.23.1**  
+**Screen audit pack:** [docs/audits/2026-07-18-all-screens/](./audits/2026-07-18-all-screens/) — 51 screenshots + 52-page PDF with per-screen fixes  
 **Protocol:** [AGENT-TRUTH-PROTOCOL.md](./AGENT-TRUTH-PROTOCOL.md)  
 **Capacity gate:** [CAPACITY-REQUIREMENTS.md](./CAPACITY-REQUIREMENTS.md) — **NOT MET**  
 **Release gates:** [RELEASE-GATES.md](./RELEASE-GATES.md) — **OPEN**  

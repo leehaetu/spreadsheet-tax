@@ -34,38 +34,85 @@ export function oauthConfig() {
 }
 
 /**
- * @param {{ userId: string, state?: string }} opts
+ * Ensure oauth_states can carry authority_type (individual vs agent).
+ */
+export function ensureOauthStateSchema() {
+  const database = getDb();
+  const cols = database
+    .prepare(`PRAGMA table_info(oauth_states)`)
+    .all()
+    .map((c) => c.name);
+  if (!cols.includes('authority_type')) {
+    database.exec(
+      `ALTER TABLE oauth_states ADD COLUMN authority_type TEXT NOT NULL DEFAULT 'individual'`
+    );
+  }
+}
+
+/**
+ * @param {string} raw
+ * @returns {'individual'|'agent'}
+ */
+export function normalizeAuthorityType(raw) {
+  const t = String(raw || 'individual').toLowerCase().trim();
+  if (t === 'agent' || t === 'organisation' || t === 'agent_services') {
+    return 'agent';
+  }
+  return 'individual';
+}
+
+/**
+ * @param {{ userId: string, state?: string, authorityType?: string }} opts
  */
 export function buildAuthorizeUrl(opts) {
+  ensureOauthStateSchema();
   const cfg = oauthConfig();
+  const authorityType = normalizeAuthorityType(opts.authorityType);
   const state = opts.state || crypto.randomBytes(16).toString('hex');
-  // store state
+  // store state + intended authority (individual taxpayer vs agent)
   getDb()
     .prepare(
-      `INSERT INTO oauth_states (id, user_id, created_at) VALUES (?, ?, ?)`
+      `INSERT INTO oauth_states (id, user_id, created_at, authority_type) VALUES (?, ?, ?, ?)`
     )
-    .run(state, opts.userId, new Date().toISOString());
+    .run(state, opts.userId, new Date().toISOString(), authorityType);
 
   if (cfg.mock) {
     return {
       mock: true,
       state,
+      authorityType,
       url: `/api/hmrc/callback?code=mock-auth-code&state=${encodeURIComponent(state)}`,
     };
   }
 
   const authBase = cfg.mode === 'production' ? LIVE_AUTH : SANDBOX_AUTH;
+  // Agent and individual use separate HMRC Hub apps in production; scopes may differ.
+  const scopes =
+    authorityType === 'agent'
+      ? process.env.HMRC_OAUTH_SCOPES_AGENT ||
+        process.env.HMRC_OAUTH_SCOPES ||
+        DEFAULT_SCOPES
+      : process.env.HMRC_OAUTH_SCOPES || DEFAULT_SCOPES;
+  const clientId =
+    authorityType === 'agent' && process.env.HMRC_AGENT_CLIENT_ID
+      ? process.env.HMRC_AGENT_CLIENT_ID
+      : cfg.clientId;
   const params = new URLSearchParams({
     response_type: 'code',
-    client_id: cfg.clientId,
-    scope: process.env.HMRC_OAUTH_SCOPES || DEFAULT_SCOPES,
+    client_id: clientId,
+    scope: scopes,
     state,
     redirect_uri: cfg.redirectUri,
   });
   return {
     mock: false,
     state,
+    authorityType,
     url: `${authBase}?${params.toString()}`,
+    note:
+      authorityType === 'agent'
+        ? 'Agent OAuth journey — use agent Hub credentials when configured (HMRC_AGENT_CLIENT_ID).'
+        : 'Individual taxpayer OAuth journey.',
   };
 }
 
@@ -177,6 +224,7 @@ export async function pingHmrcHelloApplication() {
  * @param {{ code: string, state: string }} opts
  */
 export async function exchangeCodeForTokens(opts) {
+  ensureOauthStateSchema();
   const cfg = oauthConfig();
   const row = getDb()
     .prepare(`SELECT * FROM oauth_states WHERE id = ?`)
@@ -185,6 +233,7 @@ export async function exchangeCodeForTokens(opts) {
     throw new Error('Invalid or expired OAuth state.');
   }
   getDb().prepare(`DELETE FROM oauth_states WHERE id = ?`).run(opts.state);
+  const authorityType = normalizeAuthorityType(row.authority_type);
 
   if (cfg.mock || opts.code === 'mock-auth-code') {
     const access = `mock-access-${crypto.randomBytes(8).toString('hex')}`;
@@ -192,7 +241,7 @@ export async function exchangeCodeForTokens(opts) {
     return saveConnection({
       userId: row.user_id,
       mode: 'sandbox',
-      authorityType: 'individual',
+      authorityType,
       accessToken: access,
       refreshToken: refresh,
       scopes: DEFAULT_SCOPES,
@@ -201,11 +250,19 @@ export async function exchangeCodeForTokens(opts) {
   }
 
   const tokenUrl = cfg.mode === 'production' ? LIVE_TOKEN : SANDBOX_TOKEN;
+  const clientId =
+    authorityType === 'agent' && process.env.HMRC_AGENT_CLIENT_ID
+      ? process.env.HMRC_AGENT_CLIENT_ID
+      : cfg.clientId;
+  const clientSecret =
+    authorityType === 'agent' && process.env.HMRC_AGENT_CLIENT_SECRET
+      ? process.env.HMRC_AGENT_CLIENT_SECRET
+      : cfg.clientSecret;
   const body = new URLSearchParams({
     grant_type: 'authorization_code',
     code: opts.code,
-    client_id: cfg.clientId,
-    client_secret: cfg.clientSecret,
+    client_id: clientId,
+    client_secret: clientSecret,
     redirect_uri: cfg.redirectUri,
   });
   const res = await fetch(tokenUrl, {
@@ -222,7 +279,7 @@ export async function exchangeCodeForTokens(opts) {
   return saveConnection({
     userId: row.user_id,
     mode: cfg.mode === 'production' ? 'production' : 'sandbox',
-    authorityType: 'individual',
+    authorityType,
     accessToken: json.access_token,
     refreshToken: json.refresh_token || null,
     scopes: json.scope || DEFAULT_SCOPES,
@@ -238,12 +295,14 @@ export function saveConnection(p) {
   const id = newId();
   const now = new Date();
   const expires = new Date(now.getTime() + (p.expiresInSec || 3600) * 1000);
-  // one active connection per user+mode
+  const authorityType = normalizeAuthorityType(p.authorityType);
+  // one active connection per user+mode+authority (individual and agent can coexist)
   database
     .prepare(
-      `DELETE FROM hmrc_connections WHERE user_id = ? AND mode = ? AND revoked_at IS NULL`
+      `DELETE FROM hmrc_connections
+       WHERE user_id = ? AND mode = ? AND authority_type = ? AND revoked_at IS NULL`
     )
-    .run(p.userId, p.mode);
+    .run(p.userId, p.mode, authorityType);
   database
     .prepare(
       `INSERT INTO hmrc_connections (
@@ -256,7 +315,7 @@ export function saveConnection(p) {
       p.userId,
       p.firmId || null,
       p.mode,
-      p.authorityType || 'individual',
+      authorityType,
       encryptSecret(p.accessToken),
       p.refreshToken ? encryptSecret(p.refreshToken) : null,
       p.scopes || DEFAULT_SCOPES,
@@ -266,6 +325,7 @@ export function saveConnection(p) {
   return {
     id,
     mode: p.mode,
+    authorityType,
     expiresAt: expires.toISOString(),
     mock: String(p.accessToken).startsWith('mock-'),
   };
@@ -282,14 +342,29 @@ export function isMockAccessToken(token) {
   return Boolean(token && String(token).startsWith('mock-'));
 }
 
-export function getActiveConnection(userId) {
-  const row = getDb()
-    .prepare(
-      `SELECT * FROM hmrc_connections
-       WHERE user_id = ? AND revoked_at IS NULL
-       ORDER BY created_at DESC LIMIT 1`
-    )
-    .get(userId);
+/**
+ * @param {string} userId
+ * @param {{ authorityType?: string }} [opts]
+ */
+export function getActiveConnection(userId, opts = {}) {
+  const prefer = opts.authorityType
+    ? normalizeAuthorityType(opts.authorityType)
+    : null;
+  const row = prefer
+    ? getDb()
+        .prepare(
+          `SELECT * FROM hmrc_connections
+           WHERE user_id = ? AND authority_type = ? AND revoked_at IS NULL
+           ORDER BY created_at DESC LIMIT 1`
+        )
+        .get(userId, prefer)
+    : getDb()
+        .prepare(
+          `SELECT * FROM hmrc_connections
+           WHERE user_id = ? AND revoked_at IS NULL
+           ORDER BY created_at DESC LIMIT 1`
+        )
+        .get(userId);
   if (!row) return null;
   if (new Date(row.expires_at) < new Date()) {
     return {

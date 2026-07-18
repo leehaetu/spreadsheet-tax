@@ -1,0 +1,352 @@
+[
+  {
+    "step": 1,
+    "route": "/",
+    "file": "01-sales-home-signed-out.png",
+    "bodyClass": "theme-light",
+    "h1": "Send your quarterly tax update from the spreadsheet you already use",
+    "height": 6553,
+    "title": "Spreadsheet Tax — HMRC MTD quarterly updates from your spreadsheet",
+    "url": "/"
+  },
+  {
+    "step": 2,
+    "route": "/self-employed",
+    "file": "02-self-employed-signed-out.png",
+    "bodyClass": "theme-light",
+    "h1": "Keep your spreadsheet. Make quarterly updates simpler.",
+    "height": 1439,
+    "title": "MTD spreadsheet software for self-employed people — Spreadsheet Tax",
+    "url": "/self-employed"
+  },
+  {
+    "step": 3,
+    "route": "/landlords",
+    "file": "03-landlords-signed-out.png",
+    "bodyClass": "theme-light",
+    "h1": "Turn your property spreadsheet into a clear quarterly update.",
+    "height": 1362,
+    "title": "MTD spreadsheet software for landlords — Spreadsheet Tax",
+    "url": "/landlords"
+  },
+  {
+    "step": 4,
+    "route": "/professionals",
+    "file": "04-professionals-signed-out.png",
+    "bodyClass": "app-body",
+    "h1": "Bring spreadsheet clients into one controlled MTD workflow.",
+    "height": 1432,
+    "title": "MTD spreadsheet workflow for bookkeepers and accountants — Spreadsheet Tax",
+    "url": "/professionals"
+  },
+  {
+    "step": 5,
+    "route": "/firms",
+    "file": "05-firms-signed-out.png",
+    "bodyClass": "app-body",
+    "h1": "A practice-wide view of every spreadsheet-based MTD client.",
+    "height": 1432,
+    "title": "MTD operations for accountancy firms — Spreadsheet Tax",
+    "url": "/firms"
+  },
+  {
+    "step": 6,
+    "route": "/license",
+    "file": "06-license-signed-out.png",
+    "bodyClass": "app-body",
+    "h1": "License Spreadsheet Tax to your company",
+    "height": 1191,
+    "title": "Company licensing — Spreadsheet Tax",
+    "url": "/license"
+  },
+  {
+    "step": 7,
+    "route": "/pricing",
+    "file": "07-pricing-signed-out.png",
+    "bodyClass": "",
+    "h1": "Simple paths — prices labelled experimental",
+    "height": 1270,
+    "title": "Pricing — Spreadsheet Tax",
+    "url": "/pricing"
+  },
+  {
+    "step": 8,
+    "route": "/how-it-works",
+    "file": "08-how-it-works-signed-out.png",
+    "bodyClass": "",
+    "h1": "How it works",
+    "height": 1004,
+    "title": "How it works — Spreadsheet Tax",
+    "url": "/how-it-works"
+  },
+  {
+    "step": 9,
+    "route": "/security",
+    "file": "09-security-signed-out.png",
+    "bodyClass": "",
+    "h1": "Security, privacy and HMRC",
+    "height": 1581,
+    "title": "Security & privacy — Spreadsheet Tax",
+    "url": "/security"
+  },
+  {
+    "step": 10,
+    "route": "/integrity",
+    "file": "10-integrity-signed-out.png",
+    "bodyClass": "",
+    "h1": "Software integrity statement",
+    "height": 2035,
+    "title": "Software integrity — Spreadsheet Tax",
+    "url": "/integrity"
+  },
+  {
+    "step": 11,
+    "route": "/privacy",
+    "file": "11-privacy-signed-out.png",
+    "bodyClass": "app-body",
+    "h1": "Privacy policy",
+    "height": 1835,
+    "title": "Privacy policy — Spreadsheet Tax",
+    "url": "/privacy"
+  },
+  {
+    "step": 12,
+    "route": "/terms",
+    "file": "12-terms-signed-out.png",
+    "bodyClass": "app-body",
+    "h1": "Terms and conditions",
+    "height": 1911,
+    "title": "Terms and conditions — Spreadsheet Tax",
+    "url": "/terms"
+  },
+  {
+    "step": 13,
+    "route": "/help",
+    "file": "13-help-signed-out.png",
+    "bodyClass": "",
+    "h1": "Help centre",
+    "height": 1210,
+    "title": "Help — Spreadsheet Tax",
+    "url": "/help"
+  },
+  {
+    "step": 14,
+    "route": "/templates",
+    "file": "14-templates-signed-out.png",
+    "bodyClass": "",
+    "h1": "Free period-summary template",
+    "height": 726,
+    "title": "Spreadsheet templates — Spreadsheet Tax",
+    "url": "/templates/"
+  },
+  {
+    "step": 15,
+    "route": "/signin",
+    "file": "15-signin-signed-out.png",
+    "bodyClass": "theme-light app-body app-simple",
+    "h1": "Sign in to the app",
+    "height": 762,
+    "title": "Sign in — Spreadsheet Tax",
+    "url": "/signin"
+  },
+  {
+    "step": 16,
+    "route": "/register",
+    "file": "16-register-signed-out.png",
+    "bodyClass": "theme-light app-body app-simple",
+    "h1": "Create account",
+    "height": 807,
+    "title": "Create account — Spreadsheet Tax",
+    "url": "/register"
+  },
+  {
+    "step": 17,
+    "route": "/app",
+    "file": "17-app-signed-out.png",
+    "bodyClass": "theme-light app-body app-simple",
+    "h1": "Quarterly update",
+    "height": 1399,
+    "title": "Send your quarterly update — Spreadsheet Tax",
+    "url": "/app"
+  },
+  {
+    "step": 18,
+    "route": "/home",
+    "file": "18-home-signed-out.png",
+    "bodyClass": "theme-light app-body app-simple",
+    "h1": "Your tax year",
+    "height": 1022,
+    "title": "Your tax updates — Spreadsheet Tax",
+    "url": "/home"
+  },
+  {
+    "step": 19,
+    "route": "/onboarding",
+    "file": "19-onboarding-signed-out.png",
+    "bodyClass": "theme-light app-body app-simple",
+    "h1": "Set up your updates",
+    "height": 1501,
+    "title": "Get set up — Spreadsheet Tax",
+    "url": "/onboarding"
+  },
+  {
+    "step": 20,
+    "route": "/records",
+    "file": "20-records-signed-out.png",
+    "bodyClass": "theme-light app-body app-simple",
+    "h1": "Records",
+    "height": 1009,
+    "title": "Records — Spreadsheet Tax",
+    "url": "/records"
+  },
+  {
+    "step": 21,
+    "route": "/year-end",
+    "file": "21-year-end-signed-out.png",
+    "bodyClass": "theme-light app-body app-simple",
+    "h1": "Tax return (year end)",
+    "height": 1512,
+    "title": "Tax return / year end — Spreadsheet Tax",
+    "url": "/year-end"
+  },
+  {
+    "step": 22,
+    "route": "/accountant",
+    "file": "22-accountant-signed-out.png",
+    "bodyClass": "app-body",
+    "h1": "Accountant & bookkeeper workspace (demo)",
+    "height": 1390,
+    "title": "Accountant & bookkeeper workspace — Spreadsheet Tax",
+    "url": "/accountant"
+  },
+  {
+    "step": 23,
+    "route": "/practice",
+    "file": "23-practice-signed-out.png",
+    "bodyClass": "app-body",
+    "h1": "Practice / firm dashboard (demo)",
+    "height": 1962,
+    "title": "Multi-accountant practice dashboard — Spreadsheet Tax",
+    "url": "/practice"
+  },
+  {
+    "step": 24,
+    "route": "/portal",
+    "file": "24-portal-signed-out.png",
+    "bodyClass": "app-body",
+    "h1": "Client portal",
+    "height": 720,
+    "title": "Client portal — Spreadsheet Tax",
+    "url": "/portal"
+  },
+  {
+    "step": 25,
+    "route": "/workspace",
+    "file": "25-workspace-signed-out.png",
+    "bodyClass": "practice-shell",
+    "h1": "Clients",
+    "height": 863,
+    "title": "Practice workspace — Spreadsheet Tax",
+    "url": "/workspace"
+  },
+  {
+    "step": 26,
+    "route": "/connect-hmrc",
+    "file": "26-connect-hmrc-signed-out.png",
+    "bodyClass": "theme-light app-body app-simple",
+    "h1": "Sign in to the app",
+    "height": 762,
+    "title": "Sign in — Spreadsheet Tax",
+    "url": "/signin"
+  },
+  {
+    "step": 27,
+    "route": "/mtd",
+    "file": "27-mtd-signed-out.png",
+    "bodyClass": "app-body",
+    "h1": "MTD workspace (internal)",
+    "height": 1907,
+    "title": "MTD workspace — Spreadsheet Tax",
+    "url": "/mtd"
+  },
+  {
+    "step": 28,
+    "route": "/billing",
+    "file": "28-billing-signed-out.png",
+    "bodyClass": "app-body",
+    "h1": "Plan selection",
+    "height": 977,
+    "title": "Billing — Spreadsheet Tax",
+    "url": "/billing"
+  },
+  {
+    "step": 29,
+    "route": "/account",
+    "file": "29-account-signed-out.png",
+    "bodyClass": "app-body",
+    "h1": "Your account",
+    "height": 720,
+    "title": "Account — Spreadsheet Tax",
+    "url": "/account"
+  },
+  {
+    "step": 30,
+    "route": "/history",
+    "file": "30-history-signed-out.png",
+    "bodyClass": "app-body",
+    "h1": "Your drafts & submissions",
+    "height": 846,
+    "title": "History — Spreadsheet Tax",
+    "url": "/history"
+  },
+  {
+    "step": 31,
+    "route": "/forgot-password",
+    "file": "31-forgot-password-signed-out.png",
+    "bodyClass": "app-body",
+    "h1": "Forgot password",
+    "height": 720,
+    "title": "Forgot password — Spreadsheet Tax",
+    "url": "/forgot-password"
+  },
+  {
+    "step": 32,
+    "route": "/reset-password",
+    "file": "32-reset-password-signed-out.png",
+    "bodyClass": "app-body",
+    "h1": "Choose a new password",
+    "height": 720,
+    "title": "Reset password — Spreadsheet Tax",
+    "url": "/reset-password"
+  },
+  {
+    "step": 33,
+    "route": "/accept-invite",
+    "file": "33-accept-invite-signed-out.png",
+    "bodyClass": "app-body",
+    "h1": "Accept practice invite",
+    "height": 720,
+    "title": "Accept firm invite — Spreadsheet Tax",
+    "url": "/accept-invite"
+  },
+  {
+    "step": 34,
+    "route": "/admin",
+    "file": "34-admin-signed-out.png",
+    "bodyClass": "app-body",
+    "h1": "Ops metrics",
+    "height": 720,
+    "title": "Admin metrics — Spreadsheet Tax",
+    "url": "/admin"
+  },
+  {
+    "step": 35,
+    "route": "/legal",
+    "file": "35-legal-signed-out.png",
+    "bodyClass": "app-body",
+    "h1": "Legal notice",
+    "height": 1405,
+    "title": "Legal notice — Spreadsheet Tax (Lee Hine IP)",
+    "url": "/legal"
+  }
+]

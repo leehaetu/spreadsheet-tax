@@ -29,8 +29,13 @@
     <section class="panel">
       <h2>Status</h2>
       <pre id="status" class="code-block">Loading…</pre>
-      <div class="hero-actions" style="margin-top:1rem">
-        <button type="button" class="btn btn-primary" id="connect-btn">Start connect journey</button>
+      <p class="muted" style="margin-top:0.75rem">
+        Individual and agent OAuth are <strong>separate</strong> journeys. Choose the path that matches who is filing.
+        Agent Hub credentials are optional via <code>HMRC_AGENT_CLIENT_ID</code> / <code>HMRC_AGENT_CLIENT_SECRET</code>.
+      </p>
+      <div class="hero-actions" style="margin-top:1rem;flex-wrap:wrap;gap:0.5rem">
+        <button type="button" class="btn btn-primary" id="connect-individual-btn">Connect as individual</button>
+        <button type="button" class="btn btn-ghost" id="connect-agent-btn">Connect as agent</button>
         <button type="button" class="btn btn-ghost" id="disconnect-btn">Disconnect</button>
       </div>
     </section>
@@ -110,8 +115,10 @@
       );
     }
 
-    document.getElementById('connect-btn').onclick = async () => {
-      const res = await fetch('/api/hmrc/connect');
+    async function startConnect(authorityType) {
+      const res = await fetch(
+        '/api/hmrc/connect?authorityType=' + encodeURIComponent(authorityType)
+      );
       const data = await res.json();
       if (!res.ok) {
         err.hidden = false;
@@ -119,7 +126,11 @@
         return;
       }
       location.href = data.url;
-    };
+    }
+    document.getElementById('connect-individual-btn').onclick = () =>
+      startConnect('individual');
+    document.getElementById('connect-agent-btn').onclick = () =>
+      startConnect('agent');
     document.getElementById('disconnect-btn').onclick = async () => {
       await fetch('/api/hmrc/disconnect', { method: 'POST' });
       refresh();
