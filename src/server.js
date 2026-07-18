@@ -295,6 +295,15 @@ function sendPublicHtml(res, filename) {
       html += `\n${tag}\n`;
     }
   }
+  // SALE-12: CTA click beacon (no tax data) on marketing + public auth
+  if (MARKETING_HTML.has(filename) && !html.includes('/js/analytics.js')) {
+    const tag = '<script type="module" src="/js/analytics.js"></script>';
+    if (/<\/body>/i.test(html)) {
+      html = html.replace(/<\/body>/i, `${tag}\n</body>`);
+    } else {
+      html += `\n${tag}\n`;
+    }
+  }
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Cache-Control', 'no-cache');
   return res.status(200).send(html);

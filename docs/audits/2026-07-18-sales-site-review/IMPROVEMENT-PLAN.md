@@ -1,7 +1,7 @@
 # Sales website — in-depth step-by-step improvement plan
 
 **Date:** 2026-07-18  
-**Status:** **Implemented in app v1.26.0** (code + unit tests). Before visual pack remains the baseline; after re-score optional.  
+**Status:** **COMPLETE for this wave** — code + unit tests + after visual pack + AFTER-REPORT (v1.26.1). Human S7 interviews still external.  
 **Evidence base:** [REPORT.md](./REPORT.md) + 140 PNGs in [screenshots/](./screenshots/)  
 **Captured against (baseline):** local app ~1.25.x (`http://127.0.0.1:3456`)  
 **Related product bar:** [COMPLETION-PLAN.md](../../COMPLETION-PLAN.md) §1.1 / §4 (SALE-01…13)  
@@ -162,10 +162,10 @@ Commit/push after each phase (or A+B together if small) with version notes. Do n
 
 **Acceptance A1**
 
-- [ ] Every marketing + public auth route HTTP 200 includes `sales-chrome.js` in HTML.  
-- [ ] After JS runs, `header[data-sales-nav="v1"]` present on those pages.  
-- [ ] Mobile 390px: hamburger visible; desktop nav not a multi-row wrap disaster.  
-- [ ] Footer links present on pages that previously had only “Home”.
+- [x] Every marketing + public auth route HTTP 200 includes `sales-chrome.js` in HTML.  
+- [x] After JS runs, `header[data-sales-nav="v1"]` present on those pages.  
+- [x] Mobile 390px: hamburger visible; desktop nav not a multi-row wrap disaster.  
+- [x] Footer links present on pages that previously had only “Home”.
 
 #### A2 — Unify CTA vocabulary site-wide
 
@@ -179,9 +179,9 @@ Commit/push after each phase (or A+B together if small) with version notes. Do n
 
 **Acceptance A2**
 
-- [ ] `rg "Create free account" public/` → 0 in primary CTA contexts (or 0 total if feasible).  
-- [ ] Home + pricing + audience pages use **Get started free** for primary.  
-- [ ] Unit test asserts home has ≥1 “Get started free” and 0 “Create free account”.
+- [x] `rg "Create free account" public/` → 0 in primary CTA contexts (or 0 total if feasible).  
+- [x] Home + pricing + audience pages use **Get started free** for primary.  
+- [x] Unit test asserts home has ≥1 “Get started free” and 0 “Create free account”.
 
 #### A3 — Mode pill off auth; light forgot-password
 
@@ -195,9 +195,9 @@ Commit/push after each phase (or A+B together if small) with version notes. Do n
 
 **Acceptance A3**
 
-- [ ] GET `/signin` HTML does not contain `st-mode-pill` or “Preview only”.  
-- [ ] Visual: forgot-password matches light sales surface (recapture later in G).  
-- [ ] Signed-in product `/home` still can show mode pill (regression check).
+- [x] GET `/signin` HTML does not contain `st-mode-pill` or “Preview only”.  
+- [x] Visual: forgot-password matches light sales surface (recapture later in G).  
+- [x] Signed-in product `/home` still can show mode pill (regression check).
 
 #### A4 — Hero lead contrast + eyebrow size
 
@@ -209,15 +209,15 @@ Commit/push after each phase (or A+B together if small) with version notes. Do n
 
 **Acceptance A4**
 
-- [ ] No washed dark-grey-on-dark-blue lead on fold screenshots.  
-- [ ] Eyebrow ≥13px in computed styles / CSS rule.
+- [x] No washed dark-grey-on-dark-blue lead on fold screenshots.  
+- [x] Eyebrow ≥13px in computed styles / CSS rule.
 
 #### A — Phase exit
 
-- [ ] `tests/sales-chrome.test.js` green (fix brittle asserts if needed — assert behaviour/markers, not accidental string literals).  
-- [ ] Full `npm test` green.  
-- [ ] Version bump note (e.g. 1.26.x) for chrome system.  
-- [ ] Commit + push.
+- [x] `tests/sales-chrome.test.js` green (fix brittle asserts if needed — assert behaviour/markers, not accidental string literals).  
+- [x] Full `npm test` green.  
+- [x] Version bump note (e.g. 1.26.x) for chrome system.  
+- [x] Commit + push.
 
 **Files (primary):**  
 `public/js/sales-chrome.js`, `public/js/site-chrome.js`, `public/css/site.css`, `src/server.js`, all marketing/auth HTML, `tests/sales-chrome.test.js`, `package.json`.
@@ -272,10 +272,10 @@ Commit/push after each phase (or A+B together if small) with version notes. Do n
 
 **Acceptance B**
 
-- [ ] Home trust list free of paid-deferred line; pricing contains it.  
-- [ ] Soft proof present; zero fake social proof.  
-- [ ] Audience pages share chrome + primary CTA.  
-- [ ] `npm test` green; commit + push.
+- [x] Home trust list free of paid-deferred line; pricing contains it.  
+- [x] Soft proof present; zero fake social proof.  
+- [x] Audience pages share chrome + primary CTA.  
+- [x] `npm test` green; commit + push.
 
 ---
 
@@ -293,9 +293,9 @@ Commit/push after each phase (or A+B together if small) with version notes. Do n
 
 **Acceptance C**
 
-- [ ] Desktop + mobile fold of 15–17 look light and on-brand.  
-- [ ] No mode pill in DOM after JS on those pages.  
-- [ ] Tests still pass.
+- [x] Desktop + mobile fold of 15–17 look light and on-brand.  
+- [x] No mode pill in DOM after JS on those pages.  
+- [x] Tests still pass.
 
 ---
 
@@ -313,8 +313,8 @@ Commit/push after each phase (or A+B together if small) with version notes. Do n
 
 **Acceptance D**
 
-- [ ] Mobile fold screenshots: header is one compact bar, not multi-row link wrap.  
-- [ ] Primary CTA visible without scrolling past a wall of nav (or drawer closed by default — preferred).
+- [x] Mobile fold screenshots: header is one compact bar, not multi-row link wrap.  
+- [x] Primary CTA visible without scrolling past a wall of nav (or drawer closed by default — preferred).
 
 ---
 
@@ -331,8 +331,8 @@ Commit/push after each phase (or A+B together if small) with version notes. Do n
 
 **Acceptance E**
 
-- [ ] Legal pages use shared chrome.  
-- [ ] Home length not dominated by legal prose.
+- [x] Legal pages use shared chrome.  
+- [x] Home length not dominated by legal prose.
 
 ---
 
@@ -365,9 +365,9 @@ Only if Phase A–E are solid.
 
 **Acceptance G**
 
-- [ ] Before/after evidence exists on disk.  
-- [ ] STATUS matches evidence.  
-- [ ] Remote main has the commits.
+- [x] Before/after evidence exists on disk.  
+- [x] STATUS matches evidence.  
+- [x] Remote main has the commits.
 
 ---
 
@@ -401,36 +401,36 @@ Use as a working checklist during execution.
 
 ### Code / assets
 
-- [ ] `public/js/sales-chrome.js` — header, footer, drawer, theme, CTA unify  
-- [ ] `public/js/site-chrome.js` — product-path-only mode pill  
-- [ ] `public/css/site.css` — sales nav, hero lead, eyebrow, mobile  
-- [ ] `src/server.js` — inject sales-chrome on marketing + auth HTML  
-- [ ] `public/sales.html` (+ route alias `/`)  
-- [ ] `public/self-employed.html`  
-- [ ] `public/landlords.html`  
-- [ ] `public/professionals.html`  
-- [ ] `public/firms.html`  
-- [ ] `public/how-it-works.html`  
-- [ ] `public/pricing.html`  
-- [ ] `public/templates.html`  
-- [ ] `public/security.html`  
-- [ ] `public/help.html`  
-- [ ] `public/license.html`  
-- [ ] `public/legal.html`  
-- [ ] `public/privacy.html`  
-- [ ] `public/terms.html`  
-- [ ] `public/signin.html`  
-- [ ] `public/register.html`  
-- [ ] `public/forgot-password.html`  
-- [ ] `tests/sales-chrome.test.js`  
-- [ ] `package.json` version  
+- [x] `public/js/sales-chrome.js` — header, footer, drawer, theme, CTA unify  
+- [x] `public/js/site-chrome.js` — product-path-only mode pill  
+- [x] `public/css/site.css` — sales nav, hero lead, eyebrow, mobile  
+- [x] `src/server.js` — inject sales-chrome on marketing + auth HTML  
+- [x] `public/sales.html` (+ route alias `/`)  
+- [x] `public/self-employed.html`  
+- [x] `public/landlords.html`  
+- [x] `public/professionals.html`  
+- [x] `public/firms.html`  
+- [x] `public/how-it-works.html`  
+- [x] `public/pricing.html`  
+- [x] `public/templates.html`  
+- [x] `public/security.html`  
+- [x] `public/help.html`  
+- [x] `public/license.html`  
+- [x] `public/legal.html`  
+- [x] `public/privacy.html`  
+- [x] `public/terms.html`  
+- [x] `public/signin.html`  
+- [x] `public/register.html`  
+- [x] `public/forgot-password.html`  
+- [x] `tests/sales-chrome.test.js`  
+- [x] `package.json` version  
 
 ### Docs / evidence
 
-- [ ] This plan executed / status updated  
-- [ ] After recapture pack  
-- [ ] `docs/STATUS.md` evidence-tagged  
-- [ ] Link from audit README  
+- [x] This plan executed / status updated  
+- [x] After recapture pack  
+- [x] `docs/STATUS.md` evidence-tagged  
+- [x] Link from audit README  
 
 ---
 
@@ -565,17 +565,19 @@ Smaller atomic commits are fine if tests stay green.
 
 ---
 
-## 15. After-wave scorecard (Phase G)
+## 15. After-wave scorecard (Phase G) — filled
 
-| Lens | Before | After (code review) | Evidence |
-|------|:------:|:-------------------:|----------|
-| Visual consistency | 3.5 | **~4.5 expected** | One `sales-chrome` nav/footer on all marketing+auth [UNIT_TESTED inject] |
-| Sales psychology | 3.5 | **~4.0 expected** | Soft proof; pricing owns paid-deferred; one CTA [UNIT_TESTED] |
-| Readability desktop | 4.0 | **~4.5 expected** | Hero lead #e8eef7 + eyebrow 13px [CSS ROUTE_ONLY] |
-| Readability mobile | 3.0 | **~4.0 expected** | Hamburger + sticky header CSS [ROUTE_ONLY] |
-| Conversion clarity | 4.0 | **~4.5 expected** | Get started free everywhere; data-cta hooks [UNIT_TESTED] |
+See [AFTER-REPORT.md](./AFTER-REPORT.md).
 
-**Honest gap:** full after PNG recapture pack not re-scored in this commit. Re-run Playwright fold captures when validating deploy.
+| Lens | Before | After | Evidence |
+|------|:------:|:-----:|----------|
+| Visual consistency | 3.5 | **4.5** | after pack 34/34 `salesNav:v1` |
+| Sales psychology | 3.5 | **4.0** | AFTER-REPORT + pricing honesty tests |
+| Readability desktop | 4.0 | **4.5** | lead rgb(232,238,247); eyebrow 13px |
+| Readability mobile | 3.0 | **4.0** | hamburger flex; desktop nav none |
+| Conversion clarity | 4.0 | **4.5** | Get started free; analytics CTA beacon |
+
+**Remaining outside this wave:** human moderated S7 interviews; capacity; HMRC Recognised; pilot gates.
 
 ---
 

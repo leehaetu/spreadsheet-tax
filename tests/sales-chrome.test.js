@@ -127,4 +127,23 @@ describe('sales chrome system', () => {
       assert.match(res.body, /sales-chrome\.js/, p);
     }
   });
+
+  it('injects analytics module for CTA beacons on marketing', async () => {
+    const res = await request('/');
+    assert.equal(res.status, 200);
+    assert.match(res.body, /analytics\.js/);
+  });
+
+  it('site-chrome treats product paths and control-centre as non-sales', () => {
+    const js = fs.readFileSync(
+      path.join(root, 'public/js/site-chrome.js'),
+      'utf8'
+    );
+    assert.ok(js.includes('isProductShellPath()'), 'product path helper');
+    assert.ok(js.includes("control-centre"), 'control-centre is non-sales');
+    assert.ok(
+      /if\s*\(\s*isProductShellPath\s*\(\s*\)\s*\)\s*return\s+false/.test(js),
+      'product paths are never sales surfaces'
+    );
+  });
 });

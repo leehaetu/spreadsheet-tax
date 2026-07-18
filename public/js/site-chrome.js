@@ -9,15 +9,18 @@
     'Not affiliated with HMRC. Not yet on HMRC’s recognised software list.';
 
   function isSalesSurface() {
+    // Product shell paths are never sales (mode pill allowed)
+    if (isProductShellPath()) return false;
     const b = document.body;
     if (b.classList.contains('practice-shell')) return false;
+    if (b.classList.contains('control-centre')) return false;
     // Public auth entry uses app-simple but is still a sales surface (no mode pill)
     if (b.classList.contains('sales-surface')) return true;
     if (b.classList.contains('app-body') && !b.classList.contains('app-simple')) {
       return false;
     }
     // app-simple alone (sign-in/register) is public entry, not product shell
-    if (b.classList.contains('app-simple') && !isProductShellPath()) return true;
+    if (b.classList.contains('app-simple')) return true;
     if (b.classList.contains('app-body')) return false;
     return true;
   }

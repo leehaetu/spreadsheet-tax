@@ -43,11 +43,17 @@
     </div>
 
     <div class="wizard-steps" id="wizard-steps" aria-label="Progress">
-      <div class="wizard-step active" data-step="1"><span class="num">1</span><span class="label-hide-sm">Upload</span></div>
-      <div class="wizard-step" data-step="2"><span class="num">2</span><span class="label-hide-sm">Check</span></div>
-      <div class="wizard-step" data-step="3"><span class="num">3</span><span class="label-hide-sm">Approve</span></div>
-      <div class="wizard-step" data-step="4"><span class="num">4</span><span class="label-hide-sm">Send</span></div>
+      <div class="wizard-step active" data-step="1"><span class="num">1</span><span class="label-hide-sm">Add records</span></div>
+      <div class="wizard-step" data-step="2"><span class="num">2</span><span class="label-hide-sm">Map &amp; check</span></div>
+      <div class="wizard-step" data-step="3"><span class="num">3</span><span class="label-hide-sm">Review figures</span></div>
+      <div class="wizard-step" data-step="4"><span class="num">4</span><span class="label-hide-sm">Declare &amp; submit</span></div>
     </div>
+
+    <section class="panel quarterly-source-panel" id="quarterly-source-panel">
+      <div class="panel-header"><div><p class="eyebrow">Quarterly update</p><h2>Choose an income source</h2><p class="muted">Work through one source at a time. A combined spreadsheet can still contain several sources.</p></div><a href="/onboarding" class="btn btn-ghost btn-sm">Manage sources</a></div>
+      <div id="quarterly-source-list" class="quarterly-source-list" aria-live="polite"><p class="muted">Loading your income sources…</p></div>
+      <p id="quarterly-source-note" class="help-tip" hidden></p>
+    </section>
 
     <section class="panel" id="upload-panel">
       <div class="panel-header">
@@ -59,7 +65,6 @@
       <form id="upload-form">
         <label class="dropzone" id="dropzone" for="file-input">
           <input type="file" id="file-input" name="file" accept=".csv,.xlsx,.xls" />
-          <div class="dropzone-icon">↑</div>
           <strong>Drop your spreadsheet here</strong>
           <p>or tap to choose a file (max 5&nbsp;MB)</p>
           <div class="file-chosen" id="file-chosen">
@@ -68,7 +73,7 @@
         </label>
         <div class="upload-actions">
           <button type="submit" class="btn btn-primary btn-lg" id="import-btn">Check my figures</button>
-          <a class="btn btn-ghost" href="/download/template">Get free template</a>
+          <a class="btn btn-ghost" href="/download/template" data-cta="download-template">Download free template</a>
         </div>
       </form>
       <p id="upload-error" class="error" hidden></p>
@@ -264,6 +269,7 @@
     window.trackCta = trackCta;
   </script>
   <script src="/js/app.js"></script>
+  <script src="/js/quarterly-sources.js"></script>
   <script src="/js/cookie-banner.js"></script>
   <script>
     (function () {

@@ -1,9 +1,9 @@
 # Project status
 
 **Last updated:** 2026-07-18  
-**App version:** **1.26.0**  
+**App version:** **1.26.1**  
 **Screen audit pack:** [docs/audits/2026-07-18-all-screens/](./audits/2026-07-18-all-screens/) — drives UI fixes (not “image work”)  
-**Sales review + plan:** [docs/audits/2026-07-18-sales-site-review/](./audits/2026-07-18-sales-site-review/) · [IMPROVEMENT-PLAN.md](./audits/2026-07-18-sales-site-review/IMPROVEMENT-PLAN.md)  
+**Sales review + plan:** [docs/audits/2026-07-18-sales-site-review/](./audits/2026-07-18-sales-site-review/) · [AFTER-REPORT.md](./audits/2026-07-18-sales-site-review/AFTER-REPORT.md)  
 **Protocol:** [AGENT-TRUTH-PROTOCOL.md](./AGENT-TRUTH-PROTOCOL.md)  
 **Capacity gate:** [CAPACITY-REQUIREMENTS.md](./CAPACITY-REQUIREMENTS.md) — **NOT MET**  
 **Release gates:** [RELEASE-GATES.md](./RELEASE-GATES.md) — **OPEN**  
@@ -11,7 +11,17 @@
 
 ---
 
-## Truth status (2026-07-18) — v1.26 sales chrome conversion wave
+## Truth status (2026-07-18) — v1.26.1 sales wave complete (after pack)
+
+### Shipped in 1.26.1 (close remaining plan items)
+
+- After visual pack: 17 routes × desktop/mobile, all HTTP 200, `salesNav:v1`, zero mode pills on sales/auth [CUSTOMER_WORKFLOW screenshots]
+- [AFTER-REPORT.md](./audits/2026-07-18-sales-site-review/AFTER-REPORT.md) scores vs before pack
+- Durable capture: `npm run capture:sales` → `scripts/capture-sales-site.mjs`
+- Mode pill regression fixed for control-centre `/home` (`isProductShellPath` first) [CUSTOMER_WORKFLOW]
+- SALE-12: `analytics.js` inject on marketing; CTA POST ok [UNIT_TESTED + smoke]
+- SALE-13: real app review image on `/how-it-works` + `public/images/app-review-fold.png` [CUSTOMER_WORKFLOW]
+- Plan acceptance checkboxes closed for this wave; human S7 interviews still external
 
 ### Shipped in 1.26.0 (sales site plan Phases A–G — code)
 
@@ -22,9 +32,8 @@
 - Hero lead contrast + eyebrow ≥13px; mobile sticky compact header + drawer [ROUTE_ONLY CSS]
 - Home soft proof (no fake metrics); paid-deferred honesty on **pricing** only [UNIT_TESTED]
 - Professionals first-time education + return sign-in path [ROUTE_ONLY]
-- `data-cta` attributes for light instrumentation (SALE-12 style) [UNIT_TESTED source]
-- Plan doc: [IMPROVEMENT-PLAN.md](./audits/2026-07-18-sales-site-review/IMPROVEMENT-PLAN.md)
-- **Not** pilot-ready · **not** sales-complete S1–S7 (no moderated S7 interviews; no full after visual pack re-score yet)
+- `data-cta` attributes for light instrumentation [UNIT_TESTED source]
+- **Not** pilot-ready · capacity NOT MET · HMRC not recognised
 
 ```text
 BLOCKERS:
@@ -37,14 +46,15 @@ BLOCKERS:
 - Transactional email: stub unless EMAIL_WEBHOOK_URL
 - CSRF enforced only when CSRF_ENFORCE=1 or NODE_ENV=production
 - Practice admin MFA hard-require only when MFA_REQUIRE_PRACTICE_ADMIN=1
-- Full after visual recapture pack scores not yet written to AFTER-REPORT (code done; optional re-PNG)
+- Human moderated S7 interviews (COMPLETION-PLAN) — agent 10s structure review only
 
 PROVEN:
-- Unit tests: 216 pass including sales-chrome suite [UNIT_TESTED]
+- Unit tests including sales-chrome + analytics inject [UNIT_TESTED]
 - Sales-chrome inject on marketing + auth routes [UNIT_TESTED]
 - Pricing owns “Paid plans not available yet”; home has no “Create free account” [UNIT_TESTED]
-- Sign-in HTML has no mode pill / Preview only [UNIT_TESTED]
-- Product surface freeze + security freeze suites still pass [UNIT_TESTED]
+- Sign-in HTML has no mode pill / Preview only; product /home shows mode pill [CUSTOMER_WORKFLOW]
+- After pack scores: consistency 4.5, psychology 4.0, desktop 4.5, mobile 4.0, conversion 4.5 [CUSTOMER_WORKFLOW]
+- After capture index 34/34 HTTP 200 [CUSTOMER_WORKFLOW]
 - SE + UK + foreign period sandbox HTTP on prior journey ledger [SANDBOX_HTTP]
 - Customer quarterly path exists (import → review → preview) [CUSTOMER_WORKFLOW / UNIT_TESTED]
 
@@ -54,8 +64,7 @@ UNPROVEN:
 - Independent pen-test and tax-domain sign-off
 - Live Stripe checkout + webhook verification
 - Real email delivery in production
-- Human moderated 10-second sales targets (S7)
-- After visual score uplift vs 2026-07-18 before pack (needs re-capture on deployed or local :3456)
+- Human moderated 10-second sales targets with real users (S7)
 
 EXTERNAL:
 - HMRC Production credentials / recognition listing
