@@ -1,7 +1,7 @@
 # Project status
 
 **Last updated:** 2026-07-18  
-**App version:** **1.32.0**
+**App version:** **1.32.1**
 **Screen audit pack:** [docs/audits/2026-07-18-all-screens/](./audits/2026-07-18-all-screens/) — drives UI fixes (not “image work”)  
 **Sales review + plan:** [docs/audits/2026-07-18-sales-site-review/](./audits/2026-07-18-sales-site-review/) · [AFTER-REPORT.md](./audits/2026-07-18-sales-site-review/AFTER-REPORT.md)  
 **Taxpayer overhaul gaps:** [TAXPAYER-OVERHAUL-BACKEND-GAP-REPORT.md](./TAXPAYER-OVERHAUL-BACKEND-GAP-REPORT.md)  
@@ -229,6 +229,12 @@ EXTERNAL:
 
 | Area | Change | Evidence tag |
 |---
+
+## Sales conversion audit pack (v1.32.1 docs)
+
+- Full visual review: [docs/audits/2026-07-18-sales-conversion-review/REPORT.md](./audits/2026-07-18-sales-conversion-review/REPORT.md)
+- Improvement plan: [IMPROVEMENT-PLAN.md](./audits/2026-07-18-sales-conversion-review/IMPROVEMENT-PLAN.md)
+- High-conversion bar **not** met until P0 visual fixes
 
 ## Sales site finished — COMPLETION-PLAN S1–S7 (v1.32.0)
 

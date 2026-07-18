@@ -1,0 +1,1258 @@
+{
+  "base": "https://spreadsheet-tax-production.up.railway.app",
+  "at": "2026-07-18T12:42:39.603Z",
+  "pageCaptures": 34,
+  "findingCount": 3,
+  "p0": 0,
+  "p1": 3,
+  "findings": [
+    {
+      "severity": "P1",
+      "route": "/signin",
+      "viewport": "mobile",
+      "issue": "primary CTA short tap target",
+      "text": "Get started free",
+      "href": "/register",
+      "w": 138.046875,
+      "h": 39.0625
+    },
+    {
+      "severity": "P1",
+      "route": "/register",
+      "viewport": "mobile",
+      "issue": "primary CTA short tap target",
+      "text": "Get started free",
+      "href": "/register",
+      "w": 138.046875,
+      "h": 39.0625
+    },
+    {
+      "severity": "P1",
+      "route": "/forgot-password",
+      "viewport": "mobile",
+      "issue": "primary CTA short tap target",
+      "text": "Get started free",
+      "href": "/register",
+      "w": 138.046875,
+      "h": 39.0625
+    }
+  ],
+  "pages": [
+    {
+      "route": "/",
+      "id": "01-home",
+      "viewport": "desktop",
+      "status": 200,
+      "metrics": {
+        "h1": "Quarterly updates from the spreadsheet you already use",
+        "salesNav": "v1",
+        "scrollH": 4179,
+        "stickyH": 65,
+        "primaryCtAs": [
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 138.046875,
+            "h": 39.0625
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 0,
+            "h": 0
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 171.875,
+            "h": 54.46875
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 421.125,
+            "h": 45.375
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 171.875,
+            "h": 54.46875
+          }
+        ],
+        "trust": [
+          {
+            "text": "Keep your records in your spreadsheet",
+            "color": "rgb(241, 245, 249)"
+          },
+          {
+            "text": "Self-employed, UK property and foreign property",
+            "color": "rgb(241, 245, 249)"
+          },
+          {
+            "text": "Clear review before anything is sent",
+            "color": "rgb(241, 245, 249)"
+          },
+          {
+            "text": "Free to start — no card needed",
+            "color": "rgb(241, 245, 249)"
+          }
+        ]
+      }
+    },
+    {
+      "route": "/self-employed",
+      "id": "02-self-employed",
+      "viewport": "desktop",
+      "status": 200,
+      "metrics": {
+        "h1": "Your trade spreadsheet, ready for each quarter",
+        "salesNav": "v1",
+        "scrollH": 2343,
+        "stickyH": 65,
+        "primaryCtAs": [
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 138.046875,
+            "h": 39.0625
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 0,
+            "h": 0
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 171.875,
+            "h": 54.46875
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 155.03125,
+            "h": 45.375
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 171.875,
+            "h": 54.46875
+          }
+        ],
+        "trust": []
+      }
+    },
+    {
+      "route": "/landlords",
+      "id": "03-landlords",
+      "viewport": "desktop",
+      "status": 200,
+      "metrics": {
+        "h1": "Rental figures reviewed before each quarter",
+        "salesNav": "v1",
+        "scrollH": 2220,
+        "stickyH": 65,
+        "primaryCtAs": [
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 138.046875,
+            "h": 39.0625
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 0,
+            "h": 0
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 171.875,
+            "h": 54.46875
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 155.03125,
+            "h": 45.375
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 171.875,
+            "h": 54.46875
+          }
+        ],
+        "trust": []
+      }
+    },
+    {
+      "route": "/professionals",
+      "id": "04-professionals",
+      "viewport": "desktop",
+      "status": 200,
+      "metrics": {
+        "h1": "Bring spreadsheet clients into one clear workflow",
+        "salesNav": "v1",
+        "scrollH": 2024,
+        "stickyH": 65,
+        "primaryCtAs": [
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 138.046875,
+            "h": 39.0625
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 0,
+            "h": 0
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 171.875,
+            "h": 54.46875
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 155.03125,
+            "h": 45.375
+          }
+        ],
+        "trust": []
+      }
+    },
+    {
+      "route": "/firms",
+      "id": "05-firms",
+      "viewport": "desktop",
+      "status": 200,
+      "metrics": {
+        "h1": "Spreadsheet clients without a full ledger migration",
+        "salesNav": "v1",
+        "scrollH": 2019,
+        "stickyH": 65,
+        "primaryCtAs": [
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 138.046875,
+            "h": 39.0625
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 0,
+            "h": 0
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 171.875,
+            "h": 54.46875
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 155.03125,
+            "h": 45.375
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 155.03125,
+            "h": 45.375
+          }
+        ],
+        "trust": []
+      }
+    },
+    {
+      "route": "/how-it-works",
+      "id": "06-how-it-works",
+      "viewport": "desktop",
+      "status": 200,
+      "metrics": {
+        "h1": "How it works",
+        "salesNav": "v1",
+        "scrollH": 2295,
+        "stickyH": 65,
+        "primaryCtAs": [
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 138.046875,
+            "h": 39.0625
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 0,
+            "h": 0
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 155.03125,
+            "h": 45.375
+          }
+        ],
+        "trust": []
+      }
+    },
+    {
+      "route": "/pricing",
+      "id": "07-pricing",
+      "viewport": "desktop",
+      "status": 200,
+      "metrics": {
+        "h1": "Simple to start",
+        "salesNav": "v1",
+        "scrollH": 1270,
+        "stickyH": 65,
+        "primaryCtAs": [
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 138.046875,
+            "h": 39.0625
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 0,
+            "h": 0
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 164.09375,
+            "h": 45.375
+          }
+        ],
+        "trust": []
+      }
+    },
+    {
+      "route": "/templates",
+      "id": "08-templates",
+      "viewport": "desktop",
+      "status": 200,
+      "metrics": {
+        "h1": "Quarterly spreadsheet template",
+        "salesNav": "v1",
+        "scrollH": 1228,
+        "stickyH": 65,
+        "primaryCtAs": [
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 138.046875,
+            "h": 39.0625
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 0,
+            "h": 0
+          },
+          {
+            "text": "Download free template",
+            "href": "/download/template",
+            "w": 234.546875,
+            "h": 54.46875
+          }
+        ],
+        "trust": []
+      }
+    },
+    {
+      "route": "/security",
+      "id": "09-security",
+      "viewport": "desktop",
+      "status": 200,
+      "metrics": {
+        "h1": "Security & HMRC status",
+        "salesNav": "v1",
+        "scrollH": 1588,
+        "stickyH": 65,
+        "primaryCtAs": [
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 138.046875,
+            "h": 39.0625
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 0,
+            "h": 0
+          }
+        ],
+        "trust": []
+      }
+    },
+    {
+      "route": "/help",
+      "id": "10-help",
+      "viewport": "desktop",
+      "status": 200,
+      "metrics": {
+        "h1": "Help",
+        "salesNav": "v1",
+        "scrollH": 1252,
+        "stickyH": 65,
+        "primaryCtAs": [
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 138.046875,
+            "h": 39.0625
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 0,
+            "h": 0
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 155.03125,
+            "h": 45.375
+          }
+        ],
+        "trust": []
+      }
+    },
+    {
+      "route": "/license",
+      "id": "11-license",
+      "viewport": "desktop",
+      "status": 200,
+      "metrics": {
+        "h1": "How licensing works",
+        "salesNav": "v1",
+        "scrollH": 1161,
+        "stickyH": 65,
+        "primaryCtAs": [
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 138.046875,
+            "h": 39.0625
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 0,
+            "h": 0
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 155.03125,
+            "h": 45.375
+          }
+        ],
+        "trust": []
+      }
+    },
+    {
+      "route": "/legal",
+      "id": "12-legal",
+      "viewport": "desktop",
+      "status": 200,
+      "metrics": {
+        "h1": "Legal",
+        "salesNav": "v1",
+        "scrollH": 971,
+        "stickyH": 65,
+        "primaryCtAs": [
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 138.046875,
+            "h": 39.0625
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 0,
+            "h": 0
+          }
+        ],
+        "trust": []
+      }
+    },
+    {
+      "route": "/privacy",
+      "id": "13-privacy",
+      "viewport": "desktop",
+      "status": 200,
+      "metrics": {
+        "h1": "Privacy notice",
+        "salesNav": "v1",
+        "scrollH": 2114,
+        "stickyH": 65,
+        "primaryCtAs": [
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 138.046875,
+            "h": 39.0625
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 0,
+            "h": 0
+          }
+        ],
+        "trust": []
+      }
+    },
+    {
+      "route": "/terms",
+      "id": "14-terms",
+      "viewport": "desktop",
+      "status": 200,
+      "metrics": {
+        "h1": "Terms of use",
+        "salesNav": "v1",
+        "scrollH": 1821,
+        "stickyH": 65,
+        "primaryCtAs": [
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 138.046875,
+            "h": 39.0625
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 0,
+            "h": 0
+          }
+        ],
+        "trust": []
+      }
+    },
+    {
+      "route": "/signin",
+      "id": "15-signin",
+      "viewport": "desktop",
+      "status": 200,
+      "metrics": {
+        "h1": "Sign in",
+        "salesNav": "v1",
+        "scrollH": 900,
+        "stickyH": 65,
+        "primaryCtAs": [
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 138.046875,
+            "h": 39.0625
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 0,
+            "h": 0
+          },
+          {
+            "text": "Sign in",
+            "href": null,
+            "w": 88.28125,
+            "h": 45.375
+          }
+        ],
+        "trust": []
+      }
+    },
+    {
+      "route": "/register",
+      "id": "16-register",
+      "viewport": "desktop",
+      "status": 200,
+      "metrics": {
+        "h1": "Create account",
+        "salesNav": "v1",
+        "scrollH": 1069,
+        "stickyH": 65,
+        "primaryCtAs": [
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 138.046875,
+            "h": 39.0625
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 0,
+            "h": 0
+          },
+          {
+            "text": "Get started free",
+            "href": null,
+            "w": 155.03125,
+            "h": 45.375
+          }
+        ],
+        "trust": []
+      }
+    },
+    {
+      "route": "/forgot-password",
+      "id": "17-forgot-password",
+      "viewport": "desktop",
+      "status": 200,
+      "metrics": {
+        "h1": "Forgot password",
+        "salesNav": "v1",
+        "scrollH": 900,
+        "stickyH": 65,
+        "primaryCtAs": [
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 138.046875,
+            "h": 39.0625
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 0,
+            "h": 0
+          },
+          {
+            "text": "Send reset link",
+            "href": null,
+            "w": 147.5625,
+            "h": 45.375
+          }
+        ],
+        "trust": []
+      }
+    },
+    {
+      "route": "/",
+      "id": "01-home",
+      "viewport": "mobile",
+      "status": 200,
+      "metrics": {
+        "h1": "Quarterly updates from the spreadsheet you already use",
+        "salesNav": "v1",
+        "scrollH": 5673,
+        "stickyH": 65.78125,
+        "primaryCtAs": [
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 0,
+            "h": 0
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 0,
+            "h": 0
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 358.796875,
+            "h": 54.46875
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 305.609375,
+            "h": 45.375
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 358.796875,
+            "h": 54.46875
+          }
+        ],
+        "trust": [
+          {
+            "text": "Keep your records in your spreadsheet",
+            "color": "rgb(241, 245, 249)"
+          },
+          {
+            "text": "Self-employed, UK property and foreign property",
+            "color": "rgb(241, 245, 249)"
+          },
+          {
+            "text": "Clear review before anything is sent",
+            "color": "rgb(241, 245, 249)"
+          },
+          {
+            "text": "Free to start — no card needed",
+            "color": "rgb(241, 245, 249)"
+          }
+        ]
+      }
+    },
+    {
+      "route": "/self-employed",
+      "id": "02-self-employed",
+      "viewport": "mobile",
+      "status": 200,
+      "metrics": {
+        "h1": "Your trade spreadsheet, ready for each quarter",
+        "salesNav": "v1",
+        "scrollH": 3154,
+        "stickyH": 65.78125,
+        "primaryCtAs": [
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 0,
+            "h": 0
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 0,
+            "h": 0
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 358.796875,
+            "h": 54.46875
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 358.796875,
+            "h": 45.375
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 171.875,
+            "h": 54.46875
+          }
+        ],
+        "trust": []
+      }
+    },
+    {
+      "route": "/landlords",
+      "id": "03-landlords",
+      "viewport": "mobile",
+      "status": 200,
+      "metrics": {
+        "h1": "Rental figures reviewed before each quarter",
+        "salesNav": "v1",
+        "scrollH": 2908,
+        "stickyH": 65.78125,
+        "primaryCtAs": [
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 0,
+            "h": 0
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 0,
+            "h": 0
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 358.796875,
+            "h": 54.46875
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 358.796875,
+            "h": 45.375
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 171.875,
+            "h": 54.46875
+          }
+        ],
+        "trust": []
+      }
+    },
+    {
+      "route": "/professionals",
+      "id": "04-professionals",
+      "viewport": "mobile",
+      "status": 200,
+      "metrics": {
+        "h1": "Bring spreadsheet clients into one clear workflow",
+        "salesNav": "v1",
+        "scrollH": 2820,
+        "stickyH": 65.78125,
+        "primaryCtAs": [
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 0,
+            "h": 0
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 0,
+            "h": 0
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 358.796875,
+            "h": 54.46875
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 358.796875,
+            "h": 45.375
+          }
+        ],
+        "trust": []
+      }
+    },
+    {
+      "route": "/firms",
+      "id": "05-firms",
+      "viewport": "mobile",
+      "status": 200,
+      "metrics": {
+        "h1": "Spreadsheet clients without a full ledger migration",
+        "salesNav": "v1",
+        "scrollH": 2869,
+        "stickyH": 65.78125,
+        "primaryCtAs": [
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 0,
+            "h": 0
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 0,
+            "h": 0
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 358.796875,
+            "h": 54.46875
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 358.796875,
+            "h": 45.375
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 155.03125,
+            "h": 45.375
+          }
+        ],
+        "trust": []
+      }
+    },
+    {
+      "route": "/how-it-works",
+      "id": "06-how-it-works",
+      "viewport": "mobile",
+      "status": 200,
+      "metrics": {
+        "h1": "How it works",
+        "salesNav": "v1",
+        "scrollH": 2790,
+        "stickyH": 65.78125,
+        "primaryCtAs": [
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 0,
+            "h": 0
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 0,
+            "h": 0
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 155.03125,
+            "h": 45.375
+          }
+        ],
+        "trust": []
+      }
+    },
+    {
+      "route": "/pricing",
+      "id": "07-pricing",
+      "viewport": "mobile",
+      "status": 200,
+      "metrics": {
+        "h1": "Simple to start",
+        "salesNav": "v1",
+        "scrollH": 3102,
+        "stickyH": 65.78125,
+        "primaryCtAs": [
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 0,
+            "h": 0
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 0,
+            "h": 0
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 305.609375,
+            "h": 45.375
+          }
+        ],
+        "trust": []
+      }
+    },
+    {
+      "route": "/templates",
+      "id": "08-templates",
+      "viewport": "mobile",
+      "status": 200,
+      "metrics": {
+        "h1": "Quarterly spreadsheet template",
+        "salesNav": "v1",
+        "scrollH": 1615,
+        "stickyH": 65.78125,
+        "primaryCtAs": [
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 0,
+            "h": 0
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 0,
+            "h": 0
+          },
+          {
+            "text": "Download free template",
+            "href": "/download/template",
+            "w": 308.796875,
+            "h": 54.46875
+          }
+        ],
+        "trust": []
+      }
+    },
+    {
+      "route": "/security",
+      "id": "09-security",
+      "viewport": "mobile",
+      "status": 200,
+      "metrics": {
+        "h1": "Security & HMRC status",
+        "salesNav": "v1",
+        "scrollH": 2028,
+        "stickyH": 65.78125,
+        "primaryCtAs": [
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 0,
+            "h": 0
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 0,
+            "h": 0
+          }
+        ],
+        "trust": []
+      }
+    },
+    {
+      "route": "/help",
+      "id": "10-help",
+      "viewport": "mobile",
+      "status": 200,
+      "metrics": {
+        "h1": "Help",
+        "salesNav": "v1",
+        "scrollH": 2241,
+        "stickyH": 65.78125,
+        "primaryCtAs": [
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 0,
+            "h": 0
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 0,
+            "h": 0
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 308.796875,
+            "h": 45.375
+          }
+        ],
+        "trust": []
+      }
+    },
+    {
+      "route": "/license",
+      "id": "11-license",
+      "viewport": "mobile",
+      "status": 200,
+      "metrics": {
+        "h1": "How licensing works",
+        "salesNav": "v1",
+        "scrollH": 1474,
+        "stickyH": 65.78125,
+        "primaryCtAs": [
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 0,
+            "h": 0
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 0,
+            "h": 0
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 155.03125,
+            "h": 45.375
+          }
+        ],
+        "trust": []
+      }
+    },
+    {
+      "route": "/legal",
+      "id": "12-legal",
+      "viewport": "mobile",
+      "status": 200,
+      "metrics": {
+        "h1": "Legal",
+        "salesNav": "v1",
+        "scrollH": 1399,
+        "stickyH": 65.78125,
+        "primaryCtAs": [
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 0,
+            "h": 0
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 0,
+            "h": 0
+          }
+        ],
+        "trust": []
+      }
+    },
+    {
+      "route": "/privacy",
+      "id": "13-privacy",
+      "viewport": "mobile",
+      "status": 200,
+      "metrics": {
+        "h1": "Privacy notice",
+        "salesNav": "v1",
+        "scrollH": 2675,
+        "stickyH": 65.78125,
+        "primaryCtAs": [
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 0,
+            "h": 0
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 0,
+            "h": 0
+          }
+        ],
+        "trust": []
+      }
+    },
+    {
+      "route": "/terms",
+      "id": "14-terms",
+      "viewport": "mobile",
+      "status": 200,
+      "metrics": {
+        "h1": "Terms of use",
+        "salesNav": "v1",
+        "scrollH": 2332,
+        "stickyH": 65.78125,
+        "primaryCtAs": [
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 0,
+            "h": 0
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 0,
+            "h": 0
+          }
+        ],
+        "trust": []
+      }
+    },
+    {
+      "route": "/signin",
+      "id": "15-signin",
+      "viewport": "mobile",
+      "status": 200,
+      "metrics": {
+        "h1": "Sign in",
+        "salesNav": "v1",
+        "scrollH": 984,
+        "stickyH": 207.53125,
+        "primaryCtAs": [
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 138.046875,
+            "h": 39.0625
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 0,
+            "h": 0
+          },
+          {
+            "text": "Sign in",
+            "href": null,
+            "w": 88.28125,
+            "h": 45.375
+          }
+        ],
+        "trust": []
+      }
+    },
+    {
+      "route": "/register",
+      "id": "16-register",
+      "viewport": "mobile",
+      "status": 200,
+      "metrics": {
+        "h1": "Create account",
+        "salesNav": "v1",
+        "scrollH": 1325,
+        "stickyH": 207.53125,
+        "primaryCtAs": [
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 138.046875,
+            "h": 39.0625
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 0,
+            "h": 0
+          },
+          {
+            "text": "Get started free",
+            "href": null,
+            "w": 155.03125,
+            "h": 45.375
+          }
+        ],
+        "trust": []
+      }
+    },
+    {
+      "route": "/forgot-password",
+      "id": "17-forgot-password",
+      "viewport": "mobile",
+      "status": 200,
+      "metrics": {
+        "h1": "Forgot password",
+        "salesNav": "v1",
+        "scrollH": 951,
+        "stickyH": 207.53125,
+        "primaryCtAs": [
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 138.046875,
+            "h": 39.0625
+          },
+          {
+            "text": "Get started free",
+            "href": "/register",
+            "w": 0,
+            "h": 0
+          },
+          {
+            "text": "Send reset link",
+            "href": null,
+            "w": 147.5625,
+            "h": 45.375
+          }
+        ],
+        "trust": []
+      }
+    }
+  ]
+}
