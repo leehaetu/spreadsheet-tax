@@ -74,10 +74,34 @@ function readiness(source) {
   };
 }
 
-function renderSources(sources) {
+function renderSources(sources, { connected = false } = {}) {
   const list = document.getElementById('source-list');
   const empty = document.getElementById('source-empty');
   const count = document.getElementById('source-count');
+  const refresh = document.getElementById('sources-refresh-link');
+
+  if (!connected) {
+    if (count) count.textContent = 'Connect HMRC to load sources';
+    if (refresh) {
+      refresh.href = '/connect-hmrc';
+      refresh.textContent = 'Connect HMRC';
+    }
+    if (list) list.innerHTML = '';
+    if (empty) {
+      empty.hidden = false;
+      empty.innerHTML =
+        'Connect HMRC first, then load the businesses HMRC already holds for you. ' +
+        '<a href="/connect-hmrc">Connect HMRC</a>. ' +
+        'Missing a business later? <a href="/guide#hmrc-businesses">Add it with HMRC</a>.';
+    }
+    return;
+  }
+
+  if (refresh) {
+    refresh.href = '/onboarding';
+    refresh.textContent = 'Refresh from HMRC';
+  }
+
   if (count) {
     count.textContent = `${sources.length} ${
       sources.length === 1 ? 'source' : 'sources'
@@ -85,7 +109,13 @@ function renderSources(sources) {
   }
   if (!sources.length) {
     if (list) list.innerHTML = '';
-    if (empty) empty.hidden = false;
+    if (empty) {
+      empty.hidden = false;
+      empty.innerHTML =
+        'No HMRC income sources have been loaded yet. ' +
+        '<a href="/onboarding">Load your sources from HMRC</a>. ' +
+        'Missing a business? <a href="/guide#hmrc-businesses">Add it with HMRC</a>.';
+    }
     return;
   }
   if (empty) empty.hidden = true;
@@ -155,7 +185,7 @@ async function load() {
     if (titleEl) titleEl.textContent = 'Connect HMRC to continue';
     if (periodEl) {
       periodEl.textContent =
-        'Authorise Spreadsheet Tax, then load your income sources from HMRC.';
+        'Authorise Spreadsheet Tax for your individual tax account, then load income sources from HMRC.';
     }
     if (lead) {
       lead.textContent =
@@ -174,7 +204,7 @@ async function load() {
     if (titleEl) titleEl.textContent = 'Load your income sources';
     if (periodEl) {
       periodEl.textContent =
-        'Pull the businesses HMRC already holds for you, then start a quarterly update.';
+        'Pull self-employment, UK property, and foreign property businesses HMRC already holds for you.';
     }
     if (lead) {
       lead.textContent =
@@ -221,7 +251,8 @@ async function load() {
     }
   }
 
-  renderSources(sources);
+  // Never show local/preview sources as actionable while HMRC is disconnected.
+  renderSources(connected ? sources : [], { connected });
 
   if (typeof window.stRefreshConnection === 'function') {
     await window.stRefreshConnection();

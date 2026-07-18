@@ -155,4 +155,27 @@ test.describe('Product finish checklist', () => {
     await page.goto('/records');
     await expect(page.getByRole('heading', { name: 'Sources', exact: true })).toBeVisible();
   });
+
+  test('disconnected home and connect page are individual-only', async ({ page }) => {
+    await page.route('**/api/hmrc/status', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          connection: { connected: false, mock: false, label: 'Not connected' },
+          oauthConnected: false,
+        }),
+      });
+    });
+    await signIn(page, '/home');
+    await expect(page.locator('#next-task-title')).toContainText(/Connect HMRC/i);
+    await expect(page.locator('#next-task-cta')).toHaveAttribute('href', '/connect-hmrc');
+    await expect(page.locator('#connection-status')).toHaveText(/Not connected/i);
+    await expect(page.locator('#source-list .cc-source-row')).toHaveCount(0);
+    await page.goto('/connect-hmrc');
+    await expect(page.getByRole('button', { name: 'Connect HMRC' })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Connect as agent/i })).toHaveCount(0);
+    await expect(page.locator('body')).not.toContainText(/Connect as agent/i);
+    await expect(page.locator('#disconnect-btn')).toBeHidden();
+  });
 });

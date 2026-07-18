@@ -43,13 +43,13 @@
         <section class="cc-next-task" aria-labelledby="next-task-title">
           <div class="cc-task-copy">
             <span class="cc-task-kicker">Your next task</span>
-            <h2 id="next-task-title">Prepare your quarterly update</h2>
-            <p id="next-task-period">Quarterly update for your active income sources</p>
-            <p class="cc-deadline" id="deadline-lead">Loading your deadline…</p>
+            <h2 id="next-task-title">Connect HMRC to continue</h2>
+            <p id="next-task-period">Authorise Spreadsheet Tax, then load your income sources from HMRC.</p>
+            <p class="cc-deadline" id="deadline-lead">Your confirmed obligation and deadline appear after HMRC is connected.</p>
           </div>
           <div class="cc-task-actions">
-            <a class="btn btn-primary btn-lg" id="next-task-cta" href="/app?flow=quarterly">Continue quarterly update <span aria-hidden="true">→</span></a>
-            <a class="btn btn-ghost" href="/onboarding">Set up income sources</a>
+            <a class="btn btn-primary btn-lg" id="next-task-cta" href="/connect-hmrc">Connect HMRC <span aria-hidden="true">→</span></a>
+            <a class="btn btn-ghost" href="/onboarding">Set up your account</a>
           </div>
         </section>
 
@@ -57,15 +57,15 @@
           <div class="cc-section-title">
             <div>
               <h2 id="sources-title">Your income sources</h2>
-              <p id="source-count">Loading sources…</p>
+              <p id="source-count">Connect HMRC to load sources</p>
             </div>
-            <a href="/onboarding">Refresh from HMRC</a>
+            <a id="sources-refresh-link" href="/connect-hmrc">Connect HMRC</a>
           </div>
           <div id="source-list" class="cc-source-list"></div>
-          <p id="source-empty" class="cc-empty" hidden>
-            No HMRC income sources have been loaded yet.
-            <a href="/onboarding">Connect HMRC and load your sources</a>.
-            Missing a business? <a href="/guide#hmrc-businesses">Add it with HMRC</a>.
+          <p id="source-empty" class="cc-empty">
+            Connect HMRC first, then load the businesses HMRC already holds for you.
+            <a href="/connect-hmrc">Connect HMRC</a>.
+            Missing a business later? <a href="/guide#hmrc-businesses">Add it with HMRC</a>.
           </p>
         </section>
       </div>

@@ -75,13 +75,12 @@
 
   window.stConnectionLabel = function stConnectionLabel(data) {
     if (!data) return 'Checking…';
-    const conn = data.connection || {};
-    const connected = Boolean(
-      data.oauthConnected || data.hmrcConnected || (conn.connected && !conn.mock)
-    );
-    const mock = Boolean(data.oauthMock || conn.mock || data.oauth?.mock);
-    if (connected && !mock) return 'Connected';
-    return 'Not connected';
+    // Only a real, non-mock, non-expired stored HMRC token counts as Connected.
+    // Never promote mock OAuth, app-status flags, or missing connection objects.
+    const conn = data.connection;
+    if (!conn || typeof conn !== 'object') return 'Not connected';
+    const really = Boolean(conn.connected && !conn.mock && !conn.expired);
+    return really ? 'Connected' : 'Not connected';
   };
 
   window.stApplyConnectionStatus = function stApplyConnectionStatus(data) {
@@ -118,23 +117,17 @@
 
   async function refreshConnection() {
     try {
-      const res = await fetch('/api/status');
-      const data = await res.json().catch(() => ({}));
-      try {
-        const me = await fetch('/api/hmrc/status');
-        if (me.ok) {
-          const conn = await me.json();
-          Object.assign(data, conn);
-          data.oauthConnected = Boolean(conn?.connection?.connected);
-          data.oauthMock = Boolean(conn?.connection?.mock || conn?.oauth?.mock);
-        }
-      } catch {
-        /* optional */
+      // Prefer user HMRC status; /api/status alone must never mark Connected.
+      const me = await fetch('/api/hmrc/status');
+      if (me.ok) {
+        const data = await me.json().catch(() => ({}));
+        window.stApplyConnectionStatus(data);
+        return data;
       }
-      window.stApplyConnectionStatus(data);
-      return data;
+      window.stApplyConnectionStatus({ connection: null });
+      return null;
     } catch {
-      window.stApplyConnectionStatus({ previewOnly: true });
+      window.stApplyConnectionStatus({ connection: null });
       return null;
     }
   }

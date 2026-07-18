@@ -31,13 +31,12 @@
       <p id="status-human" class="muted">Checking…</p>
       <pre id="status" class="code-block" hidden></pre>
       <p class="muted">
-        Choose <strong>individual</strong> if you file for yourself.
-        Choose <strong>agent</strong> only if you are an authorised agent with the correct HMRC credentials.
+        This account is for you as an individual taxpayer (self-employment, and UK or foreign property if HMRC holds them).
+        You authorise Spreadsheet Tax with your own Government Gateway sign-in — not as an agent.
       </p>
       <div class="hero-actions" style="margin-top:1rem;flex-wrap:wrap;gap:0.5rem">
-        <button type="button" class="btn btn-primary" id="connect-individual-btn">Connect as individual</button>
-        <button type="button" class="btn btn-ghost" id="connect-agent-btn">Connect as agent</button>
-        <button type="button" class="btn btn-ghost" id="disconnect-btn">Disconnect</button>
+        <button type="button" class="btn btn-primary" id="connect-individual-btn">Connect HMRC</button>
+        <button type="button" class="btn btn-ghost" id="disconnect-btn" hidden>Disconnect</button>
       </div>
       <p class="muted" style="margin-top:1rem">
         After you connect, <a href="/onboarding">load your income sources from HMRC</a>, then open
@@ -50,7 +49,8 @@
       <ol>
         <li>Connect HMRC with your Government Gateway credentials.</li>
         <li>Enter your National Insurance number in <a href="/onboarding">set up</a> if asked.</li>
-        <li>Load the businesses HMRC already holds for you — Spreadsheet Tax does not create them.</li>
+        <li>Load the businesses HMRC already holds for you — self-employment, UK property, and foreign property if they exist. Spreadsheet Tax does not create them.</li>
+        <li>If a business is missing, add it in your HMRC account, then refresh the list here.</li>
         <li>Prepare each quarterly update one income source at a time.</li>
       </ol>
       <p class="muted"><a href="/guide#hmrc-businesses">Help: if a business is missing</a></p>
@@ -95,6 +95,11 @@
       err.textContent = params.get('error');
     }
 
+    function isReallyConnected(connection) {
+      const c = connection || {};
+      return Boolean(c.connected && !c.mock && !c.expired);
+    }
+
     async function refresh() {
       const me = await fetch('/api/auth/me').then((r) => r.json());
       if (!me.user) {
@@ -104,12 +109,30 @@
       const st = await fetch('/api/hmrc/status').then((r) => r.json());
       const c = st.connection || {};
       const human = document.getElementById('status-human');
-      if (c.connected && !c.mock && !c.expired) {
-        human.textContent = 'Connected. You can load your businesses and prepare updates.';
+      const connectBtn = document.getElementById('connect-individual-btn');
+      const disconnectBtn = document.getElementById('disconnect-btn');
+      const really = isReallyConnected(c);
+      if (really) {
+        human.textContent =
+          'Connected. Next: load your income sources from HMRC, then prepare quarterly updates.';
+        if (connectBtn) connectBtn.hidden = true;
+        if (disconnectBtn) disconnectBtn.hidden = false;
       } else if (c.expired) {
-        human.textContent = 'Your HMRC authorisation has expired. Connect again to continue.';
+        human.textContent =
+          'Your HMRC authorisation has expired. Connect again with your Government Gateway sign-in.';
+        if (connectBtn) {
+          connectBtn.hidden = false;
+          connectBtn.textContent = 'Reconnect HMRC';
+        }
+        if (disconnectBtn) disconnectBtn.hidden = false;
       } else {
-        human.textContent = 'Not connected. Connect as individual to authorise Spreadsheet Tax with HMRC.';
+        human.textContent =
+          'Not connected. Connect HMRC to authorise Spreadsheet Tax for your individual tax account.';
+        if (connectBtn) {
+          connectBtn.hidden = false;
+          connectBtn.textContent = 'Connect HMRC';
+        }
+        if (disconnectBtn) disconnectBtn.hidden = true;
       }
       if (typeof window.stRefreshConnection === 'function') window.stRefreshConnection();
       // Operator tools only when explicitly flagged on status for signed-in operators
@@ -119,9 +142,10 @@
       }
     }
 
-    async function startConnect(authorityType) {
+    async function startConnect() {
+      // Taxpayer product path is individual-only. Agent OAuth remains available to practice surfaces/API tests.
       const res = await fetch(
-        `/api/hmrc/connect?authorityType=${encodeURIComponent(authorityType)}&format=json`,
+        '/api/hmrc/connect?authorityType=individual&format=json',
         { headers: { Accept: 'application/json' } }
       );
       const data = await res.json().catch(() => ({}));
@@ -135,10 +159,7 @@
         err.textContent = data.error || 'Could not start HMRC connection.';
       }
     }
-    document.getElementById('connect-individual-btn').onclick = () =>
-      startConnect('individual');
-    document.getElementById('connect-agent-btn').onclick = () =>
-      startConnect('agent');
+    document.getElementById('connect-individual-btn').onclick = () => startConnect();
     document.getElementById('disconnect-btn').onclick = async () => {
       await fetch('/api/hmrc/disconnect', { method: 'POST' });
       location.reload();

@@ -46,6 +46,9 @@ Same shell on every authenticated page.
 - [x] Hard gate: quarterly cannot start without HMRC connected  
 - [x] No create/add/remove HMRC sources in customer UI  
 - [x] Missing business → `/guide` + HMRC guidance  
+- [x] Taxpayer `/connect-hmrc` is **individual-only** (no “Connect as agent” on customer path)  
+- [x] Home disconnected: primary CTA Connect HMRC; no actionable local sources until connected  
+- [x] Sidebar “Connected” only when real non-mock, non-expired HMRC token is stored  
 
 ### P3 — Quarterly guided flow
 - [x] Source → upload → map/check → review/send as exclusive panels  
@@ -130,4 +133,6 @@ Same shell on every authenticated page.
 
 **Improvements closed in follow-up pass:** history table + recovery honesty; home next-task by connection state; quarterly/year-end tax-year chrome; declaration/adjustments copy; connect-HMRC status without mock theatre.
 
-**Honest residual (outside this plan’s bar):** full board pixel-atlas match; capacity 200×800k; pilot/production-ready; HMRC Recognised listing; real-sandbox owner walkthrough with live credentials.
+**Improvements closed in owner-complaint pass (2026-07-18):** individual-only Connect HMRC; disconnect only when connected; home defaults + source list honesty while disconnected; shell connection label trusts only real HMRC tokens (no oauthConnected shortcut). Product-finish unit 19/19; product-finish e2e 9/9. Full suite unit 282/282.
+
+**Honest residual (outside this plan’s bar / not closed by UI polish):** full board pixel-atlas match (boards still show create-business frames superseded by HMRC-mirror); capacity 200×800k NOT MET; release gates OPEN; pilot/production-ready not claimed; HMRC Recognised listing not claimed; real-sandbox owner walkthrough with live credentials optional/open.

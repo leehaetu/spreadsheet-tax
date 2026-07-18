@@ -189,5 +189,41 @@ describe('product finish — history & home honesty', () => {
     assert.match(js, /Connect HMRC to continue/);
     assert.match(js, /Load your income sources/);
     assert.match(js, /loadConnection/);
+    assert.match(js, /connected \? sources : \[\]/);
+  });
+
+  it('home defaults to Connect HMRC before JS upgrades the task', () => {
+    const html = fs.readFileSync(path.join(publicDir, 'home.html'), 'utf8');
+    assert.match(html, /Connect HMRC to continue/);
+    assert.match(html, /href="\/connect-hmrc"/);
+    assert.doesNotMatch(
+      html,
+      /id="next-task-cta"[^>]*href="\/app\?flow=quarterly"/
+    );
+  });
+
+  it('taxpayer connect-hmrc is individual-only (no agent choice)', () => {
+    const html = fs.readFileSync(
+      path.join(publicDir, 'connect-hmrc.html'),
+      'utf8'
+    );
+    assert.match(html, /Connect HMRC/);
+    assert.match(html, /individual taxpayer/i);
+    assert.doesNotMatch(html, /Connect as agent/i);
+    assert.doesNotMatch(html, /connect-agent-btn/);
+    assert.doesNotMatch(html, /Choose <strong>agent<\/strong>/i);
+    assert.match(html, /authorityType=individual/);
+  });
+
+  it('connection label only trusts real non-mock tokens', () => {
+    const js = fs.readFileSync(
+      path.join(publicDir, 'js/product-shell.js'),
+      'utf8'
+    );
+    assert.match(js, /conn\.connected && !conn\.mock && !conn\.expired/);
+    assert.doesNotMatch(
+      js,
+      /data\.oauthConnected \|\| data\.hmrcConnected/
+    );
   });
 });

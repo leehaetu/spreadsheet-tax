@@ -38,10 +38,20 @@ function formatDateShort(value) {
 }
 
 function connectionLabel(connection, status) {
+  // Prefer the HMRC status payload shape: { connection: { connected, mock, expired } }
+  const payload = {
+    ...(status && typeof status === 'object' ? status : {}),
+    connection:
+      connection?.connection ||
+      status?.connection ||
+      (connection && typeof connection === 'object' && 'connected' in connection
+        ? connection
+        : null),
+  };
   if (typeof window.stConnectionLabel === 'function') {
-    return window.stConnectionLabel({ ...status, ...connection });
+    return window.stConnectionLabel(payload);
   }
-  const conn = connection?.connection || {};
+  const conn = payload.connection || {};
   if (conn.connected && !conn.mock && !conn.expired) return 'Connected';
   return 'Not connected';
 }
@@ -188,7 +198,8 @@ async function load() {
   const modeEl = document.getElementById('history-mode');
   if (modeEl) modeEl.textContent = label;
   if (typeof window.stApplyConnectionStatus === 'function') {
-    window.stApplyConnectionStatus({ ...status, ...connection });
+    // HMRC connection object only — do not let /api/status flags imply Connected.
+    window.stApplyConnectionStatus(connection);
   }
 
   const failedReceipts = await Promise.all(
