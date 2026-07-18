@@ -6,86 +6,70 @@
   <title>Connect HMRC — Spreadsheet Tax</title>
   <link rel="stylesheet" href="/css/site.css" />
 </head>
-<body class="app-body">
+<body class="theme-light app-body app-simple">
   <header class="site-header">
     <div class="wrap header-inner">
-      <a class="logo" href="/"><span class="logo-mark">ST</span> Spreadsheet Tax</a>
+      <a class="logo" href="/home"><span class="logo-mark">ST</span> Spreadsheet Tax</a>
       <nav>
-        <a href="/account">Account</a>
-        <a href="/app">App</a>
-        <a href="/app?flow=quarterly">Quarterly update</a>
+        <a href="/home">Home</a>
+        <a href="/app?flow=quarterly">Quarterly</a>
+        <a href="/connect-hmrc" class="active">HMRC</a>
+        <a href="/account">Settings</a>
       </nav>
     </div>
   </header>
   <main class="wrap app-main" style="max-width:640px">
-    <h1>Connect to HMRC</h1>
-    <p class="muted">
-      <strong>Not HMRC-recognised software</strong> — sandbox / pilot OAuth only until recognition is granted.
-      Real OAuth uses HMRC Developer Hub client ID/secret. Without those credentials the app uses a
-      <strong>local mock connect</strong> so the UI journey can be tested — mock tokens are <strong>not</strong> HMRC access tokens and cannot file.
+    <h1>Connect HMRC</h1>
+    <p class="lead">
+      Link your Government Gateway / HMRC user so quarterly updates can be sent when live submit is enabled.
+      <strong>Not HMRC-recognised software.</strong>
     </p>
     <p id="flash" class="success-box" hidden></p>
     <p id="err" class="error" hidden></p>
+
     <section class="panel">
-      <h2>Status</h2>
-      <pre id="status" class="code-block">Loading…</pre>
-      <p class="muted" style="margin-top:0.75rem">
-        Individual and agent OAuth are <strong>separate</strong> journeys. Choose the path that matches who is filing.
-        Agent Hub credentials are optional via <code>HMRC_AGENT_CLIENT_ID</code> / <code>HMRC_AGENT_CLIENT_SECRET</code>.
+      <h2>Your connection</h2>
+      <p id="status-human" class="muted">Checking…</p>
+      <pre id="status" class="code-block" hidden></pre>
+      <p class="muted">
+        Choose <strong>individual</strong> if you file for yourself.
+        Choose <strong>agent</strong> only if you are an agent and have agent Hub credentials configured.
       </p>
       <div class="hero-actions" style="margin-top:1rem;flex-wrap:wrap;gap:0.5rem">
         <button type="button" class="btn btn-primary" id="connect-individual-btn">Connect as individual</button>
         <button type="button" class="btn btn-ghost" id="connect-agent-btn">Connect as agent</button>
         <button type="button" class="btn btn-ghost" id="disconnect-btn">Disconnect</button>
       </div>
+      <p class="muted" style="margin-top:1rem">
+        After connect, continue to <a href="/app?flow=quarterly">Quarterly update</a>.
+        Mock connect (no Hub credentials) cannot file with HMRC.
+      </p>
     </section>
-    <p class="muted">
-      External period submit also requires <code>HMRC_ALLOW_LIVE_SUBMIT=1</code> and a non-mock user token.
-      Fraud-prevention headers are prepared on outbound requests.
-      See <a href="/integrity">software integrity</a>.
-    </p>
-    <section class="panel">
-      <h2>Sandbox connectivity</h2>
-      <p class="muted">Checks Hub credentials via Hello World (no tax data).</p>
+
+    <details class="panel" id="operator-tools">
+      <summary style="cursor:pointer;font-weight:600">Operator / sandbox tools (advanced)</summary>
+      <p class="muted">Not part of the normal customer journey. Requires live submit flags for external HMRC HTTP.</p>
       <div class="hero-actions" style="margin-top:0.5rem;flex-wrap:wrap;gap:0.5rem">
-        <button type="button" class="btn btn-ghost" id="sandbox-check-btn">Run sandbox check</button>
-        <button type="button" class="btn btn-ghost" id="create-test-user-btn">Create test user</button>
-        <button type="button" class="btn btn-ghost" id="fraud-validate-btn">Validate fraud headers</button>
-        <button type="button" class="btn btn-ghost" id="show-test-user-btn">Show stored test user</button>
-        <button type="button" class="btn btn-ghost" id="list-businesses-btn">List businesses</button>
+        <button type="button" class="btn btn-ghost btn-sm" id="sandbox-check-btn">Sandbox check</button>
+        <button type="button" class="btn btn-ghost btn-sm" id="create-test-user-btn">Create test user</button>
+        <button type="button" class="btn btn-ghost btn-sm" id="fraud-validate-btn">Validate fraud headers</button>
+        <button type="button" class="btn btn-ghost btn-sm" id="list-businesses-btn">List businesses</button>
       </div>
       <pre id="sandbox-check" class="code-block" style="margin-top:0.75rem">Not run yet</pre>
-    </section>
-    <section class="panel">
-      <h2>Controlled sandbox period submit</h2>
-      <p class="muted">
-        Requires real OAuth + <code>HMRC_ALLOW_LIVE_SUBMIT=1</code>. Uses server draft payloads only
-        (import a sample on <a href="/app">/app</a> first, copy the draft id from History).
-        Not a live taxpayer filing.
-      </p>
-      <div class="form-row" style="grid-template-columns:1fr 1fr">
-        <label>NINO
-          <input type="text" id="pilot-nino" placeholder="Sandbox test NINO" autocomplete="off" />
-        </label>
-        <label>Business ID
-          <input type="text" id="pilot-bid" placeholder="e.g. XBIS…" autocomplete="off" />
-        </label>
+      <div class="form-row" style="grid-template-columns:1fr 1fr;margin-top:1rem">
+        <label>NINO <input type="text" id="pilot-nino" autocomplete="off" /></label>
+        <label>Business ID <input type="text" id="pilot-bid" autocomplete="off" /></label>
+        <label>Draft ID <input type="text" id="pilot-draft" autocomplete="off" /></label>
+        <label>Tax year <input type="text" id="pilot-taxyear" value="2024-25" autocomplete="off" /></label>
       </div>
-      <div class="form-row" style="grid-template-columns:1fr 1fr">
-        <label>Draft ID
-          <input type="text" id="pilot-draft" placeholder="From /history after import" autocomplete="off" />
-        </label>
-        <label>Tax year (property)
-          <input type="text" id="pilot-taxyear" placeholder="2024-25" value="2024-25" autocomplete="off" />
-        </label>
-      </div>
-      <div class="hero-actions" style="margin-top:0.75rem;flex-wrap:wrap;gap:0.5rem">
-        <button type="button" class="btn btn-ghost" id="submit-se-btn">Submit SE period</button>
-        <button type="button" class="btn btn-ghost" id="submit-uk-btn">Submit UK property</button>
-        <button type="button" class="btn btn-ghost" id="submit-fp-btn">Submit foreign property</button>
+      <div class="hero-actions" style="margin-top:0.5rem;flex-wrap:wrap;gap:0.5rem">
+        <button type="button" class="btn btn-ghost btn-sm" id="submit-se-btn">Submit SE period</button>
+        <button type="button" class="btn btn-ghost btn-sm" id="submit-uk-btn">Submit UK property</button>
+        <button type="button" class="btn btn-ghost btn-sm" id="submit-fp-btn">Submit foreign property</button>
       </div>
       <pre id="sandbox-submit-out" class="code-block" style="margin-top:0.75rem">Not run yet</pre>
-    </section>
+      <p class="muted"><a href="/mtd">Full MTD internal harness</a> (signed-in operators only)</p>
+    </details>
   </main>
   <script>
     const params = new URLSearchParams(location.search);
@@ -93,8 +77,7 @@
     const err = document.getElementById('err');
     if (params.get('connected')) {
       flash.hidden = false;
-      flash.textContent =
-        'Connection record saved. If OAuth is in mock mode this is not a real HMRC token — check status below.';
+      flash.textContent = 'Connection saved. Mock tokens cannot file with HMRC — check status.';
     }
     if (params.get('error')) {
       err.hidden = false;
@@ -108,8 +91,20 @@
         return;
       }
       const st = await fetch('/api/hmrc/status').then((r) => r.json());
+      const c = st.connection || {};
+      const human = document.getElementById('status-human');
+      if (c.connected && !c.mock && !c.expired) {
+        human.textContent = `Connected (${c.authorityType || 'individual'}, ${c.mode || st.oauth?.mode || 'sandbox'}).`;
+      } else if (c.connected && c.mock) {
+        human.textContent = 'Mock connection only — not a real HMRC token.';
+      } else if (c.expired) {
+        human.textContent = 'Connection expired — connect again.';
+      } else {
+        human.textContent = 'Not connected.';
+      }
+      document.getElementById('status').hidden = false;
       document.getElementById('status').textContent = JSON.stringify(
-        { user: me.user.email, plan: me.plan, hmrc: st.connection, oauth: { mock: st.oauth?.mock, mode: st.oauth?.mode } },
+        { email: me.user.email, hmrc: c, oauth: st.oauth },
         null,
         2
       );
@@ -127,10 +122,8 @@
       }
       location.href = data.url;
     }
-    document.getElementById('connect-individual-btn').onclick = () =>
-      startConnect('individual');
-    document.getElementById('connect-agent-btn').onclick = () =>
-      startConnect('agent');
+    document.getElementById('connect-individual-btn').onclick = () => startConnect('individual');
+    document.getElementById('connect-agent-btn').onclick = () => startConnect('agent');
     document.getElementById('disconnect-btn').onclick = async () => {
       await fetch('/api/hmrc/disconnect', { method: 'POST' });
       refresh();
@@ -140,8 +133,7 @@
       el.textContent = label + '…';
       try {
         const res = await fetch(url, { method: method || 'GET' });
-        const data = await res.json();
-        el.textContent = JSON.stringify(data, null, 2);
+        el.textContent = JSON.stringify(await res.json(), null, 2);
       } catch (e) {
         el.textContent = String(e);
       }
@@ -151,55 +143,33 @@
     document.getElementById('create-test-user-btn').onclick = () =>
       showJson('Creating', '/api/hmrc/create-test-user', 'POST');
     document.getElementById('fraud-validate-btn').onclick = () =>
-      showJson('Validating headers', '/api/hmrc/validate-fraud-headers', 'POST');
-    document.getElementById('show-test-user-btn').onclick = () =>
-      showJson('Loading', '/api/hmrc/sandbox-test-user');
-    document.getElementById('list-businesses-btn').onclick = async () => {
-      const nino = document.getElementById('pilot-nino').value.trim();
-      const q = nino ? `?nino=${encodeURIComponent(nino)}` : '';
-      showJson('Listing businesses', '/api/hmrc/businesses' + q);
+      showJson('Validating', '/api/hmrc/fraud-headers/validate', 'POST');
+    document.getElementById('list-businesses-btn').onclick = () => {
+      const n = document.getElementById('pilot-nino').value;
+      showJson('Businesses', '/api/hmrc/mtd/businesses?nino=' + encodeURIComponent(n));
     };
-
-    async function pilotSubmit(source) {
+    async function pilotSubmit(path) {
       const out = document.getElementById('sandbox-submit-out');
-      out.textContent = 'Submitting ' + source + '…';
+      out.textContent = 'Submitting…';
       const body = {
-        source,
-        nino: document.getElementById('pilot-nino').value.trim(),
-        businessId: document.getElementById('pilot-bid').value.trim(),
-        draftId: document.getElementById('pilot-draft').value.trim() || undefined,
-        taxYear: document.getElementById('pilot-taxyear').value.trim() || undefined,
+        nino: document.getElementById('pilot-nino').value,
+        businessId: document.getElementById('pilot-bid').value,
+        draftId: document.getElementById('pilot-draft').value,
+        taxYear: document.getElementById('pilot-taxyear').value,
       };
-      try {
-        const res = await fetch('/api/hmrc/sandbox-submit', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-        });
-        const data = await res.json();
-        out.textContent = JSON.stringify(data, null, 2);
-      } catch (e) {
-        out.textContent = String(e);
-      }
+      const res = await fetch(path, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      out.textContent = JSON.stringify(await res.json(), null, 2);
     }
     document.getElementById('submit-se-btn').onclick = () =>
-      pilotSubmit('self_employment');
+      pilotSubmit('/api/hmrc/sandbox-submit-se');
     document.getElementById('submit-uk-btn').onclick = () =>
-      pilotSubmit('uk_property');
+      pilotSubmit('/api/hmrc/sandbox-submit-uk');
     document.getElementById('submit-fp-btn').onclick = () =>
-      pilotSubmit('foreign_property');
-
-    // Prefill NINO from stored test user when available
-    fetch('/api/hmrc/sandbox-test-user')
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.ok && d.user?.nino) {
-          const el = document.getElementById('pilot-nino');
-          if (el && !el.value) el.value = d.user.nino;
-        }
-      })
-      .catch(() => {});
-
+      pilotSubmit('/api/hmrc/sandbox-submit-foreign');
     refresh();
   </script>
 </body>

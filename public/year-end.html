@@ -65,9 +65,8 @@
       <nav>
         <a href="/home">Home</a>
         <a href="/app?flow=quarterly">Quarterly</a>
-        <a href="/year-end" class="active">Tax return</a>
-        <a href="/history">Messages</a>
-        <a href="/connect-hmrc">Connect HMRC</a>
+        <a href="/year-end" class="active">Year end</a>
+        <a href="/history">Receipts</a>
         <span id="connection-status" class="badge">…</span>
       </nav>
     </div>
@@ -75,12 +74,12 @@
 
   <main class="wrap app-main">
     <div class="app-hero">
-      <h1>Tax return (year end)</h1>
+      <h1>Year end</h1>
       <p class="lead">
-        One guided case for the year: confirm quarterly updates, review totals,
-        add tax adjustments, run HMRC’s calculation, then finalise when ready.
-        Not an API console — steps match the real tax return journey.
+        Guided stages for the tax year. Prefer completing quarterly updates first.
+        Advanced HMRC actions stay under each stage — not a raw API console.
       </p>
+      <p class="muted">Live HMRC outcomes need OAuth + flags. Preview steps do not file.</p>
     </div>
 
     <p id="gate" class="error" hidden></p>

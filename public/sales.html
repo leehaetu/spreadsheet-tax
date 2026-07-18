@@ -3,28 +3,23 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Spreadsheet Tax — HMRC MTD quarterly updates from your spreadsheet</title>
-  <meta name="description" content="Bridge your spreadsheet to HMRC Making Tax Digital. Built for self-employed trades, landlords, bookkeepers, accountants and multi-partner practices. Keep records local. Preview. Submit. License and resell subscriptions." />
+  <title>Spreadsheet Tax — quarterly HMRC updates from your spreadsheet</title>
+  <meta name="description" content="Upload your self-employment or property spreadsheet, check the figures, approve, then send a quarterly MTD update. Free account. Not HMRC-recognised software." />
   <meta name="theme-color" content="#0b1220" />
   <link rel="stylesheet" href="/css/site.css" />
 </head>
 <body class="theme-light">
   <header class="site-header">
     <div class="wrap header-inner">
-      <a class="logo" href="/sales">
-        <span class="logo-mark">ST</span>
-        Spreadsheet Tax
-      </a>
+      <a class="logo" href="/"><span class="logo-mark">ST</span> Spreadsheet Tax</a>
       <nav>
-        <a href="/self-employed">I’m self-employed</a>
-        <a href="/landlords">I’m a landlord</a>
-        <a href="/professionals">I’m an accountant</a>
-        <a href="/firms">My practice</a>
+        <a href="/self-employed">Self-employed</a>
+        <a href="/landlords">Landlords</a>
+        <a href="/professionals">Accountants</a>
         <a href="/how-it-works">How it works</a>
         <a href="/pricing">Pricing</a>
-        <a href="/help">Help</a>
-        <a class="btn btn-ghost btn-sm" href="/signin?next=/home">Sign in to app</a>
-        <a class="btn btn-primary btn-sm" href="/signin?next=/home">Open the app</a>
+        <a class="btn btn-ghost btn-sm" href="/signin?next=/home">Sign in</a>
+        <a class="btn btn-primary btn-sm" href="/register">Create free account</a>
       </nav>
     </div>
   </header>
@@ -34,397 +29,79 @@
       <div class="wrap hero-grid">
         <div>
           <p class="eyebrow">Making Tax Digital for Income Tax</p>
-          <h1>Send your quarterly tax update from the spreadsheet you already use</h1>
+          <h1>Quarterly updates from the spreadsheet you already use</h1>
           <p class="lead">
-            Built for plumbers, trades and landlords who keep their books in a spreadsheet —
-            and for the bookkeepers and accountants who help them.
-            Upload the quarter’s figures, check them once, and send them to HMRC.
-            <strong>No retyping totals. No new accounting system to learn.</strong>
+            For sole traders and landlords. Upload the period file, check totals and source cells,
+            approve what HMRC will receive, then preview or send when HMRC is connected.
           </p>
           <div class="hero-actions">
-            <a class="btn btn-primary btn-lg" data-cta="hero_register" href="/register">Create free account</a>
-            <a class="btn btn-ghost btn-lg" data-cta="hero_template" href="/download/template">Get free template</a>
+            <a class="btn btn-primary btn-lg" href="/register">Create free account</a>
+            <a class="btn btn-ghost btn-lg" href="/download/template">Free template</a>
           </div>
           <ul class="trust-list">
-            <li>Keep your records in <strong>your</strong> spreadsheet</li>
-            <li>Self-employed, UK property and foreign property</li>
-            <li>Clear review screen before anything goes to HMRC</li>
-            <li>Free account — card billing is not live yet</li>
-            <li>Not HMRC-recognised software (stated on every product surface)</li>
+            <li><strong>Not</strong> HMRC-recognised software (yet)</li>
+            <li>Card billing is <strong>not live</strong> — free account path only</li>
+            <li>You approve every figure before anything is sent</li>
           </ul>
         </div>
-        <div class="hero-card">
-          <div class="card-title">Done in four steps</div>
+        <aside class="hero-card">
+          <div class="card-title">One primary journey</div>
           <ol class="flow">
-            <li>Use our free template (or your own file)</li>
-            <li>Put in this quarter’s income and costs</li>
-            <li>Upload and check the totals on screen</li>
-            <li>Connect HMRC and send the update</li>
+            <li>Create account and set income sources</li>
+            <li>Upload spreadsheet or template</li>
+            <li>Check this period and year-to-date</li>
+            <li>Approve → preview or sandbox/live when enabled</li>
           </ol>
-          <div class="hero-stats">
-            <div class="hero-stat">
-              <strong>You</strong>
-              <span>Keep the spreadsheet</span>
-            </div>
-            <div class="hero-stat">
-              <strong>We</strong>
-              <span>Match it for HMRC</span>
-            </div>
-            <div class="hero-stat">
-              <strong>HMRC</strong>
-              <span>Gets the quarterly update</span>
-            </div>
-          </div>
-          <a class="btn btn-primary btn-block" href="/register" style="margin-top:1.15rem">Create free account</a>
-          <p class="card-note">Sign in required for the product. Preview and sandbox submit only when you enable them — never silent live filing.</p>
-        </div>
-      </div>
-    </section>
-
-    <section class="section-tight section-alt">
-      <div class="wrap">
-        <div class="logo-row">
-          <span class="logo-pill">Self-employed trades</span>
-          <span class="logo-pill">UK landlords</span>
-          <span class="logo-pill">Foreign property</span>
-          <span class="logo-pill">Bookkeepers</span>
-          <span class="logo-pill">Accountants</span>
-          <span class="logo-pill">Multi-partner practices</span>
-        </div>
-      </div>
-    </section>
-
-    <section id="benefits" class="section">
-      <div class="wrap">
-        <div class="section-head">
-          <div>
-            <h2>Why customers choose Spreadsheet Tax</h2>
-            <p class="section-intro">Built to get quarterly updates done without retyping totals or forcing a new bookkeeping habit.</p>
-          </div>
-        </div>
-        <div class="cards">
-          <article class="card">
-            <div class="card-icon">1</div>
-            <h3>Stop retyping. Start submitting.</h3>
-            <p>Import CSV or Excel period summaries. See exactly how each line from your file appears in the quarterly update before anything is sent to HMRC.</p>
-          </article>
-          <article class="card">
-            <div class="card-icon">2</div>
-            <h3>Trades and landlords in one place</h3>
-            <p>Self-employment for plumbers, hairdressers and other sole traders — plus UK and foreign property landlords — without juggling separate tools.</p>
-          </article>
-          <article class="card">
-            <div class="card-icon green">3</div>
-            <h3>Built for practices, not only sole users</h3>
-            <p>Bookkeepers and accountants manage client files. Multi-accountant firms see the whole practice. Clients sign into their own portal.</p>
-          </article>
-          <article class="card">
-            <div class="card-icon green">4</div>
-            <h3>License, brand, resell</h3>
-            <p>Companies can take a license and sell subscriptions to their customers. Your commercial model, your client relationships. IP remains with Lee Hine.</p>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <section id="who" class="section section-alt">
-      <div class="wrap">
-        <h2>Built for every person who needs MTD bridging</h2>
-        <p class="section-intro">Whether you work for yourself, hold property, or run a bookkeeping or accountancy firm — there is a clear path in.</p>
-        <div class="cards">
-          <article class="card">
-            <h3>Self-employed &amp; trades</h3>
-            <p>Run a trade or business? Keep your books in a spreadsheet and send quarterly updates without changing how you work day to day.</p>
-            <a class="btn btn-primary" href="/self-employed">See the self-employed journey</a>
-          </article>
-          <article class="card">
-            <h3>UK &amp; foreign property landlords</h3>
-            <p>Period rental income and expenses for UK property and overseas property — mapped from the same local file format.</p>
-            <a class="btn btn-primary" href="/landlords">See the landlord journey</a>
-          </article>
-          <article class="card">
-            <h3>Bookkeepers &amp; accountants</h3>
-            <p>Import client period files, preview quarterly figures, and keep client lists in one practitioner workspace.</p>
-            <a class="btn btn-primary" href="/professionals">Explore professional plans</a>
-          </article>
-          <article class="card">
-            <h3>Multi-accountant practices</h3>
-            <p>Firm-wide view of clients and team members across partners — ready for practices that license software for their book.</p>
-            <a class="btn btn-primary" href="/firms">Explore practice plans</a>
-          </article>
-          <article class="card">
-            <h3>Clients of firms</h3>
-            <p>Client portal access so end clients can see their bridging status and upload period files when invited by their firm.</p>
-            <a class="btn btn-primary" href="/portal">Enter client portal</a>
-          </article>
-          <article class="card">
-            <h3>Software resellers</h3>
-            <p>License Spreadsheet Tax and sell subscriptions under your commercial terms to customers you already serve.</p>
-            <a class="btn btn-primary" href="/license">View licensing</a>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <section id="how" class="section">
-      <div class="wrap narrow">
-        <h2>How it works</h2>
-        <p class="section-intro">A short path from your local file to a quarterly update you can stand behind.</p>
-        <div class="steps">
-          <div class="step"><span>1</span><p>Keep (or start) period records in Excel or CSV using our free template.</p></div>
-          <div class="step"><span>2</span><p>Import the file — self-employment, UK property, foreign property, or all three.</p></div>
-          <div class="step"><span>3</span><p>Review income, expenses and net figures with a clear line-by-line match to your spreadsheet.</p></div>
-          <div class="step"><span>4</span><p>Submit quarterly updates. Clients and firms use the portal paths that fit their role.</p></div>
-        </div>
-        <p class="cta-row">
-          <a class="btn btn-primary btn-lg" href="/download/template">Download template</a>
-          <a class="btn btn-ghost btn-lg" href="/register">Create free account</a>
-        </p>
+          <a class="btn btn-primary btn-block" href="/register" style="margin-top:1rem">Start free</a>
+          <p class="card-note">Live HMRC only with real OAuth and operator flags — never silent filing. Any sample figures in the app are illustrative example scenarios, not customer reviews.</p>
+        </aside>
       </div>
     </section>
 
     <section class="section section-alt">
       <div class="wrap">
-        <h2>Bridging vs full bookkeeping suites</h2>
-        <p class="section-intro">If your records already live in a spreadsheet, you do not need to migrate everything to submit MTD quarterly updates.</p>
-        <div class="table-wrap" style="margin-top:1rem">
-          <table class="compare-table">
-            <thead>
-              <tr>
-                <th>Capability</th>
-                <th>Spreadsheet Tax</th>
-                <th>Full accounting suite</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Keep records in your own spreadsheet</td>
-                <td class="yes">Yes</td>
-                <td class="no">Usually no</td>
-              </tr>
-              <tr>
-                <td>HMRC MTD ITSA quarterly updates</td>
-                <td class="yes">Yes</td>
-                <td class="yes">Often yes</td>
-              </tr>
-              <tr>
-                <td>Self-employment + UK + foreign property</td>
-                <td class="yes">Yes</td>
-                <td class="yes">Varies</td>
-              </tr>
-              <tr>
-                <td>Preview before submit with field mapping</td>
-                <td class="yes">Yes</td>
-                <td class="no">Often limited</td>
-              </tr>
-              <tr>
-                <td>Practice, accountant &amp; client portal</td>
-                <td class="yes">Yes</td>
-                <td class="yes">Varies</td>
-              </tr>
-              <tr>
-                <td>Company license to resell subscriptions</td>
-                <td class="yes">Yes</td>
-                <td class="no">Rarely</td>
-              </tr>
-              <tr>
-                <td>Forces a full ledger migration</td>
-                <td class="no">No</td>
-                <td class="yes">Often yes</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <section id="pricing" class="section">
-      <div class="wrap">
-        <div class="center" style="margin-bottom:0.5rem">
-          <h2>Simple paths to get started</h2>
-          <p class="section-intro" style="margin-left:auto;margin-right:auto">Create free account with the template and app. Scale into practice and company licensing when you are ready.</p>
-        </div>
-        <div class="pricing-grid">
-          <article class="price-card">
-            <h3>Individuals &amp; landlords</h3>
-            <div class="price">Free to try</div>
-            <p class="price-desc">Download the template, fill your quarter, import and preview. Bridging for self-employment and property.</p>
-            <ul>
-              <li>Self-employment quarterly updates</li>
-              <li>UK and foreign property</li>
-              <li>Local file import (CSV / Excel)</li>
-              <li>Line-by-line figure review</li>
-            </ul>
-            <a class="btn btn-primary btn-block" href="/register">Create free account</a>
+        <h2>Who it is for</h2>
+        <div class="cards" style="margin-top:1.25rem">
+          <article class="card">
+            <h3>Self-employed</h3>
+            <p class="muted">Trades and sole traders with period income and expenses in a spreadsheet.</p>
+            <a href="/self-employed">Self-employed path →</a>
           </article>
-          <article class="price-card featured">
-            <div class="price-badge">Most popular for firms</div>
+          <article class="card">
+            <h3>Landlords</h3>
+            <p class="muted">UK and foreign property period updates, with clear mapping before submit.</p>
+            <a href="/landlords">Landlord path →</a>
+          </article>
+          <article class="card">
             <h3>Bookkeepers &amp; accountants</h3>
-            <div class="price">Practice ready</div>
-            <p class="price-desc">Practitioner workspace and client list. Bring every client period file through one clear path.</p>
-            <ul>
-              <li>Everything in Individuals</li>
-              <li>Client list and filters</li>
-              <li>Accountant / bookkeeper workspace</li>
-              <li>Client portal for end clients</li>
-            </ul>
-            <a class="btn btn-primary btn-block" href="/workspace">Open practice workspace</a>
-          </article>
-          <article class="price-card">
-            <h3>Firms &amp; resellers</h3>
-            <div class="price">Company license</div>
-            <p class="price-desc">License the software to your company and sell subscriptions to your customers. IP remains with Lee Hine.</p>
-            <ul>
-              <li>Multi-accountant practice dashboard</li>
-              <li>Right to sell subscriptions</li>
-              <li>Commercial use under license</li>
-              <li>Clear IP ownership terms</li>
-            </ul>
-            <a class="btn btn-primary btn-block" href="/license">License terms</a>
+            <p class="muted">Signed-in practice workspace for client books, plus client portal links. Firm-scale capacity is not proven.</p>
+            <a href="/professionals">Professional path →</a>
           </article>
         </div>
-        <p class="cta-row center" style="justify-content:center;margin-top:2rem">
-          <a class="btn btn-primary btn-lg" href="/register">Create free account</a>
-        </p>
       </div>
     </section>
 
-    <section id="firms" class="section section-alt">
-      <div class="wrap narrow">
-        <h2>Accounting firms: one product, three ways in</h2>
+    <section class="section">
+      <div class="wrap narrow center">
+        <h2>Honest status</h2>
         <p class="lead">
-          Grow recurring revenue without forcing clients into a full bookkeeping suite.
-          Spreadsheet Tax bridges the local files they already maintain.
+          Product is in <strong>sandbox engineering</strong>. Quarterly SE / UK / foreign mapping and review work.
+          We do not claim pilot-ready, production-ready, national capacity, or HMRC recognition.
+          Firm <a href="/license">licensing</a> and paid subscription checkout are not self-serve yet.
         </p>
-        <ul class="checklist">
-          <li><strong>Practitioner workspace</strong> — bookkeepers and accountants handle client imports</li>
-          <li><strong>Practice dashboard</strong> — multi-partner firms see clients and team coverage</li>
-          <li><strong>Client portal</strong> — clients of your firm access their own space</li>
-          <li><strong>Company license</strong> — sell subscriptions to your customers under your brand relationship</li>
-        </ul>
-        <p class="cta-row">
-          <a class="btn btn-primary btn-lg" href="/workspace">Open practice workspace</a>
-          <a class="btn btn-ghost btn-lg" href="/license">Talk licensing</a>
-        </p>
-      </div>
-    </section>
-
-    <section class="section">
-      <div class="wrap">
-        <h2>Who this product is for</h2>
-        <p class="section-intro"><strong>These are example scenarios, not customer reviews or testimonials.</strong> They describe intended use — not published feedback from real HMRC filers.</p>
-        <div class="quote-grid">
-          <blockquote class="quote">
-            <p>“I already keep the quarter in a spreadsheet. I needed a bridge, not another set of books to maintain.”</p>
-            <footer><strong>Example scenario</strong> · Self-employed trade (illustrative)</footer>
-          </blockquote>
-          <blockquote class="quote">
-            <p>“UK and foreign property in one import, with a preview we can check before anything goes to HMRC.”</p>
-            <footer><strong>Example scenario</strong> · Landlord portfolio (illustrative)</footer>
-          </blockquote>
-          <blockquote class="quote">
-            <p>“Our clients stay on their files. We get a practice view, a portal, and a license path to resell.”</p>
-            <footer><strong>Example scenario</strong> · Accountancy practice (illustrative)</footer>
-          </blockquote>
-        </div>
-      </div>
-    </section>
-
-    <section class="section section-alt">
-      <div class="wrap narrow">
-        <h2>Frequently asked questions</h2>
-        <div class="faq">
-          <details open>
-            <summary>What does “bridging-only” mean?</summary>
-            <p>You keep your records in your own spreadsheet. Spreadsheet Tax maps those period figures into HMRC Making Tax Digital quarterly updates. It is not a full double-entry ledger product.</p>
-          </details>
-          <details>
-            <summary>Which income sources are supported?</summary>
-            <p>Self-employment (trade / business), UK property, and foreign property. You can use one source or combine them in a single period file.</p>
-          </details>
-          <details>
-            <summary>Do my records leave my spreadsheet?</summary>
-            <p>You upload a local file for mapping and submission. Your ongoing books stay in the spreadsheet you already maintain. Prefer the free template for the cleanest mapping.</p>
-          </details>
-          <details>
-            <summary>Can my bookkeeper or accountant use it for clients?</summary>
-            <p>Yes. There is a practitioner workspace, a multi-accountant practice dashboard, and a client portal for end clients of the firm.</p>
-          </details>
-          <details>
-            <summary>Can my company sell this to our customers?</summary>
-            <p>Yes under a company license. Licensed companies may sell subscriptions to their customers. All intellectual property belongs to Lee Hine, including modifications and improvements. See the license page for terms.</p>
-          </details>
-          <details>
-            <summary>Is this affiliated with HMRC?</summary>
-            <p>No. Spreadsheet Tax is independent software. Use of HMRC services is subject to HMRC terms and your own credentials and compliance obligations.</p>
-          </details>
-          <details class="faq-item">
-            <summary>Is this HMRC-recognised software?</summary>
-            <p><strong>No.</strong> Spreadsheet Tax is <strong>not</strong> HMRC-recognised MTD software. It is not listed for live recognised use. We are building and testing in HMRC’s sandbox / pilot path. We will only describe the product as recognised after HMRC recognition is actually granted. Public “go live” filing for real taxpayers is not claimed until then.</p>
-          </details>
-        </div>
-      </div>
-    </section>
-
-    <section class="section">
-      <div class="wrap">
-        <div class="cta-banner">
-          <div>
-            <h2>Ready for the next quarterly deadline?</h2>
-            <p>Download the free template or open the app and import a period file in minutes.</p>
-          </div>
-          <div class="hero-actions" style="margin:0">
-            <a class="btn btn-primary btn-lg" href="/register">Create free account</a>
-            <a class="btn btn-ghost btn-lg" href="/download/template">Download template</a>
-          </div>
+        <div class="hero-actions" style="justify-content:center">
+          <a class="btn btn-primary" href="/register">Create free account</a>
+          <a class="btn btn-ghost" href="/security">Security &amp; HMRC status</a>
         </div>
       </div>
     </section>
   </main>
 
   <footer class="site-footer">
-    <div class="wrap">
-      <div class="footer-grid">
-        <div>
-          <a class="logo" href="/" style="margin-bottom:0.75rem">
-            <span class="logo-mark">ST</span>
-            Spreadsheet Tax
-          </a>
-          <p class="muted">
-            HMRC MTD ITSA bridging for self-employed individuals, landlords, bookkeepers, accountants, multi-accountant practices, and their clients.
-          </p>
-        </div>
-        <div>
-          <h4>Product</h4>
-          <a href="/register">Create free account</a>
-          <a href="/download/template">Free template</a>
-          <a href="/workspace">Practice workspace</a>
-          <a href="/portal">Client portal</a>
-        </div>
-        <div>
-          <h4>Who it’s for</h4>
-          <a href="/self-employed">Self-employed</a>
-          <a href="/landlords">Landlords</a>
-          <a href="/professionals">Accountants</a>
-          <a href="/firms">Practices</a>
-        </div>
-        <div>
-          <h4>Help</h4>
-          <a href="/help">Help centre</a>
-          <a href="/security">Security &amp; privacy</a>
-          <a href="/legal">Legal</a>
-        </div>
-      </div>
-      <div class="footer-bottom">
-        <p>
-          Spreadsheet Tax helps you send Making Tax Digital quarterly updates from a spreadsheet.
-          Independent software — not part of HMRC.
-        </p>
-        <p>© Lee Hine · Spreadsheet Tax</p>
-      </div>
+    <div class="wrap footer-bottom">
+      <p><a href="/help">Help</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <a href="/legal">Legal</a></p>
+      <p class="muted">Independent software by Lee Hine. Not affiliated with HMRC.</p>
     </div>
   </footer>
-  <script type="module" src="/js/analytics.js"></script>
-  <script src="/js/cookie-banner.js"></script>
 </body>
 </html>

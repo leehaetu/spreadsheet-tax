@@ -5,21 +5,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Billing — Spreadsheet Tax</title>
   <link rel="stylesheet" href="/css/site.css" />
+  <style>
+    .pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; max-width: 100%; }
+    .price-card { min-width: 0; overflow-wrap: anywhere; }
+  </style>
 </head>
-<body class="app-body">
+<body class="theme-light app-body app-simple">
   <header class="site-header">
     <div class="wrap header-inner">
-      <a class="logo" href="/"><span class="logo-mark">ST</span> Spreadsheet Tax</a>
+      <a class="logo" href="/home"><span class="logo-mark">ST</span> Spreadsheet Tax</a>
       <nav>
-        <a href="/account">Account</a>
-        <a href="/pricing">Pricing</a>
+        <a href="/account">Settings</a>
+        <a href="/pricing">Public pricing</a>
       </nav>
     </div>
   </header>
-  <main class="wrap app-main">
+  <main class="wrap app-main" style="max-width:900px">
     <h1>Billing</h1>
-    <p class="lead" id="billing-lead">Card payments are <strong>not live</strong> until a payment processor is configured. This page does not charge cards.</p>
-    <p id="current" class="muted">Sign in to see packaging information.</p>
+    <p class="lead" id="billing-lead">Card payments are <strong>not live</strong>. This page does not charge cards.</p>
+    <p id="current" class="muted">Loading…</p>
     <div class="pricing-grid" id="plans"></div>
     <p id="msg" class="success-box" hidden></p>
     <p id="err" class="error" hidden></p>

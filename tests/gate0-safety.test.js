@@ -151,7 +151,7 @@ describe('Gate 0 privacy copy', () => {
       security.body,
       /files never leave|your file never leaves/i
     );
-    assert.match(security.body, /not the same as/i);
+    assert.match(security.body, /device-only|upload is required for mapping|not the same as/i);
   });
 
   it('security page explains upload for mapping', async () => {

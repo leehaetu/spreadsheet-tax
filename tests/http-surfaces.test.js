@@ -199,10 +199,10 @@ describe('sales site customer focus', () => {
 
   it('provides distinct conversion journeys for each primary audience', async () => {
     const journeys = [
-      ['/self-employed', /sole traders|self-employed/i, /check my spreadsheet/i],
-      ['/landlords', /property landlords|landlord records/i, /property spreadsheet/i],
-      ['/professionals', /bookkeepers and accountants/i, /professional workspace|accountant workspace/i],
-      ['/firms', /accountancy firms|multi-user practices/i, /practice dashboard/i],
+      ['/self-employed', /sole traders|self-employed/i, /create free account|template/i],
+      ['/landlords', /property|landlord/i, /create free account|template/i],
+      ['/professionals', /bookkeepers|accountants|practice/i, /workspace|create free account/i],
+      ['/firms', /practice|firm/i, /workspace|licensing/i],
     ];
 
     for (const [urlPath, audiencePattern, ctaPattern] of journeys) {

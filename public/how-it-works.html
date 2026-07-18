@@ -4,9 +4,10 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>How it works — Spreadsheet Tax</title>
+  <meta name="description" content="Upload, check, approve, send — the Spreadsheet Tax quarterly path." />
   <link rel="stylesheet" href="/css/site.css" />
 </head>
-<body>
+<body class="theme-light">
   <header class="site-header">
     <div class="wrap header-inner">
       <a class="logo" href="/"><span class="logo-mark">ST</span> Spreadsheet Tax</a>
@@ -17,32 +18,44 @@
     </div>
   </header>
   <main class="wrap app-main">
+    <p class="eyebrow">Product path</p>
     <h1>How it works</h1>
-    <p class="lead">Three steps from your period spreadsheet to a reviewed quarterly update package.</p>
-    <div class="steps">
-      <div class="step"><span>1</span><p><strong>Upload</strong> your CSV or Excel period file (or try a sample).</p></div>
-      <div class="step"><span>2</span><p><strong>Review</strong> income and expenses in plain English. Fix any blocking checks.</p></div>
-      <div class="step"><span>3</span><p><strong>Confirm</strong> identifiers and send. Today’s public demo uses a safe preview path; live HMRC needs a later pilot gate.</p></div>
+    <p class="lead">Concrete steps — not abstract “digital transformation”.</p>
+
+    <div class="cards" style="margin-top:1.5rem">
+      <article class="card">
+        <div class="card-icon">1</div>
+        <h3>Upload</h3>
+        <p>CSV or Excel period summary (template available). Signed-in accounts store a server draft.</p>
+      </article>
+      <article class="card">
+        <div class="card-icon">2</div>
+        <h3>Check</h3>
+        <p>See mapped totals for this period and year-to-date, with source cell references where available.</p>
+      </article>
+      <article class="card">
+        <div class="card-icon">3</div>
+        <h3>Approve</h3>
+        <p>Explicit approval of the figure set. Re-upload invalidates prior approval.</p>
+      </article>
+      <article class="card">
+        <div class="card-icon green">4</div>
+        <h3>Send</h3>
+        <p><strong>Preview</strong> by default (not HMRC). Sandbox/live only with OAuth + operator flags. Receipt stored on attempt.</p>
+      </article>
     </div>
-    <section class="panel" style="margin-top:1.5rem">
-      <h2>What you will see in the app</h2>
-      <p class="muted">After import, totals and source cards appear so you can check figures before sending.</p>
-      <ul class="checklist">
-        <li>Total income, expenses and net for the period</li>
-        <li>Self-employment, UK property and foreign property sections</li>
-        <li>Line-by-line mapping from your spreadsheet fields</li>
-        <li>Spreadsheet checks that block incomplete periods</li>
+
+    <section class="panel" style="margin-top:2rem">
+      <h2>Errors and modes</h2>
+      <ul class="outcome-list">
+        <li>Validation failures show before submit (identifiers, mapping issues).</li>
+        <li>HMRC non-2xx responses are failures — not scored as success.</li>
+        <li>Preview / sandbox / live are labelled in the product status pill.</li>
       </ul>
-      <p class="cta-row">
-        <a class="btn btn-primary" data-cta="how_try_sample" href="/app#samples">Try a sample file</a>
-      </p>
+      <a class="btn btn-primary" href="/register">Create free account</a>
+      <a class="btn btn-ghost" href="/download/template">Get template</a>
     </section>
-    <p class="cta-row">
-      <a class="btn btn-primary btn-lg" data-cta="how_template" href="/download/template">Download free template</a>
-      <a class="btn btn-ghost btn-lg" data-cta="how_app" href="/register">Create free account</a>
-    </p>
   </main>
-  <script type="module" src="/js/analytics.js"></script>
+  <footer class="site-footer"><div class="wrap footer-bottom"><p><a href="/">Home</a></p></div></footer>
 </body>
 </html>
-

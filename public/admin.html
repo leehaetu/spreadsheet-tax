@@ -17,8 +17,8 @@
     </div>
   </header>
   <main class="wrap app-main">
-    <h1>Ops metrics</h1>
-    <p class="muted">Aggregate counts only — no tax identifiers. Requires sign-in for context; metrics endpoint is aggregate.</p>
+    <h1>Practice admin</h1>
+    <p class="muted">Restricted to <strong>practice_admin</strong> firm role. Aggregate counts only — no tax identifiers.</p>
     <p id="gate" class="error" hidden></p>
     <div class="stat-cards" id="stats" hidden>
       <div class="stat-card"><div class="n" id="m-users">—</div><div class="l">Users</div></div>
@@ -74,6 +74,14 @@
       if (!me.user) {
         document.getElementById('gate').hidden = false;
         document.getElementById('gate').innerHTML = '<a href="/signin?next=/admin">Sign in</a> required.';
+        return;
+      }
+      const roles = (me.memberships || []).map((m) => m.role);
+      const isAdmin = roles.includes('practice_admin');
+      if (!isAdmin) {
+        document.getElementById('gate').hidden = false;
+        document.getElementById('gate').textContent =
+          'Practice administrator role required. Use Settings or Workspace for normal work.';
         return;
       }
       document.getElementById('stats').hidden = false;

@@ -22,10 +22,11 @@
     </div>
   </header>
   <main class="wrap app-main">
-    <h1>Your account</h1>
+    <h1>Settings</h1>
+    <p class="muted">Profile, security, HMRC identifiers, notifications. Billing is separate and not live.</p>
     <p id="gate" class="error" hidden></p>
     <div class="stat-cards" id="stats" hidden>
-      <div class="stat-card"><div class="n" id="st-plan">—</div><div class="l">Plan</div></div>
+      <div class="stat-card"><div class="n" id="st-plan">—</div><div class="l">Packaging</div></div>
       <div class="stat-card"><div class="n" id="st-hmrc">—</div><div class="l">HMRC</div></div>
       <div class="stat-card"><div class="n" id="st-drafts">—</div><div class="l">Drafts</div></div>
       <div class="stat-card"><div class="n" id="st-subs">—</div><div class="l">Submissions</div></div>
@@ -33,10 +34,11 @@
     <section class="panel" id="profile-panel" hidden>
       <h2>Profile</h2>
       <ul class="profile-list" id="profile"></ul>
+      <p class="muted"><a href="/billing">Billing packaging</a> (no card charges unless payments are live)</p>
     </section>
     <section class="panel" id="prefs-panel" hidden>
       <h2>Notifications</h2>
-      <p class="muted">Email is stubbed in demo (logged on server). Preferences are stored for your account.</p>
+      <p class="muted">Preferences are stored. Email is only delivered when a provider is configured on the server.</p>
       <label class="muted" style="display:flex;gap:0.5rem;align-items:center;margin:0.5rem 0">
         <input type="checkbox" id="pref-reminders" /> Deadline and client reminders
       </label>

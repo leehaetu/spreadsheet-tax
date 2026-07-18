@@ -1,7 +1,7 @@
 # Project status
 
 **Last updated:** 2026-07-18  
-**App version:** **1.24.0**  
+**App version:** **1.25.0**  
 **Screen audit pack:** [docs/audits/2026-07-18-all-screens/](./audits/2026-07-18-all-screens/) — drives UI fixes (not “image work”)  
 **Protocol:** [AGENT-TRUTH-PROTOCOL.md](./AGENT-TRUTH-PROTOCOL.md)  
 **Capacity gate:** [CAPACITY-REQUIREMENTS.md](./CAPACITY-REQUIREMENTS.md) — **NOT MET**  
@@ -11,6 +11,14 @@
 ---
 
 ## Truth status (2026-07-18) — v1.24 product UX gates from audit
+
+### Shipped in 1.25.0 (full audit list UX pass)
+- Marketing rewritten short + honest (sales, audiences, pricing, how-it-works, license, firms, professionals)
+- Security/privacy/terms/help/legal/templates restructured
+- Reset/accept-invite token states; portal identity note; admin practice_admin gate
+- Connect HMRC: customer path vs operator tools; MTD labelled harness
+- Home primary-action hierarchy; onboarding simplified; app samples collapsed; year-end/account/billing/records/history nav cleanup
+- Demo accountant/practice: FICTIONAL DEMO banners
 
 ### Shipped in 1.24.0 (app code — from screen audit P0s)
 - Product pages require session: `/home` `/app` `/onboarding` `/records` `/year-end` `/workspace` `/connect-hmrc` `/account` `/history` `/billing` `/admin` `/mtd` → redirect to `/signin?next=…` when signed out [UNIT_TESTED]

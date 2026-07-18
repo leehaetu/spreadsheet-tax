@@ -18,8 +18,8 @@
     </div>
   </header>
   <main class="wrap app-main">
-    <h1>Set up your updates</h1>
-    <p class="lead">One product for self-employment, UK property and foreign property. We only ask what we need to configure your workflow.</p>
+    <h1>Set up</h1>
+    <p class="lead">Three decisions: who manages tax, which income sources, which tax year. Then go to quarterly upload.</p>
     <p id="err" class="error" hidden></p>
 
     <section class="panel" data-step="1">
@@ -32,15 +32,14 @@
     </section>
 
     <section class="panel" data-step="2">
-      <h2>2. Connect HMRC</h2>
-      <p class="muted">OAuth should load your income sources and obligations so you do not type business IDs.</p>
-      <a class="btn btn-primary" href="/connect-hmrc">Connect HMRC</a>
-      <button type="button" class="btn btn-ghost" id="load-hmrc-sources">Refresh sources from HMRC</button>
+      <h2>2. Income sources</h2>
+      <p class="muted">Add what you report. Optional: <a href="/connect-hmrc">connect HMRC</a> then refresh sources.</p>
+      <button type="button" class="btn btn-ghost btn-sm" id="load-hmrc-sources">Load from HMRC (if connected)</button>
       <p class="muted" id="hmrc-note"></p>
     </section>
 
     <section class="panel" data-step="3">
-      <h2>3. Confirm income sources</h2>
+      <h2>3. Confirm sources</h2>
       <div id="sources-editor"></div>
       <button type="button" class="btn btn-ghost" id="add-se">+ Self-employment</button>
       <button type="button" class="btn btn-ghost" id="add-uk">+ UK property</button>
@@ -48,8 +47,8 @@
     </section>
 
     <section class="panel" data-step="4">
-      <h2>4. Update periods</h2>
-      <p class="muted">HMRC: once you send the first update for a tax year, the period type cannot be changed for that year.</p>
+      <h2>4. Tax year &amp; period type</h2>
+      <p class="muted">After the first HMRC update for a year, period type usually cannot change for that year.</p>
       <label><input type="radio" name="periodType" value="standard" checked /> Standard (6 April – 5 April)</label><br />
       <label><input type="radio" name="periodType" value="calendar" /> Calendar (1 April – 31 March)</label>
       <label style="display:block;margin-top:0.75rem">Tax year
@@ -57,16 +56,10 @@
       </label>
     </section>
 
-    <section class="panel" data-step="5">
-      <h2>5. Spreadsheet</h2>
-      <p class="muted">Upload on the quarterly screen — .xlsx, .xls or CSV. One file or separate files per source.</p>
-      <a class="btn btn-ghost" href="/download/template">Free template</a>
-      <a class="btn btn-primary" href="/app?flow=quarterly">Go to quarterly update</a>
-    </section>
-
     <div class="action-bar">
-      <button type="button" class="btn btn-primary btn-lg" id="save-setup">Save setup</button>
-      <a class="btn btn-ghost" href="/home">Home</a>
+      <button type="button" class="btn btn-primary btn-lg" id="save-setup">Save and continue</button>
+      <a class="btn btn-ghost" href="/app?flow=quarterly">Skip to quarterly</a>
+      <a class="btn btn-ghost" href="/download/template">Template</a>
     </div>
   </main>
   <script src="/js/onboarding.js"></script>

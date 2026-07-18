@@ -3,71 +3,67 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Security &amp; privacy — Spreadsheet Tax</title>
+  <title>Security &amp; HMRC status — Spreadsheet Tax</title>
+  <meta name="description" content="How Spreadsheet Tax handles data, authentication, and HMRC. Honest limits included." />
   <link rel="stylesheet" href="/css/site.css" />
 </head>
-<body>
+<body class="theme-light">
   <header class="site-header">
     <div class="wrap header-inner">
       <a class="logo" href="/"><span class="logo-mark">ST</span> Spreadsheet Tax</a>
       <nav>
-        <a href="/legal">Legal</a>
+        <a href="/privacy">Privacy</a>
         <a class="btn btn-primary btn-sm" href="/register">Create free account</a>
       </nav>
     </div>
   </header>
-  <main class="wrap app-main">
-    <h1>Security, privacy and HMRC</h1>
+  <main class="wrap app-main narrow">
+    <p class="eyebrow">Trust</p>
+    <h1>Security &amp; HMRC status</h1>
+    <p class="lead">Short answers. Full technical matrix lives under integrity for reviewers.</p>
+
     <section class="panel">
-      <h2>What happens to your file</h2>
-      <p>When you use the hosted app, you <strong>upload a period spreadsheet</strong> so we can map figures for review. That is not the same as “the file never leaves your device.”</p>
-      <p>Your <strong>ongoing books</strong> remain in the spreadsheet (or system) you choose to maintain. We are bridging software, not a full ledger product.</p>
+      <h2>HMRC recognition</h2>
+      <p><strong>Not HMRC-recognised software.</strong> Not affiliated with HMRC. Sandbox and live APIs only when credentials and flags are set.</p>
     </section>
+
     <section class="panel">
-      <h2>Demo vs live HMRC</h2>
-      <p>The public demo uses a <strong>safe preview submission path</strong> that does not send your update with shared live credentials. Live HMRC connection requires pilot/production controls (sign-in, OAuth, fraud-prevention headers).</p>
-      <p>See the machine-readable <a href="/integrity">software integrity statement</a> for what is real vs preview.</p>
-    </section>
-    <section class="panel">
-      <h2>HMRC recognition status</h2>
+      <h2>Your spreadsheet</h2>
       <p>
-        <strong>Spreadsheet Tax is not HMRC-recognised software.</strong>
-        It is not listed as recognised Making Tax Digital software for live taxpayer use.
-        We integrate with HMRC APIs in <strong>sandbox / pilot</strong> only for development and evidence.
-        We will not present the product as live-ready or “HMRC recognised” until recognition is actually granted.
+        Ongoing books stay in <strong>your</strong> file. When you upload, the file is processed to map period figures.
+        That is different from a “device-only” claim — upload is required for mapping.
       </p>
-      <p>Spreadsheet Tax is not affiliated with or endorsed by HMRC. You remain responsible for the accuracy of figures and for HMRC obligations.</p>
     </section>
+
     <section class="panel">
-      <h2>What this software covers (and what it does not)</h2>
-      <p>
-        <strong>Customer product journeys (sandbox / pilot when HMRC live submit is enabled):</strong>
-      </p>
-      <ul>
-        <li><strong>Quarterly updates</strong> — self-employment, UK property and foreign property from a spreadsheet (<a href="/register">/app</a>).</li>
-        <li><strong>Corrections</strong> — amend an SE period after submit (<a href="/year-end">/year-end</a>).</li>
-        <li><strong>Year-end steps</strong> — annual summaries, losses, other-income adjustments, tax calculation trigger/list, BSAS trigger/list/adjust, final-declaration obligations and intent-to-finalise (<a href="/year-end">/year-end</a>).</li>
-        <li><strong>Practice book</strong> — client list, import, status (<a href="/workspace">/workspace</a>).</li>
+      <h2>Accounts &amp; access</h2>
+      <ul class="outcome-list">
+        <li>Password accounts with HttpOnly session cookies</li>
+        <li>Optional authenticator MFA (TOTP) on the account page</li>
+        <li>Product pages require sign-in — no usable shell when signed out</li>
+        <li>Practice clients are scoped by firm membership</li>
       </ul>
-      <p>
-        Default public mode is <strong>preview only</strong> (no HMRC HTTP). External HMRC calls need sign-in,
-        real OAuth, and server flags. This is <strong>not</strong> HMRC-recognised software for live production filing.
-      </p>
-      <p>
-        <strong>Not claimed:</strong> full in-product tax bill calculation (trigger/list only; use your
-        <a href="https://www.gov.uk/log-in-register-hmrc-online-services">HMRC online account</a> for the estimate view),
-        EOPS, agent multi-client production authority beyond firm roles we implement, or Production APIs until HMRC grants them.
-      </p>
-      <p>
-        Capability evidence tags and exact sandbox HTTP outcomes: see the integrity page and operator docs.
-        If you need software already on HMRC’s list for live use today, use
-        <a href="https://www.gov.uk/guidance/find-software-thats-compatible-with-making-tax-digital-for-income-tax">HMRC’s compatible software list</a>.
-      </p>
     </section>
+
     <section class="panel">
-      <h2>IP</h2>
-      <p>Intellectual property belongs to <strong>Lee Hine</strong>. See <a href="/legal">legal notice</a> and <a href="/license">licensing</a>.</p>
+      <h2>What is still open</h2>
+      <ul class="outcome-list">
+        <li>Independent pen-test and full security launch-gate sign-off</li>
+        <li>Production malware scanning of uploads</li>
+        <li>Capacity proof for large practices</li>
+        <li>Card payments and guaranteed transactional email</li>
+      </ul>
+      <p class="muted">See <a href="/integrity">integrity map</a> for implementer detail.</p>
+    </section>
+
+    <section class="panel">
+      <h2>Quarterly vs year-end</h2>
+      <p>
+        Quarterly SE / UK / foreign property is the primary path.
+        Year-end and BSAS tools exist as guided product stages; treat live HMRC outcomes as evidence-gated, not marketing claims.
+      </p>
     </section>
   </main>
+  <footer class="site-footer"><div class="wrap footer-bottom"><p><a href="/">Home</a> · <a href="/privacy">Privacy</a></p></div></footer>
 </body>
 </html>

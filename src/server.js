@@ -242,7 +242,7 @@ const root = path.join(__dirname, '..');
 const publicDir = path.join(root, 'public');
 const templatesDir = path.join(root, 'templates');
 const testSpreadsheetsDir = path.join(root, 'test-spreadsheets');
-const APP_VERSION = '1.24.0';
+const APP_VERSION = '1.25.0';
 
 /**
  * Serve HTML with site-chrome (HMRC recognition banner/footer) injected once.
@@ -1312,7 +1312,9 @@ function clientIp(req) {
 /** Auth */
 app.post('/api/auth/register', async (req, res) => {
   try {
-    if (!(await rateLimitAsync(`register:${clientIp(req)}`, 10, 60_000))) {
+    const regLimit =
+      process.env.SPREADSHEET_TAX_NO_LISTEN === '1' ? 500 : 10;
+    if (!(await rateLimitAsync(`register:${clientIp(req)}`, regLimit, 60_000))) {
       return res
         .status(429)
         .json({ error: 'Too many registration attempts. Try again shortly.' });

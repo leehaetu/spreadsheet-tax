@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Accept firm invite — Spreadsheet Tax</title>
+  <title>Accept practice invite — Spreadsheet Tax</title>
   <link rel="stylesheet" href="/css/site.css" />
 </head>
-<body class="app-body">
+<body class="theme-light app-body app-simple">
   <header class="site-header">
     <div class="wrap header-inner">
       <a class="logo" href="/"><span class="logo-mark">ST</span> Spreadsheet Tax</a>
@@ -14,51 +14,53 @@
     </div>
   </header>
   <main class="wrap app-main" style="max-width:520px">
-    <h1>Accept practice invite</h1>
-    <p class="muted">Sign in with the email that received the invite, then accept.</p>
-    <p id="status" class="muted">Checking…</p>
+    <h1>Practice invitation</h1>
+    <p id="state" class="muted">Checking invite…</p>
     <p id="err" class="error" hidden></p>
-    <div class="hero-actions">
-      <button type="button" class="btn btn-primary" id="accept-btn" hidden>Accept invite</button>
-      <a class="btn btn-ghost" href="/signin" id="signin-link" hidden>Sign in first</a>
+    <div id="ok-panel" class="panel" hidden>
+      <p id="ok-detail"></p>
+      <a class="btn btn-primary" href="/signin?next=/workspace">Sign in to workspace</a>
+      <a class="btn btn-ghost" href="/register">Create account with invite email</a>
+    </div>
+    <div id="no-token" class="panel" hidden>
+      <strong>No invite token in this link.</strong>
+      <p class="muted">Ask your practice administrator to send a new invite from the signed-in workspace.</p>
+      <a class="btn btn-primary" href="/">Home</a>
     </div>
   </main>
   <script>
     const token = new URLSearchParams(location.search).get('token') || '';
-    async function init() {
-      const status = document.getElementById('status');
-      if (!token) {
-        status.textContent = 'Missing invite token.';
-        return;
-      }
-      const me = await fetch('/api/auth/me').then((r) => r.json());
-      if (!me.user) {
-        status.textContent = 'You must sign in with the invited email.';
-        document.getElementById('signin-link').hidden = false;
-        document.getElementById('signin-link').href =
-          '/signin?next=' + encodeURIComponent('/accept-invite?token=' + token);
-        return;
-      }
-      status.textContent = `Signed in as ${me.user.email}. Click accept to join the firm.`;
-      document.getElementById('accept-btn').hidden = false;
-    }
-    document.getElementById('accept-btn').onclick = async () => {
-      const err = document.getElementById('err');
-      err.hidden = true;
-      const res = await fetch('/api/me/firm-invites/accept', {
+    const state = document.getElementById('state');
+    if (!token) {
+      state.hidden = true;
+      document.getElementById('no-token').hidden = false;
+    } else {
+      // Accept requires matching signed-in email; show token present + next steps
+      state.textContent = 'Invite link detected. Sign in with the invited email, then open workspace to complete membership if not already accepted.';
+      document.getElementById('ok-panel').hidden = false;
+      document.getElementById('ok-detail').textContent =
+        'Token present. If you are already signed in as the invitee, open Accept from the email again after sign-in or contact your admin.';
+      // Try accept if session exists
+      fetch('/api/me/firm-invites/accept', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        err.textContent = data.error || 'Could not accept';
-        err.hidden = false;
-        return;
-      }
-      location.href = '/workspace';
-    };
-    init();
+      })
+        .then(async (r) => {
+          const j = await r.json().catch(() => ({}));
+          if (r.ok) {
+            document.getElementById('ok-detail').textContent =
+              j.message || 'Invite accepted. Open the practice workspace.';
+            state.textContent = 'Invite accepted.';
+          } else if (r.status === 401) {
+            state.textContent = 'Sign in with the invited email to accept this invite.';
+          } else {
+            document.getElementById('err').textContent = j.error || 'Could not accept invite';
+            document.getElementById('err').hidden = false;
+          }
+        })
+        .catch(() => {});
+    }
   </script>
 </body>
 </html>

@@ -4,33 +4,32 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Client portal — Spreadsheet Tax</title>
-  <meta name="description" content="Client portal for clients of bookkeepers and accountants using Spreadsheet Tax." />
+  <meta name="description" content="Client portal for practice clients with a shared token link." />
   <link rel="stylesheet" href="/css/site.css" />
 </head>
-<body class="app-body">
+<body class="theme-light app-body app-simple">
   <header class="site-header">
     <div class="wrap header-inner">
       <a class="logo" href="/"><span class="logo-mark">ST</span> Spreadsheet Tax</a>
       <nav>
         <span class="badge">Client portal</span>
-        <a href="/">Home</a>
+        <a href="/signin?next=/home">Sign in (my account)</a>
         <a href="/download/template">Template</a>
-        <a class="btn btn-primary btn-sm" href="/app">Upload period file</a>
       </nav>
     </div>
   </header>
 
-  <main class="wrap app-main">
-    <div class="app-hero">
-      <h1>Client portal</h1>
-      <p class="lead">
-        Open the secure link from your accountant, or use a portal token they share with you.
-      </p>
-    </div>
+  <main class="wrap app-main" style="max-width:640px">
+    <h1>Client portal</h1>
+    <p class="lead">
+      Use the secure link your practice sent (<code>?token=…</code>).
+      This is separate from your personal Spreadsheet Tax account.
+    </p>
+    <p id="signed-in-note" class="muted" hidden></p>
 
     <section class="panel" id="token-panel">
-      <h2>Enter portal access</h2>
-      <p class="muted">Your firm sends a link like <code>/portal?token=…</code>. Paste the token if needed.</p>
+      <h2>Open with portal token</h2>
+      <p class="muted">If the link did not include a token, paste it below.</p>
       <div class="form-row">
         <label>Portal token
           <input type="text" id="token-input" placeholder="Token from your accountant" autocomplete="off" />
@@ -51,12 +50,28 @@
         <span id="client-status" class="status-pill">—</span>
       </div>
       <ul class="profile-list" id="profile-list"></ul>
+      <p class="muted">Upload period files via the link your practice provides, or ask them to import on your behalf.</p>
       <div class="hero-actions" style="margin-top:1rem">
-        <a class="btn btn-primary" href="/app" id="upload-link">Upload my period file</a>
         <a class="btn btn-ghost" href="/download/template">Get template</a>
       </div>
     </section>
   </main>
   <script src="/js/portal.js"></script>
+  <script>
+    fetch('/api/auth/me')
+      .then((r) => r.json())
+      .then((me) => {
+        if (me.user) {
+          const n = document.getElementById('signed-in-note');
+          n.hidden = false;
+          n.innerHTML =
+            'Signed in as <strong>' +
+            (me.user.email || '') +
+            '</strong>. Portal token access is still required for client views. ' +
+            '<a href="/home">Go to your tax home</a>.';
+        }
+      })
+      .catch(() => {});
+  </script>
 </body>
 </html>

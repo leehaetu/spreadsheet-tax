@@ -3,107 +3,53 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Software integrity — Spreadsheet Tax</title>
-  <meta name="description" content="Honest map of what Spreadsheet Tax does for real versus preview, mock, and demo paths. For HMRC and security review." />
+  <title>Integrity — Spreadsheet Tax</title>
+  <meta name="description" content="Machine-readable honesty map for HMRC and security review." />
   <link rel="stylesheet" href="/css/site.css" />
 </head>
-<body>
+<body class="theme-light app-body">
   <header class="site-header">
     <div class="wrap header-inner">
       <a class="logo" href="/"><span class="logo-mark">ST</span> Spreadsheet Tax</a>
       <nav>
-        <a href="/security">Security</a>
-        <a href="/legal">Legal</a>
-        <a href="/register">Create free account</a>
+        <a href="/security">Customer security page</a>
+        <a href="/">Home</a>
       </nav>
     </div>
   </header>
-  <main class="wrap app-main narrow">
-    <h1>Software integrity statement</h1>
+  <main class="wrap app-main">
+    <p class="eyebrow">Reviewer surface</p>
+    <h1>Software integrity</h1>
     <p class="lead">
-      This product is built for HMRC Making Tax Digital bridging. Inspectors and customers should
-      be able to tell <strong>exactly</strong> which parts talk to HMRC and which do not.
-      Machine-readable copy: <a href="/api/integrity"><code>/api/integrity</code></a>.
+      For HMRC and security reviewers. Customers should start at
+      <a href="/security">Security &amp; HMRC status</a>.
+      Default public submit is <strong>preview</strong> (not sent to HMRC).
     </p>
-
     <section class="panel">
-      <h2>HMRC recognition</h2>
-      <p>
-        <strong>Not HMRC-recognised software.</strong>
-        Spreadsheet Tax is not on HMRC’s recognised MTD software list.
-        We develop against the <strong>sandbox</strong> and pilot controls only.
-        We will not claim “HMRC recognised” or public live filing readiness until recognition is actually obtained.
-        App version numbers (e.g. on <code>/health</code>) are <strong>our software release</strong> (semantic version), not an HMRC software ID or submission reference.
-      </p>
+      <h2>Live machine map</h2>
+      <p class="muted">JSON from this deployment — not a static claim sheet.</p>
+      <pre id="map" class="code-block">Loading /api/integrity…</pre>
     </section>
-
     <section class="panel">
-      <h2>What is real today</h2>
-      <ul class="checklist">
-        <li><strong>Spreadsheet import</strong> — CSV/Excel parse, field mapping, digital-link traces, period payloads</li>
-        <li><strong>Validation</strong> — blocks invalid periods, NINO, tax year, business IDs before submit</li>
-        <li><strong>Server-owned drafts</strong> — import stores figures on the server; submit uses <code>draftId</code></li>
-        <li><strong>Preview submit (default)</strong> — builds the same HTTP request shape HMRC expects, stores a local receipt, <strong>does not call HMRC</strong></li>
-        <li><strong>Authenticated practice workspace</strong> — real SQLite firm/clients under <code>/workspace</code></li>
-        <li><strong>Auth sessions</strong> — register, login, password change/reset (email delivery is stubbed to logs)</li>
+      <h2>How to read evidence tags</h2>
+      <ul class="outcome-list">
+        <li><code>ROUTE_ONLY</code> — UI or handler exists</li>
+        <li><code>UNIT_TESTED</code> — automated test</li>
+        <li><code>SANDBOX_HTTP</code> — real HMRC sandbox status recorded</li>
+        <li><code>CUSTOMER_WORKFLOW</code> — browser path works</li>
+        <li>Non-2xx HMRC responses are failures</li>
       </ul>
     </section>
-
-    <section class="panel">
-      <h2>What is not real HMRC filing</h2>
-      <ul class="checklist">
-        <li><strong>Preview / double mode</strong> — default public submit; labels say “not sent to HMRC”</li>
-        <li><strong>Mock OAuth</strong> — without Developer Hub credentials, “connect” stores a local mock token only</li>
-        <li><strong>Demo portfolio</strong> — <code>/accountant</code> and <code>/practice</code> use fictional in-memory data</li>
-        <li><strong>Billing</strong> — plan selection is stored; cards are not charged</li>
-        <li><strong>Email</strong> — invites/reminders/password reset are logged, not delivered by a mail provider</li>
-      </ul>
-    </section>
-
-    <section class="panel">
-      <h2>What HMRC live requires (not claimed complete)</h2>
-      <ol>
-        <li>HMRC Developer Hub application registration</li>
-        <li><code>HMRC_CLIENT_ID</code> / <code>HMRC_CLIENT_SECRET</code> and real OAuth (<code>HMRC_OAUTH_MOCK</code> off)</li>
-        <li><code>HMRC_ALLOW_LIVE_SUBMIT=1</code> on the server</li>
-        <li>Non-mock access token on the user account</li>
-        <li>Fraud-prevention header pack validated against current HMRC guidance</li>
-        <li>Production approval for live filing</li>
-      </ol>
-      <p class="muted">Until those are true, any successful “submit” in the public app is a <strong>preview</strong>.</p>
-    </section>
-
-    <section class="panel">
-      <h2>Live status (from this deployment)</h2>
-      <pre id="live" class="code-block">Loading…</pre>
-    </section>
-
-    <p class="muted">Intellectual property: Lee Hine. See <a href="/legal">Legal</a> and <a href="/license">License</a>.</p>
   </main>
   <script>
-    Promise.all([
-      fetch('/api/status').then((r) => r.json()),
-      fetch('/api/integrity').then((r) => r.json()),
-    ])
-      .then(([status, integrity]) => {
-        document.getElementById('live').textContent = JSON.stringify(
-          {
-            gate: status.gate,
-            hmrcMode: status.hmrcMode,
-            previewOnly: status.previewOnly,
-            liveSubmitEnabled: status.liveSubmitEnabled,
-            oauthMock: status.oauthMock,
-            honesty: status.honesty,
-            layers: integrity.layers,
-          },
-          null,
-          2
-        );
+    fetch('/api/integrity')
+      .then((r) => r.json())
+      .then((j) => {
+        document.getElementById('map').textContent = JSON.stringify(j, null, 2);
       })
       .catch((e) => {
-        document.getElementById('live').textContent = String(e);
+        document.getElementById('map').textContent = String(e);
       });
   </script>
-  <script src="/js/cookie-banner.js"></script>
 </body>
 </html>

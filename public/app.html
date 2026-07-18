@@ -73,9 +73,9 @@
       </form>
       <p id="upload-error" class="error" hidden></p>
 
-      <div class="or-divider" id="samples">Or try a sample first</div>
-      <p class="muted" style="margin-bottom:0.75rem">See how it works with made-up example figures — nothing is sent to HMRC.</p>
-      <div class="sample-grid" id="sample-grid">
+      <details id="samples" style="margin-top:1rem">
+        <summary class="muted" style="cursor:pointer">Try a sample first (fictional figures — not sent to HMRC)</summary>
+      <div class="sample-grid" id="sample-grid" style="margin-top:0.75rem">
         <button type="button" class="sample-btn" data-sample="self_employment">
           <strong>Self-employed plumber</strong>
           <span>Example trade income and expenses</span>
@@ -93,12 +93,13 @@
           <span>Both in one file</span>
         </button>
       </div>
+      </details>
     </section>
 
     <section class="panel" id="review-panel" hidden>
       <div class="panel-header">
         <div>
-          <h2>2. Check these figures carefully</h2>
+          <h2>2. Check these figures</h2>
           <p class="muted">
             Approve the <strong>year-to-date</strong> column (what HMRC will hold).
             The “this period” column shows what your new file contributed.
