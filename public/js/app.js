@@ -65,11 +65,8 @@ function connectionLabel(data) {
   if (typeof window.stConnectionLabel === 'function') {
     return window.stConnectionLabel(data);
   }
-  if (data?.oauthConnected && !data.oauthMock) return 'Connected';
-  if (data?.previewOnly || data?.hmrcMode === 'double' || data?.oauthMock) {
-    return 'Not connected';
-  }
-  if (data?.liveSubmitEnabled) return 'Connected';
+  const conn = data?.connection;
+  if (conn && conn.connected && !conn.mock && !conn.expired) return 'Connected';
   return 'Not connected';
 }
 
@@ -138,21 +135,18 @@ function showQuarterlyReviewState(state) {
 
 async function loadStatus() {
   try {
-    const res = await apiFetch('/api/status');
-    const data = await res.json();
+    let data = {};
     try {
       const connRes = await apiFetch('/api/hmrc/status');
-      if (connRes.ok) {
-        const conn = await connRes.json();
-        Object.assign(data, conn);
-        data.oauthConnected = Boolean(conn?.connection?.connected);
-        data.oauthMock = Boolean(conn?.connection?.mock || conn?.oauth?.mock);
-      }
-    } catch { /* optional */ }
-    const el = document.getElementById('connection-status');
-    if (el) {
-      el.textContent = connectionLabel(data);
-      el.classList.add('ok');
+      if (connRes.ok) data = await connRes.json();
+    } catch {
+      /* optional */
+    }
+    if (typeof window.stApplyConnectionStatus === 'function') {
+      window.stApplyConnectionStatus(data);
+    } else {
+      const el = document.getElementById('connection-status');
+      if (el) el.textContent = connectionLabel(data);
     }
     const btn = document.getElementById('submit-btn');
     if (btn) {
@@ -160,8 +154,12 @@ async function loadStatus() {
       btn.removeAttribute('title');
     }
   } catch {
-    const el = document.getElementById('connection-status');
-    if (el) el.textContent = 'Not connected';
+    if (typeof window.stApplyConnectionStatus === 'function') {
+      window.stApplyConnectionStatus({ connection: null });
+    } else {
+      const el = document.getElementById('connection-status');
+      if (el) el.textContent = 'Not connected';
+    }
   }
 }
 
@@ -266,11 +264,15 @@ function handleImportSuccess(data) {
   lastSpreadsheetCheck = data.spreadsheetCheck || null;
   showReview(data);
   renderSpreadsheetCheck(lastSpreadsheetCheck);
-  // After upload → check figures (map columns, then totals)
-  showPanels({ map: true });
-  setWizardStep(3);
+  // After upload → map columns (exclusive step). Full sheet opens in the modal viewer.
+  if (typeof window.stQuarterlyShowStep === 'function') {
+    window.stQuarterlyShowStep('map');
+  } else {
+    showPanels({ map: true });
+    setWizardStep(3);
+  }
   const ssPanel = document.getElementById('spreadsheet-check-panel');
-  if (ssPanel) ssPanel.hidden = false;
+  if (ssPanel) ssPanel.hidden = true;
 
   if (data.payloads?.meta?.taxYear) {
     const ty = document.getElementById('tax-year');
@@ -344,7 +346,8 @@ function renderSpreadsheetCheck(model) {
     return;
   }
   panel.dataset.available = '1';
-  panel.hidden = false;
+  // Keep advanced cell tools off the main map path; sheet grid lives in the modal.
+  panel.hidden = true;
   lastSpreadsheetCheck = model;
 
   const note = document.getElementById('ss-security-note');
@@ -1117,6 +1120,7 @@ document.getElementById('back-to-sources')?.addEventListener('click', (e) => {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 });
 document.getElementById('open-ss-viewer')?.addEventListener('click', () => {
+  if (lastSpreadsheetCheck) renderSpreadsheetCheck(lastSpreadsheetCheck);
   document.getElementById('ss-viewer-dialog')?.showModal();
 });
 document.getElementById('close-ss-viewer')?.addEventListener('click', () => {

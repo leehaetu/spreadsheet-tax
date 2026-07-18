@@ -184,9 +184,23 @@
         abody.appendChild(tr);
       }
       document.getElementById('st-plan').textContent = me.plan?.label || me.plan?.planId || '—';
+      // Customer labels only — never surface sandbox/mock theatre here.
+      const hmrc = me.hmrc || {};
       document.getElementById('st-hmrc').textContent =
-        me.hmrc?.label ||
-        (me.hmrc?.connected ? 'Connected' : me.hmrc?.expired ? 'Expired' : 'Not connected');
+        hmrc.connected && !hmrc.mock
+          ? 'Connected'
+          : hmrc.expired
+            ? 'Expired'
+            : 'Not connected';
+      if (typeof window.stApplyConnectionStatus === 'function') {
+        window.stApplyConnectionStatus({
+          connection: {
+            connected: Boolean(hmrc.connected && !hmrc.mock),
+            mock: Boolean(hmrc.mock),
+            expired: Boolean(hmrc.expired),
+          },
+        });
+      }
       document.getElementById('profile').innerHTML = [
         ['Name', me.user.name],
         ['Email', me.user.email],

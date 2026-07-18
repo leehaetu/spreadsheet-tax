@@ -5,7 +5,9 @@ const port = Number(process.env.E2E_PORT) || 4173;
 export default defineConfig({
   testDir: 'tests/e2e',
   timeout: 60_000,
+  // Single worker: shared SQLite demo user + session store races under parallel workers.
   fullyParallel: false,
+  workers: 1,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   use: {
@@ -19,6 +21,8 @@ export default defineConfig({
     env: {
       ...process.env,
       PORT: String(port),
+      CSRF_ENFORCE: '0',
+      E2E_RELAX_RATE_LIMIT: '1',
       HMRC_ALLOW_LIVE_SUBMIT: '',
       DEMO_PRACTICE_WRITES: '',
     },

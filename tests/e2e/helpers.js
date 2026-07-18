@@ -19,9 +19,17 @@ export async function signIn(page, next = '/home') {
   await page.click('button[type=submit]');
   // Match path only (ignore query order) so /app?flow=quarterly is stable
   const pathOnly = next.split('?')[0];
-  await page.waitForURL((url) => url.pathname === pathOnly || url.pathname.endsWith(pathOnly), {
-    timeout: 20_000,
-  });
+  try {
+    await page.waitForURL(
+      (url) => url.pathname === pathOnly || url.pathname.endsWith(pathOnly),
+      { timeout: 20_000 }
+    );
+  } catch (err) {
+    const errText = await page.locator('#err').textContent().catch(() => '');
+    throw new Error(
+      `signIn failed (still on ${page.url()}). Form error: ${errText || '(none)'}. Original: ${err}`
+    );
+  }
 }
 
 /**

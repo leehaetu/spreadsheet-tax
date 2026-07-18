@@ -1513,7 +1513,10 @@ app.post('/api/auth/register', async (req, res) => {
 
 app.post('/api/auth/login', async (req, res) => {
   try {
-    if (!(await rateLimitAsync(`login:${clientIp(req)}`, 20, 60_000))) {
+    // E2E suites sign in many times against one IP; relax only when explicitly flagged.
+    const loginMax =
+      process.env.E2E_RELAX_RATE_LIMIT === '1' ? 500 : 20;
+    if (!(await rateLimitAsync(`login:${clientIp(req)}`, loginMax, 60_000))) {
       return res
         .status(429)
         .json({ error: 'Too many login attempts. Try again shortly.' });
@@ -1712,13 +1715,14 @@ app.get('/api/auth/me', (req, res) => {
           expired: Boolean(hmrc.expired),
           mode: hmrc.mode,
           expiresAt: hmrc.expiresAt,
+          // Customer-facing labels only — never "sandbox connected" theatre.
           label: hmrc.expired
             ? 'Expired'
             : hmrc.mock
-              ? 'Mock connection (not HMRC)'
-              : hmrc.mode === 'production'
-                ? 'HMRC live connected'
-                : 'HMRC sandbox connected',
+              ? 'Not connected'
+              : !hmrc.expired && !hmrc.mock
+                ? 'Connected'
+                : 'Not connected',
         }
       : { connected: false, mock: false, label: 'Not connected' },
   });
@@ -1820,11 +1824,12 @@ app.get('/api/hmrc/status', (req, res) => {
           expired: Boolean(hmrc.expired),
           mode: hmrc.mode,
           expiresAt: hmrc.expiresAt,
+          // Customer UI: Connected / Not connected / Expired only.
           label: hmrc.expired
             ? 'Expired'
-            : hmrc.mock
-              ? 'Mock connection (UI journey only — not HMRC)'
-              : 'HMRC OAuth token stored',
+            : hmrc.mock || hmrc.expired
+              ? 'Not connected'
+              : 'Connected',
         }
       : null,
     honesty: {

@@ -80,7 +80,8 @@ Same shell on every authenticated page.
 ### P7 — Proof
 - [x] Unit tests: `tests/product-finish.test.js`  
 - [x] Playwright product-finish checklist: `tests/e2e/product-finish.spec.js` (mocked HMRC connection for UI gates only — **not** SANDBOX_HTTP)  
-- [ ] Optional owner browser pass on real sandbox credentials  
+- [x] Combined product e2e pack green (product-finish + taxpayer-overhaul + app-journey + smoke) with single worker + `E2E_RELAX_RATE_LIMIT`  
+- [ ] Optional owner browser pass on real sandbox credentials (external)  
 
 ---
 
@@ -133,6 +134,9 @@ Same shell on every authenticated page.
 
 **Improvements closed in follow-up pass:** history table + recovery honesty; home next-task by connection state; quarterly/year-end tax-year chrome; declaration/adjustments copy; connect-HMRC status without mock theatre.
 
-**Improvements closed in owner-complaint pass (2026-07-18):** individual-only Connect HMRC; disconnect only when connected; home defaults + source list honesty while disconnected; shell connection label trusts only real HMRC tokens (no oauthConnected shortcut). Product-finish unit 19/19; product-finish e2e 9/9. Full suite unit 282/282.
+**Improvements closed in owner-complaint pass (2026-07-18):** individual-only Connect HMRC; disconnect only when connected; home defaults + source list honesty while disconnected; shell connection label trusts only real HMRC tokens (no oauthConnected shortcut).
 
-**Honest residual (outside this plan’s bar / not closed by UI polish):** full board pixel-atlas match (boards still show create-business frames superseded by HMRC-mirror); capacity 200×800k NOT MET; release gates OPEN; pilot/production-ready not claimed; HMRC Recognised listing not claimed; real-sandbox owner walkthrough with live credentials optional/open.
+**Closeout pass (2026-07-18):** customer API labels Connected/Not connected only (no “HMRC sandbox connected”); Settings + Sources honesty; quarterly spreadsheet check off main path (modal viewer); Playwright workers=1 + E2E login rate-limit relax. Evidence: unit 284/284; product e2e pack 20/20.
+
+**Customer product-finish bar:** closed for automated checklist.  
+**Honest residual (outside this plan’s bar):** full board pixel-atlas; capacity 200×800k NOT MET; release gates OPEN; pilot/production-ready not claimed; HMRC Recognised not claimed; owner real-sandbox walkthrough optional/open.

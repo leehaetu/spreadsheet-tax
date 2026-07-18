@@ -34,7 +34,7 @@
           <h2 style="margin:0">HMRC income sources</h2>
           <p style="margin:4px 0 0;color:#728097">Mirrored from HMRC. Missing a business? Add it in your HMRC account, then refresh.</p>
         </div>
-        <a class="btn btn-primary btn-sm" href="/onboarding">Refresh from HMRC</a>
+        <a class="btn btn-primary btn-sm" id="sources-hmrc-action" href="/connect-hmrc">Connect HMRC</a>
       </div>
       <ul id="source-list" class="result-list"></ul>
     </section>
@@ -74,6 +74,23 @@
     }
     async function load() {
       const gate = document.getElementById('gate');
+      const meRes = await fetch('/api/auth/me');
+      if (meRes.status === 401) {
+        window.location.replace('/signin?next=/records');
+        return;
+      }
+      let connected = false;
+      try {
+        const st = await fetch('/api/hmrc/status').then((r) => r.json());
+        const c = st.connection || {};
+        connected = Boolean(c.connected && !c.mock && !c.expired);
+        if (typeof window.stApplyConnectionStatus === 'function') {
+          window.stApplyConnectionStatus(st);
+        }
+      } catch {
+        connected = false;
+      }
+
       const srcRes = await fetch('/api/me/income-sources');
       if (srcRes.status === 401) {
         window.location.replace('/signin?next=/records');
@@ -81,8 +98,22 @@
       }
       const srcData = await srcRes.json();
       const sl = document.getElementById('source-list');
-      if (!srcData.sources?.length) {
-        sl.innerHTML = '<li class="muted">No sources loaded. <a href="/onboarding">Connect HMRC and load businesses</a>.</li>';
+      const action = document.getElementById('sources-hmrc-action');
+      if (action) {
+        if (connected) {
+          action.href = '/onboarding';
+          action.textContent = 'Refresh from HMRC';
+        } else {
+          action.href = '/connect-hmrc';
+          action.textContent = 'Connect HMRC';
+        }
+      }
+      if (!connected) {
+        sl.innerHTML =
+          '<li class="muted">Connect HMRC first, then load businesses HMRC already holds for you. <a href="/connect-hmrc">Connect HMRC</a>.</li>';
+      } else if (!srcData.sources?.length) {
+        sl.innerHTML =
+          '<li class="muted">No sources loaded. <a href="/onboarding">Load businesses from HMRC</a>.</li>';
       } else {
         sl.innerHTML = srcData.sources
           .map((s) => {

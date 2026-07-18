@@ -226,4 +226,20 @@ describe('product finish — history & home honesty', () => {
       /data\.oauthConnected \|\| data\.hmrcConnected/
     );
   });
+
+  it('customer connection labels never say sandbox connected', () => {
+    const server = fs.readFileSync(path.join(root, 'src/server.js'), 'utf8');
+    assert.doesNotMatch(server, /HMRC sandbox connected/);
+    assert.doesNotMatch(server, /HMRC live connected/);
+    const account = fs.readFileSync(path.join(publicDir, 'account.html'), 'utf8');
+    assert.match(account, /Customer labels only|st-hmrc/);
+    assert.doesNotMatch(account, /hmrc\?\.label/);
+  });
+
+  it('quarterly spreadsheet check panel stays off main path', () => {
+    const js = fs.readFileSync(path.join(publicDir, 'js/app.js'), 'utf8');
+    assert.match(js, /ss-viewer-dialog/);
+    assert.match(js, /panel\.hidden = true/);
+    assert.doesNotMatch(js, /ssPanel\) ssPanel\.hidden = false/);
+  });
 });

@@ -177,5 +177,8 @@ test.describe('Product finish checklist', () => {
     await expect(page.getByRole('button', { name: /Connect as agent/i })).toHaveCount(0);
     await expect(page.locator('body')).not.toContainText(/Connect as agent/i);
     await expect(page.locator('#disconnect-btn')).toBeHidden();
+    await page.goto('/records');
+    await expect(page.locator('#source-list')).toContainText(/Connect HMRC first/i);
+    await expect(page.locator('#sources-hmrc-action')).toHaveAttribute('href', '/connect-hmrc');
   });
 });
