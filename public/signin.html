@@ -26,7 +26,7 @@
       <div class="form-row">
         <label>Password <input type="password" id="password" required autocomplete="current-password" /></label>
       </div>
-      <div class="form-row" id="mfa-row" hidden>
+      <div class="form-row" id="mfa-row" hidden style="display:none">
         <label>Authenticator code (if enabled)
           <input type="text" id="mfa" inputmode="numeric" autocomplete="one-time-code" maxlength="8" />
         </label>
@@ -59,7 +59,9 @@
       const data = await res.json();
       if (!res.ok) {
         if (data.code === 'MFA_REQUIRED' || data.mfaRequired) {
-          document.getElementById('mfa-row').hidden = false;
+          const row = document.getElementById('mfa-row');
+          row.hidden = false;
+          row.style.display = '';
           err.textContent = data.error || 'Enter your authenticator code.';
         } else {
           err.textContent = data.error || 'Sign-in failed';

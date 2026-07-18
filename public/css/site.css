@@ -236,7 +236,20 @@ nav a.btn-ghost { color: var(--text); }
 }
 .hero .trust-list,
 .audience-hero .trust-list {
-  color: #d5e0ee;
+  color: #f1f5f9 !important;
+}
+.hero .trust-list li,
+.audience-hero .trust-list li {
+  color: #f1f5f9 !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+.hero .trust-list strong,
+.audience-hero .trust-list strong {
+  color: #ffffff !important;
+}
+.hero .trust-list li::before,
+.audience-hero .trust-list li::before {
+  color: #6ee7b7 !important;
 }
 .hero h1,
 .audience-hero h1 {
