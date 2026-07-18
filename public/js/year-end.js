@@ -31,18 +31,19 @@ const STAGE_ACTIONS = {
     { wf: 'other_income', label: 'Other income adjustment', primary: true },
   ],
   calculation: [
-    { wf: 'calc', label: 'Trigger tax calculation', primary: true },
-    { wf: 'calc_list', label: 'List calculations' },
+    { wf: 'calc', label: 'Request tax calculation from HMRC', primary: true },
+    { wf: 'calc_list', label: 'List existing calculations', advanced: true },
   ],
   hmrc_assist: [
     { wf: 'sa_assist_report', label: 'Get HMRC Assist report', primary: true },
   ],
   bsas: [
-    { wf: 'bsas_trigger', label: 'Trigger BSAS', primary: true },
-    { wf: 'bsas_list', label: 'List BSAS' },
-    { wf: 'bsas_adjust', label: 'Adjust BSAS (SE)' },
-    { wf: 'bsas_adjust_uk', label: 'Adjust BSAS (UK)' },
-    { wf: 'bsas_adjust_fp', label: 'Adjust BSAS (foreign)' },
+    { wf: 'bsas_trigger', label: 'Request adjustable summary', primary: true },
+    // Secondary actions stay available but are rendered under Advanced in renderStageActions
+    { wf: 'bsas_list', label: 'List adjustable summaries', advanced: true },
+    { wf: 'bsas_adjust', label: 'Adjust self-employment summary', advanced: true },
+    { wf: 'bsas_adjust_uk', label: 'Adjust UK property summary', advanced: true },
+    { wf: 'bsas_adjust_fp', label: 'Adjust foreign property summary', advanced: true },
   ],
   final_declaration: [
     { wf: 'final_calc', label: 'Intent to finalise', primary: true },
@@ -110,6 +111,71 @@ function showOut(obj) {
   if (el) el.textContent = typeof obj === 'string' ? obj : JSON.stringify(obj, null, 2);
 }
 
+/**
+ * Pull calculationId from common HMRC / product response shapes.
+ * @param {object} data
+ * @returns {string}
+ */
+function extractCalculationId(data) {
+  if (!data || typeof data !== 'object') return '';
+  const body = data.body || data.hmrcBody || data.readback?.body || {};
+  const candidates = [
+    data.calculationId,
+    body.calculationId,
+    body.id,
+    body.metadata?.calculationId,
+    Array.isArray(body.calculations) && body.calculations[0]?.calculationId,
+    Array.isArray(body.calculations) && body.calculations[0]?.id,
+    data.readback?.calculationId,
+  ];
+  for (const c of candidates) {
+    const s = String(c || '').trim();
+    if (s && s.length >= 8) return s;
+  }
+  return '';
+}
+
+/** Persist calculation id for Assist + BSAS without requiring the user to type it. */
+function storeCalculationId(calcId) {
+  if (!calcId) return;
+  const el = document.getElementById('bsas-calc-id');
+  if (el) el.value = String(calcId);
+  try {
+    sessionStorage.setItem('st_last_calculation_id', String(calcId));
+  } catch {
+    /* ignore */
+  }
+  const status = document.getElementById('assist-calc-status');
+  if (status) {
+    status.textContent = 'Calculation reference ready for this request.';
+  }
+}
+
+/** After tax calculation, offer a clear path into HMRC Assist. */
+function offerAssistContinue(calcId) {
+  const ok = document.getElementById('wf-success');
+  if (!ok) return;
+  let row = document.getElementById('assist-continue-row');
+  if (!row) {
+    row = document.createElement('div');
+    row.id = 'assist-continue-row';
+    row.className = 'action-bar';
+    row.style.border = '0';
+    row.style.marginTop = '0.75rem';
+    ok.appendChild(row);
+  }
+  row.hidden = false;
+  row.innerHTML = calcId
+    ? `<button type="button" class="btn btn-primary" id="goto-hmrc-assist">Continue to HMRC Assist feedback</button>
+       <span class="muted">Calculation saved. HMRC Assist uses this reference automatically.</span>`
+    : `<button type="button" class="btn btn-ghost" id="goto-hmrc-assist">Open HMRC Assist feedback</button>
+       <span class="muted">If Assist fails, list calculations first so a reference is stored.</span>`;
+  document.getElementById('goto-hmrc-assist')?.addEventListener('click', async () => {
+    await jumpToStage('hmrc_assist');
+    showYeCard('work');
+  });
+}
+
 function showResult(data) {
   const resultPanel = document.getElementById('year-end-result');
   if (resultPanel) resultPanel.hidden = false;
@@ -133,10 +199,6 @@ function showResult(data) {
     sum.textContent = data.ok
       ? `${nice} completed.`
       : `${nice} failed or HMRC returned a non-success response.`;
-    if (data.ok && data.workflow === 'calc') {
-      sum.textContent +=
-        ' Next: open HMRC Assist feedback to request HMRC’s messages for this calculation.';
-    }
   }
   const rb = data.readback;
   let rbLine = '';
@@ -159,22 +221,21 @@ function showResult(data) {
   // Remember calculation / assist identifiers for the next step
   try {
     const body = data.body || data.hmrcBody || data.readback?.body || {};
-    const calcId =
-      body.calculationId ||
-      body.id ||
-      data.calculationId ||
-      (Array.isArray(body.calculations) && body.calculations[0]?.calculationId);
-    if (calcId) {
-      const el = document.getElementById('bsas-calc-id');
-      if (el && !el.value) el.value = String(calcId);
-      sessionStorage.setItem('st_last_calculation_id', String(calcId));
+    const calcId = extractCalculationId(data);
+    if (calcId) storeCalculationId(calcId);
+    if (
+      data.ok &&
+      (data.workflow === 'calc' || data.workflow === 'calc_list' || data.workflow === 'final_calc')
+    ) {
+      offerAssistContinue(calcId || sessionStorage.getItem('st_last_calculation_id') || '');
     }
     if (body.reportId) sessionStorage.setItem('st_assist_report_id', String(body.reportId));
     const corr =
       data.correlationId ||
       data.hmrcCorrelationId ||
       body.correlationId ||
-      data.responseHeaders?.['x-correlationid'];
+      data.responseHeaders?.['x-correlationid'] ||
+      data.responseHeaders?.['x-correlation-id'];
     if (corr) sessionStorage.setItem('st_assist_correlation_id', String(corr));
   } catch {
     /* ignore */
@@ -480,6 +541,32 @@ function renderProgress() {
   }
 }
 
+function wireStageActionButton(btn, a) {
+  btn.addEventListener('click', () => {
+    if (a.wf === 'fp_annual' && !(eoyCase?.foreignPropertyRecords || []).some((record) => /^[A-Z]{3}$/.test(record.countryCode || ''))) {
+      showError('Upload and review foreign-property spreadsheet records first. No country will be invented or typed in as an HMRC income source.');
+      return;
+    }
+    if (a.wf === 'final_calc' && !document.getElementById('eoy-declaration')?.checked) {
+      showError('Confirm the final declaration review before continuing.');
+      return;
+    }
+    if (a.wf === 'sa_assist_report') {
+      const calcId =
+        document.getElementById('bsas-calc-id')?.value ||
+        sessionStorage.getItem('st_last_calculation_id') ||
+        '';
+      if (!calcId) {
+        showError(
+          'HMRC Assist needs a calculation reference. Complete the Tax calculation step first, then try again.'
+        );
+        return;
+      }
+    }
+    runWorkflow(a.wf);
+  });
+}
+
 function renderStageActions(stageId) {
   const box = document.getElementById('stage-actions');
   if (!box) return;
@@ -489,10 +576,12 @@ function renderStageActions(stageId) {
     box.innerHTML = '<p class="muted">No HMRC call on this step — review and mark done when ready.</p>';
     return;
   }
-  for (const a of actions) {
+  const primary = actions.filter((a) => !a.advanced);
+  const advanced = actions.filter((a) => a.advanced);
+  for (const a of primary) {
     if (a.href) {
       const link = document.createElement('a');
-      link.className = 'btn btn-ghost';
+      link.className = a.primary ? 'btn btn-primary' : 'btn btn-ghost';
       link.href = a.href;
       link.textContent = a.label;
       box.appendChild(link);
@@ -502,31 +591,29 @@ function renderStageActions(stageId) {
       btn.className = a.primary ? 'btn btn-primary' : 'btn btn-ghost';
       btn.setAttribute('data-wf', a.wf);
       btn.textContent = a.label;
-      btn.addEventListener('click', () => {
-        if (a.wf === 'fp_annual' && !(eoyCase?.foreignPropertyRecords || []).some((record) => /^[A-Z]{3}$/.test(record.countryCode || ''))) {
-          showError('Upload and review foreign-property spreadsheet records first. No country will be invented or typed in as an HMRC income source.');
-          return;
-        }
-        if (a.wf === 'final_calc' && !document.getElementById('eoy-declaration')?.checked) {
-          showError('Confirm the final declaration review before continuing.');
-          return;
-        }
-        if (a.wf === 'sa_assist_report') {
-          const calcId =
-            document.getElementById('bsas-calc-id')?.value ||
-            sessionStorage.getItem('st_last_calculation_id') ||
-            '';
-          if (!calcId) {
-            showError(
-              'HMRC Assist needs a calculation reference. Complete the Tax calculation step first, then try again.'
-            );
-            return;
-          }
-        }
-        runWorkflow(a.wf);
-      });
+      wireStageActionButton(btn, a);
       box.appendChild(btn);
     }
+  }
+  if (advanced.length) {
+    const details = document.createElement('details');
+    details.className = 'settings-advanced';
+    details.style.marginTop = '0.75rem';
+    details.innerHTML = '<summary>Advanced</summary>';
+    const inner = document.createElement('div');
+    inner.className = 'eoy-actions';
+    inner.style.marginTop = '0.5rem';
+    for (const a of advanced) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn btn-ghost btn-sm';
+      btn.setAttribute('data-wf', a.wf);
+      btn.textContent = a.label;
+      wireStageActionButton(btn, a);
+      inner.appendChild(btn);
+    }
+    details.appendChild(inner);
+    box.appendChild(details);
   }
 }
 

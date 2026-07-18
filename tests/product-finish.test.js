@@ -141,6 +141,28 @@ describe('product finish — HMRC mirror & quarterly', () => {
     assert.ok(calcIdx > 0 && assistIdx > calcIdx && finalIdx > assistIdx);
   });
 
+  it('year-end wires calculationId into Assist and offers continue', () => {
+    const js = fs.readFileSync(path.join(publicDir, 'js/year-end.js'), 'utf8');
+    assert.match(js, /function extractCalculationId/);
+    assert.match(js, /function storeCalculationId/);
+    assert.match(js, /function offerAssistContinue/);
+    assert.match(js, /goto-hmrc-assist|Continue to HMRC Assist/);
+    assert.match(js, /jumpToStage\('hmrc_assist'\)/);
+  });
+
+  it('quarterly import filters to selected HMRC source only', () => {
+    const js = fs.readFileSync(path.join(publicDir, 'js/app.js'), 'utf8');
+    assert.match(js, /function filterPayloadsToSelectedSource/);
+    assert.match(js, /st_quarterly_source_type/);
+    assert.match(js, /does not contain figures for the income source/);
+  });
+
+  it('Assist empty 204 is an honest customer state not a blank panel', () => {
+    const js = fs.readFileSync(path.join(publicDir, 'js/hmrc-assist.js'), 'utf8');
+    assert.match(js, /No Assist messages from HMRC/);
+    assert.match(js, /assist-empty/);
+  });
+
   it('quarterly Assist points customers to year-end, not a fake in-step report', () => {
     const html = fs.readFileSync(path.join(publicDir, 'app.html'), 'utf8');
     assert.match(html, /Open year-end for HMRC Assist/);

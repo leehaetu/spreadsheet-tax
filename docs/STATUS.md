@@ -1,7 +1,7 @@
 # Project status
 
 **Last updated:** 2026-07-18  
-**App version:** **1.34.2** (branch; deployed host may lag until Railway redeploy)
+**App version:** **1.34.3** (branch; live host may still report 1.34.2 until Railway redeploy)
 **Screen audit pack:** [docs/audits/2026-07-18-all-screens/](./audits/2026-07-18-all-screens/) — drives UI fixes (not “image work”)  
 **Sales high-conversion stream:** [docs/audits/2026-07-18-sales-conversion-after/REPORT.md](./audits/2026-07-18-sales-conversion-after/REPORT.md) · [full live pack 0 defects](./audits/2026-07-18-sales-conversion-after-full/REPORT.md) · prior [conversion-review](./audits/2026-07-18-sales-conversion-review/)  
 **Sales weekly readout:** [SALES-WEEKLY-READOUT.md](./SALES-WEEKLY-READOUT.md)  
@@ -16,39 +16,40 @@
 
 ---
 
-## Truth status (2026-07-18) — HMRC Assist customer UI (after owner call-out)
+## Truth status (2026-07-18) — v1.34.3 missing-work closeout (plan P0–P2/P3 partial)
 
 ```text
 BLOCKERS:
 - Capacity 200 practices / 800k customers NOT MET
 - Release gates OPEN
 - HMRC Recognised: No
-- Live host may lag until redeploy
-- Real Assist messages still require live/sandbox HMRC calculation + scopes [SANDBOX_HTTP prior only]
+- Live host /health was appVersion 1.34.2 at plan time — may lag this 1.34.3 push
+- Real Assist messages still need connected OAuth + real HMRC calculation [SANDBOX_HTTP prior ledger only for generate/ack]
 
-WAS WRONG / FIXED THIS PASS:
-- SA Assist existed as API + sandbox evidence + buried buttons — NOT as a customer step users could see
-- Now: dedicated year-end stage “HMRC Assist feedback” on checklist + work UI + primary “Get HMRC Assist report”
-- Quarterly: primary CTA routes to Year end for Assist (not a fake quarterly-only Assist product)
+SHIPPED THIS CLOSEOUT (software-completable gaps from session plan):
+- Assist calcId extract/store + Continue to HMRC Assist after calc [UNIT_TESTED + CUSTOMER_WORKFLOW]
+- Assist 204 empty state is honest customer copy [UNIT_TESTED + CUSTOMER_WORKFLOW e2e]
+- Quarterly import filtered to selected HMRC source only [UNIT_TESTED]
+- Year-end BSAS/list calc secondary under Advanced [ROUTE_ONLY UX]
+- Sources drafts reframed as unsent quarterly drafts [ROUTE_ONLY]
+- package 1.34.3 for deploy detection
 
 PROVEN:
-- EOY stage list includes hmrc_assist after calculation [UNIT_TESTED]
-- Year-end checklist shows “HMRC Assist feedback”; stage opens Assist panel + primary CTA [CUSTOMER_WORKFLOW]
-- Assist generate/ack SANDBOX_HTTP still on prior ledger docs/hmrc/sa-assist-sandbox-run.json [SANDBOX_HTTP]
-- Unit 286/286; product-finish e2e includes Assist stage test [UNIT_TESTED + CUSTOMER_WORKFLOW]
+- Unit 289/289 [UNIT_TESTED]
+- product-finish + taxpayer-overhaul + app-journey e2e 17/17 [CUSTOMER_WORKFLOW] (HMRC connection mocked for UI gates; Assist report mocked 204 in one test)
 
 UNPROVEN:
-- Owner browser: full Year end → calc → Assist → real HMRC messages on live host
-- Capacity / pilot / production-ready / Recognised
+- Live redeploy of 1.34.3
+- Owner real sandbox: calc → Assist messages 200
+- Full board pixel atlas; full annual field matrix; capacity/pilot
 ```
 
 - Stage: 2 of 5 — Sandbox engineering
-- Not claiming: production-ready · pilot-ready · HMRC Recognised · capacity met
-- Customer Assist UI path: present in year-end [CUSTOMER_WORKFLOW]; live HMRC Assist content still needs real calc + OAuth scopes [SANDBOX_HTTP prior]
+- Not claiming: production-ready · pilot-ready · HMRC Recognised · capacity met · product complete
 
 ### Next honest step
 
-- Redeploy; owner walk Year end checklist → HMRC Assist feedback step (needs real calculation reference for live messages).
+- Redeploy Railway to 1.34.3; owner: Year end → calculation → Continue to Assist → Get report.
 
 ---
 

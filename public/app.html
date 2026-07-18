@@ -170,6 +170,7 @@
         </p>
         <div class="action-bar" style="border:0;padding-top:0.5rem">
           <a class="btn btn-primary" href="/year-end" id="assist-year-end-link">Open year-end for HMRC Assist</a>
+          <button type="button" class="btn btn-ghost" id="assist-report-btn" hidden>Get Assist for saved calculation</button>
         </div>
         <details class="settings-advanced" style="margin-top:0.75rem" id="assist-advanced">
           <summary>I already have an HMRC calculation reference</summary>
@@ -183,9 +184,24 @@
             </label>
           </div>
           <div class="action-bar" style="border:0;padding-top:0.5rem">
-            <button type="button" class="btn btn-ghost" id="assist-report-btn">Get HMRC Assist report</button>
+            <button type="button" class="btn btn-ghost" id="assist-report-btn-advanced">Get HMRC Assist report</button>
           </div>
         </details>
+        <script>
+          // Show quick Assist when a calculation id was stored from year-end
+          try {
+            const saved = sessionStorage.getItem('st_last_calculation_id');
+            const btn = document.getElementById('assist-report-btn');
+            const input = document.getElementById('assist-calculation-id');
+            if (saved && btn) {
+              btn.hidden = false;
+              if (input && !input.value) input.value = saved;
+            }
+            document.getElementById('assist-report-btn-advanced')?.addEventListener('click', () => {
+              document.getElementById('assist-report-btn')?.click();
+            });
+          } catch (e) { /* ignore */ }
+        </script>
         <div id="assist-view" class="assist-view" hidden></div>
         <p id="assist-error" class="error" hidden></p>
       </section>

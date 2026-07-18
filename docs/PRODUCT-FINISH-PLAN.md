@@ -141,5 +141,6 @@ Same shell on every authenticated page.
 
 **Closeout pass (2026-07-18):** customer API labels Connected/Not connected only (no “HMRC sandbox connected”); Settings + Sources honesty; quarterly spreadsheet check off main path (modal viewer); Playwright workers=1 + E2E login rate-limit relax. Evidence: unit 284/284; product e2e pack 20/20.
 
-**Customer product-finish bar:** closed for automated checklist.  
-**Honest residual (outside this plan’s bar):** full board pixel-atlas; capacity 200×800k NOT MET; release gates OPEN; pilot/production-ready not claimed; HMRC Recognised not claimed; owner real-sandbox walkthrough optional/open.
+**Customer product-finish bar:** automated checklist green; Assist now a year-end step with calc wiring in **1.34.3**.  
+**Closeout 1.34.3:** calcId extract/store; Continue to Assist; 204 empty Assist state; quarterly one-source filter; BSAS advanced collapse; unsent drafts copy.  
+**Honest residual:** live redeploy verify; owner real-sandbox Assist messages; board pixel-atlas; capacity 200×800k NOT MET; release gates OPEN; pilot/production-ready not claimed; HMRC Recognised not claimed.

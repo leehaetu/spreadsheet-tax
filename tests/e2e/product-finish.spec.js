@@ -117,6 +117,52 @@ test.describe('Product finish checklist', () => {
     await expect(page.locator('#stage-actions button[data-wf="sa_assist_report"]')).toBeVisible();
   });
 
+  test('calc success offers continue to Assist and stores calculation id', async ({ page }) => {
+    await mockHmrcConnected(page);
+    await signIn(page, '/year-end');
+    // Seed a calculation id the way post-calc code does, then open Assist stage.
+    await page.evaluate(() => {
+      sessionStorage.setItem('st_last_calculation_id', 'f2fb30e5-4ab6-4a29-b3c1-c7264259ff1c');
+      const el = document.getElementById('bsas-calc-id');
+      if (el) el.value = 'f2fb30e5-4ab6-4a29-b3c1-c7264259ff1c';
+    });
+    await page.locator('[data-ye-card="q1"] [data-ye-answer="se"][data-value="yes"]').click();
+    await page.locator('[data-ye-card="q2"] [data-ye-answer="uk"][data-value="no"]').click();
+    await page.locator('[data-ye-card="q3"] [data-ye-answer="fp"][data-value="no"]').click();
+    await page.locator('[data-ye-card="q4"] [data-ye-answer="losses"][data-value="no"]').click();
+    await page.locator('#year-end-source-board li', { hasText: /HMRC Assist feedback/i }).click();
+    await expect(page.locator('#assist-calc-status')).toContainText(/Calculation reference ready/i);
+    // Intercept Assist report and ensure calculationId is sent.
+    let assistBody = null;
+    await page.route('**/api/workflows/run', async (route) => {
+      const req = route.request();
+      const json = req.postDataJSON();
+      if (json?.workflow === 'sa_assist_report') {
+        assistBody = json;
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            ok: true,
+            workflow: 'sa_assist_report',
+            previewOnly: false,
+            status: 204,
+            hmrcStatus: 204,
+            noContent: true,
+            body: null,
+          }),
+        });
+        return;
+      }
+      await route.continue();
+    });
+    await page.locator('#stage-actions button[data-wf="sa_assist_report"]').click();
+    await expect.poll(() => assistBody?.calculationId).toBe(
+      'f2fb30e5-4ab6-4a29-b3c1-c7264259ff1c'
+    );
+    await expect(page.locator('#eoy-assist-host')).toContainText(/No Assist messages from HMRC/i);
+  });
+
   test('quarterly exclusive steps: source → upload → map → review → send', async ({
     page,
   }) => {

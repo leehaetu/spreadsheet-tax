@@ -2652,6 +2652,17 @@ body.control-centre .cc-topbar-date {
   color: #087353;
   font-weight: 700;
 }
+.assist-empty {
+  margin-top: 12px;
+}
+.assist-empty p {
+  margin: 6px 0 0;
+}
+#assist-continue-row {
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
 #assist-quarterly-panel {
   border: 1px solid #d5e0ec;
   border-radius: 12px;

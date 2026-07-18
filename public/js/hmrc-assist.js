@@ -134,16 +134,18 @@
     }
 
     if (payload.noContent || payload.status === 204) {
-      // 204 No Content — no messages; do not invent feedback
-      host.innerHTML = '';
-      host.hidden = true;
+      // 204 No Content — HMRC had nothing to say; show honest empty state (do not invent feedback)
+      host.hidden = false;
       host.dataset.assistStatus = '204';
+      host.innerHTML =
+        '<div class="assist-empty help-tip"><strong>No Assist messages from HMRC</strong><p>HMRC returned an empty report for this calculation. That is normal when there is nothing to highlight. You can continue year-end.</p></div>';
       return payload;
     }
 
     if (!payload.messages.length) {
-      host.innerHTML = '';
-      host.hidden = true;
+      host.hidden = false;
+      host.innerHTML =
+        '<div class="assist-empty help-tip"><strong>No Assist messages in this response</strong><p>HMRC did not return message text. Download the receipt from step result if you need the raw response.</p></div>';
       return payload;
     }
 

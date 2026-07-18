@@ -252,8 +252,65 @@ async function importSample(sampleId) {
   return data;
 }
 
+/**
+ * Keep only the HMRC income source the user selected for this quarterly update.
+ * Combined workbooks are allowed as files, but only one source is submitted.
+ */
+function filterPayloadsToSelectedSource(payloads, selectedType) {
+  if (!payloads || !selectedType) return payloads;
+  const out = {
+    ...payloads,
+    meta: { ...(payloads.meta || {}) },
+  };
+  if (selectedType === 'self_employment') {
+    out.ukProperty = undefined;
+    out.foreignProperty = undefined;
+    out.selfEmployment = payloads.selfEmployment || null;
+  } else if (selectedType === 'uk_property') {
+    out.selfEmployment = undefined;
+    out.foreignProperty = undefined;
+    out.ukProperty = payloads.ukProperty || null;
+  } else if (selectedType === 'foreign_property') {
+    out.selfEmployment = undefined;
+    out.ukProperty = undefined;
+    out.foreignProperty = payloads.foreignProperty || null;
+  }
+  return out;
+}
+
+function selectedSourceHasFigures(payloads, selectedType) {
+  if (!payloads || !selectedType) return false;
+  if (selectedType === 'self_employment') return Boolean(payloads.selfEmployment);
+  if (selectedType === 'uk_property') return Boolean(payloads.ukProperty);
+  if (selectedType === 'foreign_property') {
+    const list =
+      payloads.foreignProperty?.foreignProperty ||
+      payloads.foreignProperty?.foreignNonFhlProperty ||
+      [];
+    return Array.isArray(list) && list.length > 0;
+  }
+  return true;
+}
+
 function handleImportSuccess(data) {
-  lastPayloads = data.payloads;
+  const selectedType =
+    sessionStorage.getItem('st_quarterly_source_type') || '';
+  let payloads = data.payloads;
+  if (selectedType) {
+    if (!selectedSourceHasFigures(payloads, selectedType)) {
+      const errEl = document.getElementById('upload-error');
+      if (errEl) {
+        errEl.hidden = false;
+        errEl.textContent =
+          'This spreadsheet does not contain figures for the income source you selected. Choose a different file, or go back and select the matching HMRC income source.';
+      }
+      showPanels({ upload: true });
+      setWizardStep(2);
+      return;
+    }
+    payloads = filterPayloadsToSelectedSource(payloads, selectedType);
+  }
+  lastPayloads = payloads;
   lastSummary = data.summary || null;
   lastDraftId = data.draftId || null;
   lastValidation = data.validation || { ready: true, errors: [], warnings: [] };
@@ -262,7 +319,7 @@ function handleImportSuccess(data) {
   lastFilename = data.filename || null;
   lastRowCount = data.rowCount ?? null;
   lastSpreadsheetCheck = data.spreadsheetCheck || null;
-  showReview(data);
+  showReview({ ...data, payloads });
   renderSpreadsheetCheck(lastSpreadsheetCheck);
   // After upload → map columns (exclusive step). Full sheet opens in the modal viewer.
   if (typeof window.stQuarterlyShowStep === 'function') {
