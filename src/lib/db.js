@@ -117,7 +117,7 @@ function migrate(database) {
 
     CREATE TABLE IF NOT EXISTS submission_attempts (
       id TEXT PRIMARY KEY,
-      draft_id TEXT NOT NULL REFERENCES drafts(id),
+      draft_id TEXT,
       user_id TEXT,
       mode TEXT NOT NULL,
       ok INTEGER NOT NULL,
@@ -244,6 +244,34 @@ function migrate(database) {
     );
   } catch {
     /* already exists */
+  }
+
+  // Allow workflow receipts without a draft (submission_attempts.draft_id nullable)
+  try {
+    const cols = database.prepare(`PRAGMA table_info(submission_attempts)`).all();
+    const draftCol = cols.find((c) => c.name === 'draft_id');
+    if (draftCol && draftCol.notnull === 1) {
+      database.exec(`
+        CREATE TABLE IF NOT EXISTS submission_attempts_v2 (
+          id TEXT PRIMARY KEY,
+          draft_id TEXT,
+          user_id TEXT,
+          mode TEXT NOT NULL,
+          ok INTEGER NOT NULL,
+          results_json TEXT NOT NULL,
+          created_at TEXT NOT NULL
+        );
+        INSERT OR IGNORE INTO submission_attempts_v2 (id, draft_id, user_id, mode, ok, results_json, created_at)
+          SELECT id, draft_id, user_id, mode, ok, results_json, created_at FROM submission_attempts;
+        DROP TABLE submission_attempts;
+        ALTER TABLE submission_attempts_v2 RENAME TO submission_attempts;
+      `);
+    }
+  } catch (e) {
+    console.warn(
+      'submission_attempts draft_id migration skipped:',
+      e instanceof Error ? e.message : e
+    );
   }
 
   // Scale indexes for large firm books (hundreds of thousands of clients)

@@ -83,8 +83,28 @@ function splitCsvLine(line) {
   return cells;
 }
 
+/** Max workbook size (bytes) for XLSX path — untrusted upload control. */
+export const XLSX_MAX_BYTES = 2 * 1024 * 1024;
+/** Max sheets / rows to reduce DoS surface of xlsx parser. */
+export const XLSX_MAX_SHEETS = 8;
+export const XLSX_MAX_ROWS_PER_SHEET = 5000;
+
+/**
+ * Whether Excel parse is allowed (CSV is always preferred/safe).
+ * Production defaults to CSV-only unless ALLOW_XLSX_PARSE=1.
+ * @param {NodeJS.ProcessEnv} [env]
+ */
+export function isXlsxParseEnabled(env = process.env) {
+  if (env.ALLOW_XLSX_PARSE === '0') return false;
+  if (env.ALLOW_XLSX_PARSE === '1') return true;
+  // Non-production: allow for tests and local; production: opt-in only
+  return env.NODE_ENV !== 'production';
+}
+
 /**
  * Parse a Buffer (CSV or XLSX) into rows.
+ * Compensating controls for vulnerable xlsx: size/sheet/row limits, optional disable.
+ * Prefer CSV for untrusted production uploads.
  * @param {Buffer} buffer
  * @param {string} [filename]
  * @returns {Record<string, string>[]}
@@ -97,22 +117,57 @@ export function parseFileBuffer(buffer, filename = '') {
     return parseCsvText(buffer.toString('utf8'));
   }
 
-  const workbook = XLSX.read(buffer, { type: 'buffer', raw: false });
+  if (!isXlsxParseEnabled()) {
+    throw new Error(
+      'Excel (.xlsx) upload is disabled on this server. Export your sheet as CSV and upload that, or set ALLOW_XLSX_PARSE=1 with risk acceptance.'
+    );
+  }
+  if (buffer.length > XLSX_MAX_BYTES) {
+    throw new Error(
+      `Spreadsheet too large for Excel parse (max ${XLSX_MAX_BYTES} bytes). Use CSV or a smaller file.`
+    );
+  }
+
+  const workbook = XLSX.read(buffer, {
+    type: 'buffer',
+    raw: false,
+    cellDates: false,
+    // dense/sheetRows limits reduce work on hostile workbooks
+    sheetRows: XLSX_MAX_ROWS_PER_SHEET + 1,
+  });
   /** @type {Record<string, string>[]} */
   const all = [];
-  for (const name of workbook.SheetNames) {
+  const names = (workbook.SheetNames || []).slice(0, XLSX_MAX_SHEETS);
+  for (const name of names) {
     const rows = sheetToRows(workbook.Sheets[name]);
-    // If sheet is named after a section and lacks section column, inject it
     const sectionHint = normalizeHeader(name);
     for (const row of rows) {
-      if (!row.section && isKnownSection(sectionHint)) {
-        all.push({ ...row, section: sectionHint });
+      // Prototype-pollution guard: only own enumerable string keys, stringify values
+      const safe = sanitizeRow(row);
+      if (!safe.section && isKnownSection(sectionHint)) {
+        all.push({ ...safe, section: sectionHint });
       } else {
-        all.push(row);
+        all.push(safe);
       }
     }
   }
   return all;
+}
+
+/**
+ * @param {Record<string, string>} row
+ * @returns {Record<string, string>}
+ */
+function sanitizeRow(row) {
+  /** @type {Record<string, string>} */
+  const out = Object.create(null);
+  for (const key of Object.keys(row || {})) {
+    if (key === '__proto__' || key === 'constructor' || key === 'prototype')
+      continue;
+    if (typeof key !== 'string') continue;
+    out[key] = String(row[key] ?? '');
+  }
+  return out;
 }
 
 /**

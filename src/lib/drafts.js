@@ -185,13 +185,29 @@ export function recordSubmissionAttempt({
 }
 
 /**
+ * Idempotency is scoped to user (and optional operation).
+ * Global key lookup alone is forbidden for replay across users.
  * @param {string} key
+ * @param {{ userId?: string|null, operation?: string }} [scope]
  */
-export function getIdempotentResponse(key) {
+export function getIdempotentResponse(key, scope = {}) {
   const row = getDb()
     .prepare(`SELECT * FROM idempotency_keys WHERE key = ?`)
     .get(key);
   if (!row) return null;
+  const scopedUser = scope.userId != null ? String(scope.userId) : null;
+  const rowUser = row.user_id != null ? String(row.user_id) : null;
+  // Deny cross-user replay: stored user must match request scope user
+  if (rowUser && scopedUser && rowUser !== scopedUser) {
+    return null;
+  }
+  if (rowUser && !scopedUser) {
+    return null;
+  }
+  if (!rowUser && scopedUser) {
+    // Anonymous key cannot be replayed by a signed-in user
+    return null;
+  }
   return JSON.parse(row.response_json);
 }
 

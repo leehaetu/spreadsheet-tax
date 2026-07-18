@@ -95,8 +95,9 @@ describe('Gate 0 submit safety', () => {
     );
     assert.equal(sample.status, 200);
     const imported = JSON.parse(sample.body);
+    assert.ok(imported.draftId, 'import must return draftId');
     const submitBody = JSON.stringify({
-      payloads: imported.payloads,
+      draftId: imported.draftId,
       nino: 'AA123456A',
       taxYear: '2024-25',
       businessIdSe: 'XAIS12345678901',

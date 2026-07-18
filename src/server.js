@@ -114,14 +114,37 @@ import {
   HMRC_RECOGNITION_BANNER,
 } from './lib/hmrc-recognition.js';
 import { registerHmrcMtdRoutes } from './routes/hmrc-mtd-routes.js';
-import { mtdCapabilityMatrix } from './lib/hmrc-api.js';
+import {
+  mtdCapabilityMatrix,
+  listFinalDeclarationObligations,
+  putSeAnnualSubmission,
+  putUkPropertyAnnualSubmission,
+  putForeignPropertyAnnualSubmission,
+  createBroughtForwardLoss,
+  triggerCalculation,
+  listCalculations,
+  triggerBsas,
+  listBsas,
+  amendSePeriod,
+  defaultSeAnnualBody,
+  resolveSeAnnualBody,
+} from './lib/hmrc-api.js';
+import {
+  loadDraftForUser,
+  assertJobOperator,
+} from './lib/access-control.js';
+import { assertProductionBoot } from './lib/production-boot.js';
+import {
+  recordWorkflowReceipt,
+  summariseHmrcResult,
+} from './lib/workflow-receipts.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, '..');
 const publicDir = path.join(root, 'public');
 const templatesDir = path.join(root, 'templates');
 const testSpreadsheetsDir = path.join(root, 'test-spreadsheets');
-const APP_VERSION = '1.15.0';
+const APP_VERSION = '1.16.0';
 
 /**
  * Serve HTML with site-chrome (HMRC recognition banner/footer) injected once.
@@ -311,6 +334,9 @@ app.get('/', (_req, res) => {
 
 app.get('/app', (_req, res) => {
   sendPublicHtml(res, 'app.html');
+});
+app.get('/year-end', (_req, res) => {
+  sendPublicHtml(res, 'year-end.html');
 });
 
 app.get('/self-employed', (_req, res) => {
@@ -723,8 +749,12 @@ app.post('/api/submit', async (req, res) => {
       return res.status(429).json({ error: 'Too many submit attempts. Try again shortly.' });
     }
 
+    const user = getSessionUser(getSessionIdFromRequest(req));
+
     if (idempotencyKey) {
-      const prior = getIdempotentResponse(String(idempotencyKey));
+      const prior = getIdempotentResponse(String(idempotencyKey), {
+        userId: user?.id || null,
+      });
       if (prior) {
         return res.json({
           ok: prior.ok,
@@ -745,19 +775,20 @@ app.post('/api/submit', async (req, res) => {
     let payloads = null;
     let draft = null;
     if (draftId) {
-      draft = getDraft(String(draftId));
-      if (!draft) {
+      const loaded = loadDraftForUser(String(draftId), user, { forSubmit: true });
+      if (loaded.error || !loaded.draft) {
         return res
-          .status(404)
-          .json({ error: 'Draft not found. Import the file again.' });
+          .status(loaded.status || 404)
+          .json({ error: loaded.error || 'Draft not found. Import the file again.' });
       }
+      draft = loaded.draft;
       payloads = draft.payloads;
     } else if (
       clientPayloads &&
-      (process.env.ALLOW_CLIENT_PAYLOAD_SUBMIT === '1' ||
-        process.env.NODE_ENV !== 'production')
+      process.env.ALLOW_CLIENT_PAYLOAD_SUBMIT === '1' &&
+      process.env.NODE_ENV !== 'production'
     ) {
-      // Dev/test fallback only — production requires draftId
+      // Explicit opt-in + non-production only — production always requires draftId
       payloads = clientPayloads;
     }
 
@@ -782,7 +813,15 @@ app.post('/api/submit', async (req, res) => {
       });
     }
 
-    const user = getSessionUser(getSessionIdFromRequest(req));
+    // Never allow anonymous external HMRC submit (sandbox or production)
+    if (
+      process.env.HMRC_ALLOW_LIVE_SUBMIT === '1' &&
+      !user &&
+      process.env.ALLOW_ANONYMOUS_LIVE_SUBMIT !== '1'
+    ) {
+      // Live path still needs a signed-in user; preview (double) remains allowed
+    }
+
     let accessToken;
     let tokenMode;
     let connectionMock = false;
@@ -802,9 +841,10 @@ app.post('/api/submit', async (req, res) => {
       }
     }
 
+    // Anonymous draft + live external: force double unless signed-in owner
     const client = createSubmitClient({
-      accessToken,
-      mode: tokenMode,
+      accessToken: user ? accessToken : undefined,
+      mode: user ? tokenMode : undefined,
       req,
       userId: user?.id || null,
     });
@@ -814,6 +854,23 @@ app.post('/api/submit', async (req, res) => {
       );
       return res.status(403).json({
         error: 'Live HMRC submission is not enabled on this server.',
+      });
+    }
+    if (client.mode !== 'double' && !user) {
+      return res.status(401).json({
+        error:
+          'Sign in required for HMRC submission. Anonymous live submit is not allowed.',
+      });
+    }
+    if (
+      client.mode !== 'double' &&
+      draft &&
+      !draft.userId &&
+      !draft.firmId
+    ) {
+      return res.status(403).json({
+        error:
+          'Anonymous drafts can only be used for preview. Sign in, re-import, then submit.',
       });
     }
 
@@ -1688,7 +1745,7 @@ app.post('/api/jobs/run', async (req, res) => {
   });
 });
 
-/** Signed-in practice can trigger deadline reminders for their firm book */
+/** Signed-in practice can trigger deadline reminders for their firm book only */
 app.post('/api/me/jobs/deadline-reminders', async (req, res) => {
   const user = requireUser(req, res);
   if (!user) return;
@@ -1696,13 +1753,26 @@ app.post('/api/me/jobs/deadline-reminders', async (req, res) => {
   if (!memberships.length) {
     return res.status(403).json({ error: 'No firm membership.' });
   }
-  const result = await runDeadlineReminders(
-    Number(req.body?.withinDays) || 14
-  );
+  const firmId =
+    typeof req.body?.firmId === 'string' && req.body.firmId
+      ? req.body.firmId
+      : memberships[0].firm_id;
+  const denied = assertJobOperator(user.id, firmId);
+  if (denied) {
+    return res.status(denied.status).json({ error: denied.error });
+  }
+  const result = await runDeadlineReminders(Number(req.body?.withinDays) || 14, {
+    firmId,
+  });
   writeAudit({
+    firmId,
     userId: user.id,
     action: 'deadline_reminders_run',
-    meta: { count: result.count, deliveredCount: result.deliveredCount },
+    meta: {
+      count: result.count,
+      deliveredCount: result.deliveredCount,
+      firmId,
+    },
   });
   res.json(result);
 });
@@ -1855,13 +1925,14 @@ app.get('/api/drafts', (req, res) => {
 });
 
 app.get('/api/drafts/:draftId', (req, res) => {
-  const draft = getDraft(req.params.draftId);
-  if (!draft) return res.status(404).json({ error: 'Draft not found' });
   const user = getSessionUser(getSessionIdFromRequest(req));
-  if (draft.userId && (!user || user.id !== draft.userId)) {
-    return res.status(403).json({ error: 'Not allowed to view this draft.' });
+  const loaded = loadDraftForUser(req.params.draftId, user);
+  if (loaded.error || !loaded.draft) {
+    return res
+      .status(loaded.status || 404)
+      .json({ error: loaded.error || 'Draft not found' });
   }
-  res.json({ ok: true, draft });
+  res.json({ ok: true, draft: loaded.draft });
 });
 
 app.delete('/api/drafts/:draftId', (req, res) => {
@@ -2097,6 +2168,245 @@ app.post('/api/me/clients', (req, res) => {
     entityId: id,
   });
   res.status(201).json({ ok: true, client: getClientRow(id) });
+});
+
+/**
+ * Customer/practice year-end and correction workflows.
+ * Same HMRC adapter as /api/hmrc/mtd/* — records immutable receipt per step.
+ */
+app.post('/api/workflows/run', async (req, res) => {
+  const user = requireUser(req, res);
+  if (!user) return;
+  const workflow = String(req.body?.workflow || '');
+  const nino = String(req.body?.nino || '')
+    .replace(/\s+/g, '')
+    .toUpperCase();
+  const taxYear = String(req.body?.taxYear || '2024-25');
+  if (!workflow) {
+    return res.status(400).json({ error: 'workflow required' });
+  }
+  if (!nino) {
+    return res.status(400).json({ error: 'nino required' });
+  }
+
+  const live = process.env.HMRC_ALLOW_LIVE_SUBMIT === '1';
+  const conn = live ? getActiveConnection(user.id) : null;
+  const canExternal =
+    live &&
+    conn &&
+    !conn.expired &&
+    !conn.mock &&
+    conn.accessToken &&
+    !isMockAccessToken(conn.accessToken);
+
+  /** @type {object} */
+  let hmrcResult = null;
+  let mode = 'double';
+
+  try {
+    if (!canExternal) {
+      // Preview receipt only — same shape, no HMRC HTTP
+      const receipt = recordWorkflowReceipt({
+        userId: user.id,
+        workflow,
+        mode: 'double',
+        ok: true,
+        request: { workflow, nino: nino.slice(0, 2) + '****', taxYear },
+        response: {
+          preview: true,
+          message:
+            'Preview only — not sent to HMRC. Connect OAuth and set HMRC_ALLOW_LIVE_SUBMIT=1 for external calls.',
+        },
+      });
+      writeAudit({
+        userId: user.id,
+        action: `workflow_${workflow}_preview`,
+        entityType: 'workflow',
+        meta: { receiptId: receipt.receiptId },
+      });
+      return res.json({
+        ok: true,
+        workflow,
+        mode: 'double',
+        previewOnly: true,
+        receiptId: receipt.receiptId,
+        message: receipt.receiptId
+          ? 'Preview receipt stored. No HMRC call made.'
+          : 'Preview complete.',
+      });
+    }
+
+    mode = conn.mode || 'sandbox';
+    const o = {
+      accessToken: conn.accessToken,
+      nino,
+      req,
+      userId: user.id,
+      taxYear,
+    };
+
+    switch (workflow) {
+      case 'final_obligations':
+        hmrcResult = await listFinalDeclarationObligations(o);
+        break;
+      case 'se_annual':
+        if (!req.body?.businessIdSe) {
+          return res.status(400).json({ error: 'businessIdSe required' });
+        }
+        hmrcResult = await putSeAnnualSubmission({
+          ...o,
+          businessId: req.body.businessIdSe,
+          body: resolveSeAnnualBody(req.body?.body || defaultSeAnnualBody()),
+        });
+        break;
+      case 'uk_annual':
+        if (!req.body?.businessIdUk) {
+          return res.status(400).json({ error: 'businessIdUk required' });
+        }
+        hmrcResult = await putUkPropertyAnnualSubmission({
+          ...o,
+          businessId: req.body.businessIdUk,
+          body: req.body?.body || { ukOtherProperty: { adjustments: {} } },
+        });
+        break;
+      case 'fp_annual':
+        if (!req.body?.businessIdForeign) {
+          return res.status(400).json({ error: 'businessIdForeign required' });
+        }
+        hmrcResult = await putForeignPropertyAnnualSubmission({
+          ...o,
+          businessId: req.body.businessIdForeign,
+          body: req.body?.body || {
+            foreignProperty: [{ countryCode: 'ESP', adjustments: {} }],
+          },
+        });
+        break;
+      case 'losses':
+        hmrcResult = await createBroughtForwardLoss({
+          ...o,
+          body: req.body?.body || {
+            businessId: req.body?.businessIdSe,
+            typeOfLoss: 'self-employment',
+            lossAmount: 1,
+            taxYearBroughtForwardFrom: taxYear,
+          },
+        });
+        break;
+      case 'calc':
+        hmrcResult = await triggerCalculation({
+          ...o,
+          calculationType: 'in-year',
+          body: {},
+        });
+        break;
+      case 'calc_list':
+        hmrcResult = await listCalculations(o);
+        break;
+      case 'bsas_trigger':
+        hmrcResult = await triggerBsas({
+          ...o,
+          body: req.body?.body || {
+            accountingPeriod: {
+              startDate: `${taxYear.slice(0, 4)}-04-06`,
+              endDate: `${Number(taxYear.slice(0, 4)) + 1}-04-05`,
+            },
+            typeOfBusiness: 'self-employment',
+            businessId: req.body?.businessIdSe,
+          },
+        });
+        break;
+      case 'bsas_list':
+        hmrcResult = await listBsas(o);
+        break;
+      case 'final_calc':
+        hmrcResult = await triggerCalculation({
+          ...o,
+          calculationType: 'intent-to-finalise',
+          body: {},
+        });
+        break;
+      case 'se_amend':
+        if (!req.body?.businessIdSe || !req.body?.periodId) {
+          return res
+            .status(400)
+            .json({ error: 'businessIdSe and periodId required' });
+        }
+        hmrcResult = await amendSePeriod({
+          ...o,
+          businessId: req.body.businessIdSe,
+          periodId: req.body.periodId,
+          body: req.body?.body || {
+            periodDates: {
+              periodStartDate: String(req.body.periodId).split('_')[0],
+              periodEndDate: String(req.body.periodId).split('_')[1],
+            },
+            periodIncome: { turnover: 1, other: 0 },
+            periodExpenses: { consolidatedExpenses: 0 },
+          },
+        });
+        break;
+      default:
+        return res.status(400).json({
+          error: 'Unknown workflow',
+          known: [
+            'final_obligations',
+            'se_annual',
+            'uk_annual',
+            'fp_annual',
+            'losses',
+            'calc',
+            'calc_list',
+            'bsas_trigger',
+            'bsas_list',
+            'final_calc',
+            'se_amend',
+          ],
+        });
+    }
+
+    const summary = summariseHmrcResult(hmrcResult);
+    const receipt = recordWorkflowReceipt({
+      userId: user.id,
+      workflow,
+      mode,
+      ok: summary.ok,
+      hmrcStatus: summary.hmrcStatus,
+      hmrcCode: summary.hmrcCode,
+      path: summary.path,
+      request: { workflow, taxYear, nino: nino.slice(0, 2) + '****' },
+      response: hmrcResult?.body ?? hmrcResult,
+      readback: summary.ok
+        ? { attempted: true, note: 'Use list/retrieve endpoints for full readback' }
+        : { attempted: false },
+    });
+    writeAudit({
+      userId: user.id,
+      action: `workflow_${workflow}`,
+      entityType: 'workflow',
+      meta: {
+        receiptId: receipt.receiptId,
+        ok: summary.ok,
+        hmrcStatus: summary.hmrcStatus,
+        hmrcCode: summary.hmrcCode,
+      },
+    });
+    res.status(summary.ok ? 200 : 502).json({
+      ok: summary.ok,
+      workflow,
+      mode,
+      previewOnly: false,
+      receiptId: receipt.receiptId,
+      hmrcStatus: summary.hmrcStatus,
+      hmrcCode: summary.hmrcCode,
+      path: summary.path,
+      body: hmrcResult?.body,
+    });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({
+      error: e instanceof Error ? e.message : 'Workflow failed',
+    });
+  }
 });
 
 app.get('/api/receipts/:attemptId', (req, res) => {
@@ -2484,6 +2794,12 @@ const port = Number(process.env.PORT) || 3000;
 
 // Allow importing app without listening (tests)
 if (process.env.SPREADSHEET_TAX_NO_LISTEN !== '1') {
+  try {
+    assertProductionBoot(process.env);
+  } catch (e) {
+    console.error(e instanceof Error ? e.message : e);
+    process.exit(1);
+  }
   app.listen(port, '0.0.0.0', () => {
     console.log(`Spreadsheet Tax listening on http://0.0.0.0:${port}`);
     console.log(`  Sales:      http://localhost:${port}/`);

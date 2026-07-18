@@ -10,20 +10,40 @@ import { newId } from './auth.js';
  * Queue deadline reminders for clients with due dates within N days.
  * Email may be stubbed (delivered:false) unless EMAIL_WEBHOOK_URL is set.
  * @param {number} [withinDays]
+ * @param {{ firmId?: string|null }} [opts] — when firmId set, only that firm
  */
-export async function runDeadlineReminders(withinDays = 14) {
+export async function runDeadlineReminders(withinDays = 14, opts = {}) {
   const database = getDb();
   const today = new Date();
   const limit = new Date(today.getTime() + withinDays * 864e5)
     .toISOString()
     .slice(0, 10);
-  const clients = database
-    .prepare(
-      `SELECT c.*, u.email AS owner_email FROM clients c
+  const firmId = opts.firmId ? String(opts.firmId) : null;
+  // Without firmId, return empty — never scan all tenants from a user route.
+  if (!firmId && opts.requireFirm !== false) {
+    return {
+      ok: true,
+      count: 0,
+      deliveredCount: 0,
+      sent: [],
+      note: 'firmId required — cross-tenant reminder scan disabled',
+    };
+  }
+  const clients = firmId
+    ? database
+        .prepare(
+          `SELECT c.*, u.email AS owner_email FROM clients c
+       LEFT JOIN users u ON u.id = c.assignee_user_id
+       WHERE c.firm_id = ? AND c.due_date IS NOT NULL AND c.due_date <= ? AND c.workflow_status NOT IN ('submitted')`
+        )
+        .all(firmId, limit)
+    : database
+        .prepare(
+          `SELECT c.*, u.email AS owner_email FROM clients c
        LEFT JOIN users u ON u.id = c.assignee_user_id
        WHERE c.due_date IS NOT NULL AND c.due_date <= ? AND c.workflow_status NOT IN ('submitted')`
-    )
-    .all(limit);
+        )
+        .all(limit);
 
   const sent = [];
   for (const c of clients) {

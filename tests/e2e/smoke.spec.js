@@ -26,11 +26,12 @@ test.describe('Gate 0 smoke — sales and personal app', () => {
 
   test('E2E-04 sample import shows review figures', async ({ page }) => {
     await page.goto('/app');
-    await expect(page.getByRole('heading', { name: /quarterly update/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /tax update|quarterly/i })).toBeVisible();
     const sample = page.locator('.sample-btn').first();
     await sample.click();
-    await expect(page.locator('#preview-panel')).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator('#review-panel')).toBeVisible({ timeout: 15_000 });
     await expect(page.locator('#metric-income')).not.toHaveText('—');
+    await expect(page.locator('#goto-submit')).toBeVisible();
   });
 
   test('E2E-audience mode changes self-employed headline', async ({ page }) => {
@@ -43,10 +44,9 @@ test.describe('Gate 0 smoke — sales and personal app', () => {
   }) => {
     await page.goto('/app');
     await page.locator('.sample-btn').first().click();
-    await expect(page.locator('#preview-panel')).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator('#review-panel')).toBeVisible({ timeout: 15_000 });
     await page.locator('#goto-submit').click();
     await expect(page.locator('#submit-panel')).toBeVisible();
-    // identifiers may be prefilled from sample meta
     const nino = page.locator('#nino');
     if (!(await nino.inputValue())) {
       await nino.fill('AA123456A');

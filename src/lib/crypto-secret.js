@@ -1,17 +1,36 @@
 /**
  * Symmetric encrypt/decrypt for OAuth tokens at rest.
+ * Production: TOKEN_ENCRYPTION_KEY required (see production-boot.js).
+ * Non-production: may fall back to SESSION_SECRET then a well-known dev key
+ * (never for production boot).
  */
 
 import crypto from 'node:crypto';
+import { DEV_TOKEN_KEY } from './production-boot.js';
 
 const ALGO = 'aes-256-gcm';
 
+/**
+ * @param {NodeJS.ProcessEnv} [env]
+ */
+export function resolveTokenEncryptionMaterial(env = process.env) {
+  if (env.TOKEN_ENCRYPTION_KEY && env.TOKEN_ENCRYPTION_KEY.length >= 16) {
+    return { material: env.TOKEN_ENCRYPTION_KEY, source: 'TOKEN_ENCRYPTION_KEY' };
+  }
+  if (env.NODE_ENV === 'production' || env.FORCE_PRODUCTION_SAFETY === '1') {
+    throw new Error(
+      'TOKEN_ENCRYPTION_KEY is required when NODE_ENV=production or FORCE_PRODUCTION_SAFETY=1'
+    );
+  }
+  if (env.SESSION_SECRET && env.SESSION_SECRET.length >= 16) {
+    return { material: env.SESSION_SECRET, source: 'SESSION_SECRET_FALLBACK' };
+  }
+  return { material: DEV_TOKEN_KEY, source: 'DEV_FALLBACK' };
+}
+
 function keyBytes() {
-  const raw =
-    process.env.TOKEN_ENCRYPTION_KEY ||
-    process.env.SESSION_SECRET ||
-    'dev-only-spreadsheet-tax-token-key!!';
-  return crypto.createHash('sha256').update(raw).digest();
+  const { material } = resolveTokenEncryptionMaterial();
+  return crypto.createHash('sha256').update(material).digest();
 }
 
 /**

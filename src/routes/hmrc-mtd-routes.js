@@ -42,7 +42,8 @@ import {
   taxYearFromPeriodStart,
   mtdCapabilityMatrix,
 } from '../lib/hmrc-api.js';
-import { getDraft, writeAudit } from '../lib/drafts.js';
+import { writeAudit } from '../lib/drafts.js';
+import { loadDraftForUser } from '../lib/access-control.js';
 
 /**
  * @param {import('express').Express} app
@@ -177,8 +178,15 @@ export function registerHmrcMtdRoutes(app, deps) {
     if (!ctx) return;
     let body = req.body?.body || req.body?.periodBody || null;
     if (!body && req.body?.draftId) {
-      const draft = getDraft(String(req.body.draftId));
-      body = periodBodyFromDraft(draft, 'self_employment');
+      const loaded = loadDraftForUser(String(req.body.draftId), ctx.user, {
+        forSubmit: true,
+      });
+      if (loaded.error || !loaded.draft) {
+        return res
+          .status(loaded.status || 403)
+          .json({ ok: false, error: loaded.error || 'Draft not allowed' });
+      }
+      body = periodBodyFromDraft(loaded.draft, 'self_employment');
       if (!body) {
         return res
           .status(404)
@@ -234,8 +242,15 @@ export function registerHmrcMtdRoutes(app, deps) {
     if (!ctx) return;
     let body = req.body?.body || req.body?.periodBody || null;
     if (!body && req.body?.draftId) {
-      const draft = getDraft(String(req.body.draftId));
-      body = periodBodyFromDraft(draft, 'uk_property');
+      const loaded = loadDraftForUser(String(req.body.draftId), ctx.user, {
+        forSubmit: true,
+      });
+      if (loaded.error || !loaded.draft) {
+        return res
+          .status(loaded.status || 403)
+          .json({ ok: false, error: loaded.error || 'Draft not allowed' });
+      }
+      body = periodBodyFromDraft(loaded.draft, 'uk_property');
       if (!body) {
         return res
           .status(404)
@@ -278,8 +293,15 @@ export function registerHmrcMtdRoutes(app, deps) {
     if (!ctx) return;
     let body = req.body?.body || req.body?.periodBody || null;
     if (!body && req.body?.draftId) {
-      const draft = getDraft(String(req.body.draftId));
-      body = periodBodyFromDraft(draft, 'foreign_property');
+      const loaded = loadDraftForUser(String(req.body.draftId), ctx.user, {
+        forSubmit: true,
+      });
+      if (loaded.error || !loaded.draft) {
+        return res
+          .status(loaded.status || 403)
+          .json({ ok: false, error: loaded.error || 'Draft not allowed' });
+      }
+      body = periodBodyFromDraft(loaded.draft, 'foreign_property');
       if (!body) {
         return res
           .status(404)

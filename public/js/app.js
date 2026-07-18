@@ -4,6 +4,10 @@ let lastPayloads = null;
 let lastSummary = null;
 let lastDraftId = null;
 let lastValidation = null;
+let lastFieldLinks = null;
+let lastSources = null;
+let lastFilename = null;
+let lastRowCount = null;
 
 /**
  * Honest client metadata for FPH — only real browser-reported values.
@@ -13,7 +17,6 @@ function fraudClientHeaders() {
   /** @type {Record<string, string>} */
   const h = {};
   try {
-    // JS getTimezoneOffset is minutes west of UTC; HMRC wants east-of-UTC offset
     h['X-Client-Timezone-Offset'] = String(-new Date().getTimezoneOffset());
     if (window.innerWidth > 0 && window.innerHeight > 0) {
       h['X-Client-Window-Size'] = `${window.innerWidth}x${window.innerHeight}`;
@@ -27,9 +30,13 @@ function fraudClientHeaders() {
         h['X-Client-Screen-Depth'] = String(window.screen.colorDepth);
       }
     }
-    // Persistent device UUID on the originating device (HMRC requirement)
     let deviceId = localStorage.getItem('st_device_id');
-    if (!deviceId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(deviceId)) {
+    if (
+      !deviceId ||
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        deviceId
+      )
+    ) {
       deviceId =
         typeof crypto !== 'undefined' && crypto.randomUUID
           ? crypto.randomUUID()
@@ -37,7 +44,6 @@ function fraudClientHeaders() {
       if (deviceId) localStorage.setItem('st_device_id', deviceId);
     }
     if (deviceId) h['X-Client-Device-Id'] = deviceId;
-    // Do NOT send X-Client-Public-Port — browser cannot know the public TCP port.
   } catch {
     /* private mode */
   }
@@ -61,9 +67,9 @@ function connectionLabel(data) {
     return 'HMRC OAuth not configured (mock connect only)';
   }
   if (data?.hmrcMode === 'sandbox' && data?.liveSubmitEnabled) {
-    return 'HMRC sandbox submit enabled';
+    return 'Sandbox submit available when signed in';
   }
-  if (data?.liveSubmitEnabled) return 'Live HMRC submit enabled';
+  if (data?.liveSubmitEnabled) return 'Live HMRC submit flag on (controlled)';
   return 'Preview mode — not sent to HMRC';
 }
 
@@ -74,6 +80,19 @@ function setWizardStep(step) {
     if (n < step) el.classList.add('done');
     if (n === step) el.classList.add('active');
   });
+}
+
+function panel(id) {
+  return document.getElementById(id);
+}
+
+function showPanels({ upload, review, submit }) {
+  const u = panel('upload-panel');
+  const r = panel('review-panel');
+  const s = panel('submit-panel');
+  if (u) u.hidden = !upload;
+  if (r) r.hidden = !review;
+  if (s) s.hidden = !submit;
 }
 
 async function loadStatus() {
@@ -88,10 +107,13 @@ async function loadStatus() {
         data.honesty?.realHmrcRequires ||
         'Default path is preview-only until HMRC credentials and live flag are set.';
     }
-    // Honest primary button: preview vs sandbox when server would call HMRC
     const btn = document.getElementById('submit-btn');
     if (btn) {
-      if (data.previewOnly || data.hmrcMode === 'double' || !data.liveSubmitEnabled) {
+      if (
+        data.previewOnly ||
+        data.hmrcMode === 'double' ||
+        !data.liveSubmitEnabled
+      ) {
         btn.textContent = 'Run preview submit';
       } else {
         btn.textContent = 'Submit to HMRC sandbox';
@@ -105,7 +127,6 @@ async function loadStatus() {
   }
 }
 
-/** Prefill NI / business IDs from saved account preferences when empty. */
 async function loadSavedIdentifiers() {
   try {
     const res = await apiFetch('/api/me/preferences');
@@ -171,7 +192,7 @@ function setImportBusy(busy, label) {
   const btn = document.getElementById('import-btn');
   if (!btn) return;
   btn.disabled = busy;
-  btn.textContent = label || (busy ? 'Reading your file…' : 'Review my figures');
+  btn.textContent = label || (busy ? 'Reading your file…' : 'Check my figures');
   btn.setAttribute('aria-busy', busy ? 'true' : 'false');
   document.querySelectorAll('.sample-btn').forEach((b) => {
     b.disabled = busy;
@@ -203,7 +224,11 @@ function handleImportSuccess(data) {
   lastSummary = data.summary || null;
   lastDraftId = data.draftId || null;
   lastValidation = data.validation || { ready: true, errors: [], warnings: [] };
-  showPreview(data);
+  lastFieldLinks = data.fieldLinks || [];
+  lastSources = data.sources || null;
+  lastFilename = data.filename || null;
+  lastRowCount = data.rowCount ?? null;
+  showReview(data);
 
   if (data.payloads?.meta?.taxYear) {
     const ty = document.getElementById('tax-year');
@@ -219,7 +244,7 @@ function handleImportSuccess(data) {
   }
 
   setWizardStep(2);
-  document.getElementById('preview-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  panel('review-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 document.getElementById('upload-form')?.addEventListener('submit', async (e) => {
@@ -257,7 +282,9 @@ document.querySelectorAll('.sample-btn').forEach((btn) => {
     if (errEl) errEl.hidden = true;
     const sampleId = btn.getAttribute('data-sample') || 'combined';
     setImportBusy(true, 'Loading sample…');
-    showChosenFile(`Sample: ${btn.querySelector('strong')?.textContent || sampleId}`);
+    showChosenFile(
+      `Sample: ${btn.querySelector('strong')?.textContent || sampleId}`
+    );
     try {
       const data = await importSample(sampleId);
       handleImportSuccess(data);
@@ -306,13 +333,6 @@ function formatMoney(v) {
   });
 }
 
-function tag(text, cls) {
-  const s = document.createElement('span');
-  s.className = cls ? `tag ${cls}` : 'tag';
-  s.textContent = text;
-  return s;
-}
-
 function esc(s) {
   return String(s)
     .replace(/&/g, '&amp;')
@@ -322,99 +342,11 @@ function esc(s) {
 }
 
 /**
- * Compact customer preview of what is ready to send.
- * @param {object} payloads
+ * Build review UI into review-panel elements in app.html.
+ * @param {object} data
  */
-function formatSubmissionPreview(payloads) {
-  const lines = [];
-  if (payloads?.meta) {
-    lines.push(
-      `Tax year: ${payloads.meta.taxYear || '—'}`,
-      `Period: ${payloads.meta.periodStartDate || '—'} to ${payloads.meta.periodEndDate || '—'}`
-    );
-  }
-  if (payloads?.selfEmployment) {
-    const se = payloads.selfEmployment;
-    lines.push('', 'Self-employment quarterly update ready');
-    if (se.periodIncome?.turnover != null)
-      lines.push(`  Turnover: ${formatMoney(se.periodIncome.turnover)}`);
-    if (se.periodIncome?.other != null)
-      lines.push(`  Other income: ${formatMoney(se.periodIncome.other)}`);
-  }
-  if (payloads?.ukProperty) {
-    const uk = payloads.ukProperty.ukOtherProperty;
-    lines.push('', 'UK property quarterly update ready');
-    if (uk?.income?.periodAmount != null)
-      lines.push(`  Rental income: ${formatMoney(uk.income.periodAmount)}`);
-    if (uk?.income?.otherIncome != null)
-      lines.push(`  Other income: ${formatMoney(uk.income.otherIncome)}`);
-  }
-  if (payloads?.foreignProperty?.foreignProperty?.length) {
-    lines.push('', 'Foreign property quarterly update ready');
-    for (const fp of payloads.foreignProperty.foreignProperty) {
-      const rent = fp.income?.rentIncome?.rentAmount;
-      lines.push(
-        `  ${fp.countryCode || 'Property'}: rent ${rent != null ? formatMoney(rent) : '—'}`
-      );
-    }
-  }
-  return lines.length ? lines.join('\n') : 'Quarterly update package prepared.';
-}
-
-function renderSourceCards(summary) {
-  const root = document.getElementById('source-cards');
-  if (!root) return;
-  root.innerHTML = '';
-
-  for (const src of summary?.sources || []) {
-    const card = document.createElement('article');
-    card.className = 'source-card';
-
-    const incomeHtml = (src.incomeLines || [])
-      .map(
-        (l) =>
-          `<div class="line-item"><span>${esc(l.label)}</span><span class="amt">${esc(formatMoney(l.amount))}</span></div>`
-      )
-      .join('');
-    const expenseHtml = (src.expenseLines || [])
-      .map(
-        (l) =>
-          `<div class="line-item"><span>${esc(l.label)}</span><span class="amt expense">${esc(formatMoney(l.amount))}</span></div>`
-      )
-      .join('');
-
-    card.innerHTML = `
-      <div class="source-card-head">
-        <div>
-          <h3>${esc(src.title)}</h3>
-          ${src.subtitle ? `<p class="sub">${esc(src.subtitle)}</p>` : ''}
-        </div>
-        <div class="source-totals">
-          <span>Income <strong>${esc(formatMoney(src.totalIncome))}</strong></span>
-          <span>Expenses <strong>${esc(formatMoney(src.totalExpenses))}</strong></span>
-          <span>Net <strong>${esc(formatMoney(src.net))}</strong></span>
-        </div>
-      </div>
-      <div class="line-grid">
-        <div class="line-col">
-          <h4>Income</h4>
-          ${incomeHtml || '<p class="muted">No income lines</p>'}
-        </div>
-        <div class="line-col">
-          <h4>Expenses</h4>
-          ${expenseHtml || '<p class="muted">No expense lines</p>'}
-        </div>
-      </div>
-    `;
-    root.appendChild(card);
-  }
-}
-
-function showPreview(data) {
-  const preview = document.getElementById('preview-panel');
-  const submit = document.getElementById('submit-panel');
-  if (preview) preview.hidden = false;
-  if (submit) submit.hidden = false;
+function showReview(data) {
+  showPanels({ upload: true, review: true, submit: false });
 
   const success = document.getElementById('submit-success');
   if (success) success.hidden = true;
@@ -425,107 +357,194 @@ function showPreview(data) {
   lastSummary = summary;
   lastValidation = data.validation || { ready: true, errors: [], warnings: [] };
 
-  const validationBox = document.getElementById('validation-summary');
-  const validationTitle = document.getElementById('validation-title');
-  const validationList = document.getElementById('validation-list');
-  const issues = [...(lastValidation.errors || []), ...(lastValidation.warnings || [])];
-  if (validationBox && validationTitle && validationList) {
-    validationBox.hidden = false;
-    validationBox.classList.remove('blocked', 'ok');
-    validationList.innerHTML = '';
+  // Validation into #validation-panel
+  const validationRoot = document.getElementById('validation-panel');
+  if (validationRoot) {
+    const issues = [
+      ...(lastValidation.errors || []),
+      ...(lastValidation.warnings || []),
+    ];
+    let cls = 'ok';
+    let title = 'Spreadsheet checks passed';
     if (lastValidation.errors?.length) {
-      validationBox.classList.add('blocked');
-      validationTitle.textContent = 'Fix these items before continuing';
+      cls = 'blocked';
+      title = 'Fix these items before continuing';
     } else if (lastValidation.warnings?.length) {
-      validationTitle.textContent = 'Check these items before continuing';
-    } else {
-      validationBox.classList.add('ok');
-      validationTitle.textContent = 'Spreadsheet checks passed';
+      title = 'Check these items before continuing';
     }
-    for (const item of issues) {
-      const li = document.createElement('li');
-      li.textContent = item.message;
-      validationList.appendChild(li);
-    }
-    if (!issues.length) {
-      const li = document.createElement('li');
-      li.textContent = 'Dates, sources and mapped figures are ready for review.';
-      validationList.appendChild(li);
-    }
+    const items =
+      issues.length > 0
+        ? issues.map((item) => `<li>${esc(item.message)}</li>`).join('')
+        : '<li>Dates, sources and mapped figures are ready for review.</li>';
+    validationRoot.innerHTML = `
+      <div id="validation-summary" class="validation-box ${cls}" data-ready="${lastValidation.ready ? '1' : '0'}">
+        <strong id="validation-title">${esc(title)}</strong>
+        <ul id="validation-list">${items}</ul>
+      </div>
+    `;
   }
+
   const continueBtn = document.getElementById('goto-submit');
   if (continueBtn) {
     continueBtn.disabled = !lastValidation.ready;
-    continueBtn.title = lastValidation.ready ? '' : 'Resolve the blocking spreadsheet checks first';
+    continueBtn.title = lastValidation.ready
+      ? ''
+      : 'Resolve the blocking spreadsheet checks first';
   }
 
-  const meta = document.getElementById('period-meta');
-  if (meta) {
-    meta.innerHTML = '';
-    const taxYear = summary?.taxYear || data.payloads?.meta?.taxYear;
-    const start = summary?.periodStart || data.payloads?.meta?.periodStartDate;
-    const end = summary?.periodEnd || data.payloads?.meta?.periodEndDate;
-    if (taxYear) meta.appendChild(tag(`Tax year ${taxYear}`, 'green'));
-    if (start && end) meta.appendChild(tag(`Period ${start} → ${end}`));
-    if (data.filename) meta.appendChild(tag(data.filename, 'amber'));
-    if (data.rowCount != null) meta.appendChild(tag(`${data.rowCount} rows read`));
-  }
-
-  const tags = document.getElementById('sources-summary');
-  if (tags) {
-    tags.innerHTML = '';
-    if (data.sources?.selfEmployment) tags.appendChild(tag('Self-employment', 'green'));
-    if (data.sources?.ukProperty) tags.appendChild(tag('UK property', 'green'));
-    for (const c of data.sources?.foreignProperty || []) {
-      tags.appendChild(tag(`Foreign property (${c})`, 'green'));
+  // Summary cards
+  const cards = document.getElementById('summary-cards');
+  if (cards) {
+    const totals = summary?.totals || {};
+    const taxYear = summary?.taxYear || data.payloads?.meta?.taxYear || '—';
+    const start =
+      summary?.periodStart || data.payloads?.meta?.periodStartDate || '—';
+    const end = summary?.periodEnd || data.payloads?.meta?.periodEndDate || '—';
+    let sourceCount =
+      summary?.sourceCount ??
+      0;
+    if (!summary?.sourceCount) {
+      if (data.sources?.selfEmployment) sourceCount += 1;
+      if (data.sources?.ukProperty) sourceCount += 1;
+      sourceCount += (data.sources?.foreignProperty || []).length;
     }
+    const net = Number(totals.net);
+    const netCls =
+      Number.isFinite(net) && net < 0
+        ? 'negative'
+        : Number.isFinite(net)
+          ? 'positive'
+          : '';
+    cards.innerHTML = `
+      <div class="stat-card"><div class="n" id="metric-income">${esc(formatMoney(totals.totalIncome ?? 0))}</div><div class="l">Income</div></div>
+      <div class="stat-card"><div class="n" id="metric-expenses">${esc(formatMoney(totals.totalExpenses ?? 0))}</div><div class="l">Expenses</div></div>
+      <div class="stat-card"><div class="n ${netCls}" id="metric-net">${esc(formatMoney(totals.net ?? 0))}</div><div class="l">Net</div></div>
+      <div class="stat-card"><div class="n" id="metric-sources">${esc(String(sourceCount))}</div><div class="l">Sources</div></div>
+      <div class="stat-card"><div class="n" style="font-size:0.95rem">${esc(String(taxYear))}</div><div class="l">Tax year · ${esc(String(start))} → ${esc(String(end))}</div></div>
+    `;
   }
 
-  const totals = summary?.totals || {};
-  const setMetric = (id, value, netStyle) => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.textContent = value;
-    el.classList.remove('positive', 'negative');
-    if (netStyle) {
-      const n = Number(totals.net);
-      if (Number.isFinite(n)) {
-        el.classList.add(n >= 0 ? 'positive' : 'negative');
+  // Mapping / lines table
+  const tableWrap = document.getElementById('mapping-table-wrap');
+  if (tableWrap) {
+    const links = data.fieldLinks || lastFieldLinks || [];
+    const sourceBlocks = [];
+
+    // Prefer structured summary sources if present
+    if (summary?.sources?.length) {
+      for (const src of summary.sources) {
+        sourceBlocks.push({
+          title: src.title || friendlySource(src.source || ''),
+          lines: [
+            ...(src.incomeLines || []).map((l) => ({
+              ...l,
+              kind: 'Income',
+            })),
+            ...(src.expenseLines || []).map((l) => ({
+              ...l,
+              kind: 'Expense',
+            })),
+          ],
+        });
+      }
+    } else if (links.length) {
+      const bySource = new Map();
+      for (const link of links) {
+        const key = link.source || 'unknown';
+        if (!bySource.has(key)) bySource.set(key, []);
+        bySource.get(key).push(link);
+      }
+      for (const [source, rows] of bySource) {
+        sourceBlocks.push({
+          title: friendlySource(source),
+          lines: rows.map((link) => ({
+            label: link.sourceField || friendlyPath(link.path),
+            amount: link.value,
+            kind: friendlyPath(link.path),
+          })),
+        });
       }
     }
-  };
-  setMetric('metric-income', formatMoney(totals.totalIncome ?? 0));
-  setMetric('metric-expenses', formatMoney(totals.totalExpenses ?? 0));
-  setMetric('metric-net', formatMoney(totals.net ?? 0), true);
-  setMetric(
-    'metric-sources',
-    String(summary?.sourceCount ?? (data.sources?.selfEmployment ? 1 : 0))
-  );
 
-  // Fix source count if summary missing
-  if (!summary) {
-    let count = 0;
-    if (data.sources?.selfEmployment) count += 1;
-    if (data.sources?.ukProperty) count += 1;
-    count += (data.sources?.foreignProperty || []).length;
-    setMetric('metric-sources', String(count));
-  }
-
-  renderSourceCards(summary);
-
-  const tbody = document.querySelector('#links-table tbody');
-  if (tbody) {
-    tbody.innerHTML = '';
-    for (const link of data.fieldLinks || []) {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${esc(friendlySource(link.source))}</td><td>${esc(link.sourceField)}</td><td>${esc(friendlyPath(link.path))}</td><td class="amount-cell">${esc(formatMoney(link.value))}</td>`;
-      tbody.appendChild(tr);
+    // Fallback from payloads when no links/summary
+    if (!sourceBlocks.length && data.payloads) {
+      const p = data.payloads;
+      if (p.selfEmployment) {
+        const se = p.selfEmployment;
+        const lines = [];
+        if (se.periodIncome?.turnover != null)
+          lines.push({
+            label: 'Turnover',
+            amount: se.periodIncome.turnover,
+            kind: 'Income',
+          });
+        if (se.periodIncome?.other != null)
+          lines.push({
+            label: 'Other income',
+            amount: se.periodIncome.other,
+            kind: 'Income',
+          });
+        const exp = se.periodExpenses || {};
+        for (const [k, v] of Object.entries(exp)) {
+          if (v != null && typeof v !== 'object')
+            lines.push({ label: k, amount: v, kind: 'Expense' });
+          else if (v && typeof v === 'object' && v.amount != null)
+            lines.push({ label: k, amount: v.amount, kind: 'Expense' });
+        }
+        sourceBlocks.push({ title: 'Self-employment', lines });
+      }
+      if (p.ukProperty?.ukOtherProperty) {
+        const uk = p.ukProperty.ukOtherProperty;
+        const lines = [];
+        if (uk.income?.periodAmount != null)
+          lines.push({
+            label: 'Rental income',
+            amount: uk.income.periodAmount,
+            kind: 'Income',
+          });
+        if (uk.income?.otherIncome != null)
+          lines.push({
+            label: 'Other income',
+            amount: uk.income.otherIncome,
+            kind: 'Income',
+          });
+        sourceBlocks.push({ title: 'UK property', lines });
+      }
+      for (const fp of p.foreignProperty?.foreignProperty || []) {
+        const rent = fp.income?.rentIncome?.rentAmount;
+        sourceBlocks.push({
+          title: `Foreign property (${fp.countryCode || '??'})`,
+          lines: [
+            {
+              label: 'Rent',
+              amount: rent,
+              kind: 'Income',
+            },
+          ],
+        });
+      }
     }
-  }
 
-  const payloadsOut = document.getElementById('payloads-out');
-  if (payloadsOut) {
-    payloadsOut.textContent = formatSubmissionPreview(data.payloads);
+    let html = '';
+    if (data.filename || data.rowCount != null) {
+      html += `<p class="muted" id="period-meta">${esc(data.filename || lastFilename || 'Spreadsheet')}${
+        data.rowCount != null || lastRowCount != null
+          ? ` · ${esc(String(data.rowCount ?? lastRowCount))} rows`
+          : ''
+      }</p>`;
+    }
+    if (!sourceBlocks.length) {
+      html += '<p class="muted">No line items found to display.</p>';
+    } else {
+      html += '<table class="data-table" id="links-table"><thead><tr><th>Source</th><th>Line</th><th>Type</th><th>Amount</th></tr></thead><tbody>';
+      for (const block of sourceBlocks) {
+        for (const line of block.lines) {
+          html += `<tr><td>${esc(block.title)}</td><td>${esc(line.label || '—')}</td><td>${esc(line.kind || '—')}</td><td class="amount-cell">${esc(formatMoney(line.amount))}</td></tr>`;
+        }
+      }
+      html += '</tbody></table>';
+    }
+    tableWrap.innerHTML = html;
   }
 }
 
@@ -534,10 +553,11 @@ function resetToUpload() {
   lastSummary = null;
   lastDraftId = null;
   lastValidation = null;
-  const preview = document.getElementById('preview-panel');
-  const submit = document.getElementById('submit-panel');
-  if (preview) preview.hidden = true;
-  if (submit) submit.hidden = true;
+  lastFieldLinks = null;
+  lastSources = null;
+  lastFilename = null;
+  lastRowCount = null;
+  showPanels({ upload: true, review: false, submit: false });
   const success = document.getElementById('submit-success');
   if (success) success.hidden = true;
   if (fileInput) fileInput.value = '';
@@ -546,19 +566,22 @@ function resetToUpload() {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+document.getElementById('back-to-upload')?.addEventListener('click', resetToUpload);
+document.getElementById('another-file')?.addEventListener('click', resetToUpload);
 document.getElementById('reset-upload')?.addEventListener('click', resetToUpload);
 document.getElementById('reset-upload-2')?.addEventListener('click', resetToUpload);
-document.getElementById('another-file')?.addEventListener('click', resetToUpload);
 
 document.getElementById('goto-submit')?.addEventListener('click', () => {
   if (lastValidation && !lastValidation.ready) return;
+  showPanels({ upload: false, review: true, submit: true });
   setWizardStep(3);
-  document.getElementById('submit-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  panel('submit-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 });
 
 document.getElementById('back-to-review')?.addEventListener('click', () => {
+  showPanels({ upload: true, review: true, submit: false });
   setWizardStep(2);
-  document.getElementById('preview-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  panel('review-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 });
 
 document.getElementById('submit-btn')?.addEventListener('click', async () => {
@@ -589,7 +612,6 @@ document.getElementById('submit-btn')?.addEventListener('click', async () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         draftId: lastDraftId || undefined,
-        // Fallback only if draft store failed; server still defaults to double mode
         payloads: lastDraftId ? undefined : lastPayloads,
         idempotencyKey:
           lastDraftId ||
@@ -603,8 +625,14 @@ document.getElementById('submit-btn')?.addEventListener('click', async () => {
     });
     const data = await res.json();
     if (!res.ok) {
-      const messages = data.validation?.errors?.map((item) => item.message).filter(Boolean) || [];
-      throw new Error(messages.length ? messages.join(' ') : (data.error || 'Submission failed. Please try again.'));
+      const messages =
+        data.validation?.errors?.map((item) => item.message).filter(Boolean) ||
+        [];
+      throw new Error(
+        messages.length
+          ? messages.join(' ')
+          : data.error || 'Submission failed. Please try again.'
+      );
     }
 
     const count = Array.isArray(data.results) ? data.results.length : 0;
@@ -660,25 +688,23 @@ document.getElementById('submit-btn')?.addEventListener('click', async () => {
   }
 });
 
-/**
- * Map HMRC typeOfBusiness to our bid-* fields.
- * @param {string} typeOfBusiness
- * @param {string} businessId
- */
 function applyBusinessId(typeOfBusiness, businessId) {
   if (!businessId) return;
   const t = String(typeOfBusiness || '').toLowerCase();
   if (t.includes('self-employment') || t.includes('self_employment')) {
     const el = document.getElementById('bid-se');
     if (el) el.value = businessId;
-  } else if (t.includes('uk-property') || t.includes('uk_property') || t === 'uk property') {
+  } else if (
+    t.includes('uk-property') ||
+    t.includes('uk_property') ||
+    t === 'uk property'
+  ) {
     const el = document.getElementById('bid-uk');
     if (el) el.value = businessId;
   } else if (t.includes('foreign-property') || t.includes('foreign_property')) {
     const el = document.getElementById('bid-fp');
     if (el) el.value = businessId;
   } else {
-    // Fallback: fill first empty business id field
     for (const id of ['bid-se', 'bid-uk', 'bid-fp']) {
       const el = document.getElementById(id);
       if (el && !el.value) {
@@ -690,161 +716,179 @@ function applyBusinessId(typeOfBusiness, businessId) {
 }
 
 function ninoFromForm() {
-  return (document.getElementById('nino')?.value || '').replace(/\s+/g, '').toUpperCase();
+  return (document.getElementById('nino')?.value || '')
+    .replace(/\s+/g, '')
+    .toUpperCase();
 }
 
-document.getElementById('load-businesses-btn')?.addEventListener('click', async () => {
-  const panel = document.getElementById('hmrc-businesses-panel');
-  const list = document.getElementById('hmrc-businesses-list');
-  const errEl = document.getElementById('hmrc-businesses-error');
-  if (panel) panel.hidden = false;
-  if (list) list.innerHTML = '';
-  if (errEl) {
-    errEl.hidden = true;
-    errEl.textContent = '';
-  }
-  const nino = ninoFromForm();
-  if (!nino) {
+document
+  .getElementById('load-businesses-btn')
+  ?.addEventListener('click', async () => {
+    const panelEl = document.getElementById('hmrc-businesses-panel');
+    const list = document.getElementById('hmrc-businesses-list');
+    const errEl = document.getElementById('hmrc-businesses-error');
+    if (panelEl) panelEl.hidden = false;
+    if (list) list.innerHTML = '';
     if (errEl) {
-      errEl.textContent = 'Enter your National Insurance number first.';
-      errEl.hidden = false;
+      errEl.hidden = true;
+      errEl.textContent = '';
     }
-    return;
-  }
-  try {
-    const res = await apiFetch(`/api/hmrc/businesses?nino=${encodeURIComponent(nino)}`);
-    const data = await res.json();
-    if (!res.ok || !data.ok) {
-      throw new Error(data.error || data.body?.message || `HMRC businesses failed (${res.status})`);
-    }
-    const businesses = data.body?.listOfBusinesses || data.body?.businesses || data.body || [];
-    const rows = Array.isArray(businesses) ? businesses : [];
-    if (!rows.length) {
-      if (list) {
-        list.innerHTML = '<li class="muted">No businesses returned for this NINO in the current environment.</li>';
+    const nino = ninoFromForm();
+    if (!nino) {
+      if (errEl) {
+        errEl.textContent = 'Enter your National Insurance number first.';
+        errEl.hidden = false;
       }
       return;
     }
-    for (const b of rows) {
-      const id = b.businessId || b.id || '';
-      const type = b.typeOfBusiness || b.businessType || b.type || 'business';
-      const trading = b.tradingName || b.trading_name || '';
-      const li = document.createElement('li');
-      li.innerHTML = `<strong>${type}</strong> · <code>${id}</code>${trading ? ` · ${trading}` : ''}`;
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'btn btn-ghost';
-      btn.style.marginLeft = '0.5rem';
-      btn.textContent = 'Use ID';
-      btn.addEventListener('click', () => applyBusinessId(type, id));
-      li.appendChild(btn);
-      list?.appendChild(li);
+    try {
+      const res = await apiFetch(
+        `/api/hmrc/businesses?nino=${encodeURIComponent(nino)}`
+      );
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        throw new Error(
+          data.error ||
+            data.body?.message ||
+            `HMRC businesses failed (${res.status})`
+        );
+      }
+      const businesses =
+        data.body?.listOfBusinesses || data.body?.businesses || data.body || [];
+      const rows = Array.isArray(businesses) ? businesses : [];
+      if (!rows.length) {
+        if (list) {
+          list.innerHTML =
+            '<li class="muted">No businesses returned for this NINO in the current environment.</li>';
+        }
+        return;
+      }
+      for (const b of rows) {
+        const id = b.businessId || b.id || '';
+        const type = b.typeOfBusiness || b.businessType || b.type || 'business';
+        const trading = b.tradingName || b.trading_name || '';
+        const li = document.createElement('li');
+        li.innerHTML = `<strong>${esc(type)}</strong> · <code>${esc(id)}</code>${trading ? ` · ${esc(trading)}` : ''}`;
+        const useBtn = document.createElement('button');
+        useBtn.type = 'button';
+        useBtn.className = 'btn btn-ghost';
+        useBtn.style.marginLeft = '0.5rem';
+        useBtn.textContent = 'Use ID';
+        useBtn.addEventListener('click', () => applyBusinessId(type, id));
+        li.appendChild(useBtn);
+        list?.appendChild(li);
+      }
+    } catch (err) {
+      if (errEl) {
+        errEl.textContent =
+          err.message ||
+          'Could not load businesses. Connect HMRC sandbox OAuth first (/connect-hmrc).';
+        errEl.hidden = false;
+      }
     }
-  } catch (err) {
-    if (errEl) {
-      errEl.textContent =
-        err.message ||
-        'Could not load businesses. Connect HMRC sandbox OAuth first (/connect-hmrc).';
-      errEl.hidden = false;
-    }
-  }
-});
+  });
 
-document.getElementById('load-obligations-btn')?.addEventListener('click', async () => {
-  const panel = document.getElementById('hmrc-obligations-panel');
-  const list = document.getElementById('hmrc-obligations-list');
-  const errEl = document.getElementById('hmrc-obligations-error');
-  if (panel) panel.hidden = false;
-  if (list) list.innerHTML = '';
-  if (errEl) {
-    errEl.hidden = true;
-    errEl.textContent = '';
-  }
-  const nino = ninoFromForm();
-  if (!nino) {
+document
+  .getElementById('load-obligations-btn')
+  ?.addEventListener('click', async () => {
+    const panelEl = document.getElementById('hmrc-obligations-panel');
+    const list = document.getElementById('hmrc-obligations-list');
+    const errEl = document.getElementById('hmrc-obligations-error');
+    if (panelEl) panelEl.hidden = false;
+    if (list) list.innerHTML = '';
     if (errEl) {
-      errEl.textContent = 'Enter your National Insurance number first.';
-      errEl.hidden = false;
+      errEl.hidden = true;
+      errEl.textContent = '';
     }
-    return;
-  }
-  try {
-    const q = new URLSearchParams({ nino });
-    const bid =
-      document.getElementById('bid-se')?.value ||
-      document.getElementById('bid-uk')?.value ||
-      document.getElementById('bid-fp')?.value;
-    if (bid) q.set('businessId', bid);
-    const res = await apiFetch(`/api/hmrc/obligations?${q.toString()}`);
-    const data = await res.json();
-    if (!res.ok || !data.ok) {
-      throw new Error(data.error || data.body?.message || `HMRC obligations failed (${res.status})`);
+    const nino = ninoFromForm();
+    if (!nino) {
+      if (errEl) {
+        errEl.textContent = 'Enter your National Insurance number first.';
+        errEl.hidden = false;
+      }
+      return;
     }
-    // Response shapes vary by version; support common list keys
-    const body = data.body || {};
-    const obligations =
-      body.obligations ||
-      body.obligationDetails ||
-      body.incomeAndExpenditureObligations ||
-      (Array.isArray(body) ? body : []);
-    const flat = [];
-    if (Array.isArray(obligations)) {
-      for (const group of obligations) {
-        const type = group.typeOfBusiness || group.businessType || '';
-        const businessId = group.businessId || '';
-        const periods = group.obligationDetails || group.obligations || [group];
-        for (const p of periods) {
-          flat.push({
-            type,
-            businessId: businessId || p.businessId || '',
-            status: p.status || group.status || '',
-            start: p.periodStartDate || p.fromDate || p.start || '',
-            end: p.periodEndDate || p.toDate || p.end || '',
-            due: p.dueDate || p.due || '',
-          });
+    try {
+      const q = new URLSearchParams({ nino });
+      const bid =
+        document.getElementById('bid-se')?.value ||
+        document.getElementById('bid-uk')?.value ||
+        document.getElementById('bid-fp')?.value;
+      if (bid) q.set('businessId', bid);
+      const res = await apiFetch(`/api/hmrc/obligations?${q.toString()}`);
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        throw new Error(
+          data.error ||
+            data.body?.message ||
+            `HMRC obligations failed (${res.status})`
+        );
+      }
+      const body = data.body || {};
+      const obligations =
+        body.obligations ||
+        body.obligationDetails ||
+        body.incomeAndExpenditureObligations ||
+        (Array.isArray(body) ? body : []);
+      const flat = [];
+      if (Array.isArray(obligations)) {
+        for (const group of obligations) {
+          const type = group.typeOfBusiness || group.businessType || '';
+          const businessId = group.businessId || '';
+          const periods =
+            group.obligationDetails || group.obligations || [group];
+          for (const p of periods) {
+            flat.push({
+              type,
+              businessId: businessId || p.businessId || '',
+              status: p.status || group.status || '',
+              start: p.periodStartDate || p.fromDate || p.start || '',
+              end: p.periodEndDate || p.toDate || p.end || '',
+              due: p.dueDate || p.due || '',
+            });
+          }
         }
       }
-    }
-    if (!flat.length) {
-      if (list) {
-        list.innerHTML =
-          '<li class="muted">No obligations in response. Raw keys: ' +
-          Object.keys(body).join(', ') +
-          '</li>';
+      if (!flat.length) {
+        if (list) {
+          list.innerHTML =
+            '<li class="muted">No open periods returned for this NINO.</li>';
+        }
+        return;
       }
-      return;
-    }
-    for (const o of flat) {
-      const li = document.createElement('li');
-      li.innerHTML = `<strong>${o.status || 'obligation'}</strong> · ${o.start || '?'} → ${o.end || '?'}${
-        o.due ? ` · due ${o.due}` : ''
-      }${o.businessId ? ` · <code>${o.businessId}</code>` : ''}`;
-      if (o.businessId) {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'btn btn-ghost';
-        btn.style.marginLeft = '0.5rem';
-        btn.textContent = 'Use ID';
-        btn.addEventListener('click', () => applyBusinessId(o.type, o.businessId));
-        li.appendChild(btn);
+      for (const o of flat) {
+        const li = document.createElement('li');
+        li.innerHTML = `<strong>${esc(o.status || 'obligation')}</strong> · ${esc(o.start || '?')} → ${esc(o.end || '?')}${
+          o.due ? ` · due ${esc(o.due)}` : ''
+        }${o.businessId ? ` · <code>${esc(o.businessId)}</code>` : ''}`;
+        if (o.businessId) {
+          const useBtn = document.createElement('button');
+          useBtn.type = 'button';
+          useBtn.className = 'btn btn-ghost';
+          useBtn.style.marginLeft = '0.5rem';
+          useBtn.textContent = 'Use ID';
+          useBtn.addEventListener('click', () =>
+            applyBusinessId(o.type, o.businessId)
+          );
+          li.appendChild(useBtn);
+        }
+        list?.appendChild(li);
       }
-      list?.appendChild(li);
+    } catch (err) {
+      if (errEl) {
+        errEl.textContent =
+          err.message ||
+          'Could not load obligations. Connect HMRC sandbox OAuth first (/connect-hmrc).';
+        errEl.hidden = false;
+      }
     }
-  } catch (err) {
-    if (errEl) {
-      errEl.textContent =
-        err.message ||
-        'Could not load obligations. Connect HMRC sandbox OAuth first (/connect-hmrc).';
-      errEl.hidden = false;
-    }
-  }
-});
+  });
 
 setWizardStep(1);
+showPanels({ upload: true, review: false, submit: false });
 loadStatus();
 loadSavedIdentifiers();
 
-// Audience mode from sales CTAs (?mode=self-employed|property|landlord)
 (function applyAudienceMode() {
   const mode = new URLSearchParams(location.search).get('mode') || '';
   const lead = document.querySelector('.app-hero .lead');
@@ -855,8 +899,9 @@ loadSavedIdentifiers();
       lead.innerHTML =
         'Built for sole traders and trades. Upload your period spreadsheet, review turnover and expenses, then submit — <strong>no retyping totals</strong>.';
     }
-    // Prefer self-employment sample first
-    const se = document.querySelector('.sample-btn[data-sample="self_employment"]');
+    const se = document.querySelector(
+      '.sample-btn[data-sample="self_employment"]'
+    );
     if (se) se.classList.add('tag', 'green');
   } else if (mode === 'property' || mode === 'landlord' || mode === 'landlords') {
     if (h1) h1.textContent = 'Submit your property quarterly update';
@@ -869,7 +914,6 @@ loadSavedIdentifiers();
   }
 })();
 
-// Resume a server draft when opened from history (?draftId=)
 (async function resumeDraftFromQuery() {
   const id = new URLSearchParams(location.search).get('draftId');
   if (!id) return;

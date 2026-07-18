@@ -4,6 +4,10 @@
 
 import { getDb } from './db.js';
 import { newId, userCanAccessFirm } from './auth.js';
+import {
+  assertClientMutator,
+  assertPracticeAdmin,
+} from './access-control.js';
 
 const TRANSITIONS = {
   awaiting_records: ['records_received', 'mapping_required'],
@@ -242,9 +246,8 @@ export function updateClientDetails({ clientId, userId, dueDate, displayName }) 
  * @param {{ firmId: string, email: string, role: string, invitedBy: string }} opts
  */
 export function createFirmInvite({ firmId, email, role, invitedBy }) {
-  if (!userCanAccessFirm(invitedBy, firmId)) {
-    return { error: 'Not allowed for this firm.', status: 403 };
-  }
+  const denied = assertPracticeAdmin(invitedBy, firmId);
+  if (denied) return denied;
   const allowedRoles = ['bookkeeper', 'accountant', 'practice_admin'];
   if (!allowedRoles.includes(role)) {
     return { error: 'Invalid role.', status: 400 };
@@ -454,9 +457,8 @@ export function createFirm({ userId, name, type = 'accountancy' }) {
 export function deleteClient({ clientId, userId }) {
   const client = getClientRow(clientId);
   if (!client) return { error: 'Client not found', status: 404 };
-  if (!userCanAccessFirm(userId, client.firmId)) {
-    return { error: 'Not allowed for this firm.', status: 403 };
-  }
+  const denied = assertPracticeAdmin(userId, client.firmId);
+  if (denied) return denied;
   getDb().prepare(`DELETE FROM portal_invites WHERE client_id = ?`).run(clientId);
   getDb().prepare(`DELETE FROM workflow_events WHERE client_id = ?`).run(clientId);
   getDb().prepare(`DELETE FROM clients WHERE id = ?`).run(clientId);
@@ -468,9 +470,8 @@ export function deleteClient({ clientId, userId }) {
  * @param {{ firmId: string, userId: string, name: string }} opts
  */
 export function renameFirm({ firmId, userId, name }) {
-  if (!userCanAccessFirm(userId, firmId)) {
-    return { error: 'Not allowed for this firm.', status: 403 };
-  }
+  const denied = assertPracticeAdmin(userId, firmId);
+  if (denied) return denied;
   const n = String(name || '').trim().slice(0, 120);
   if (!n) return { error: 'Firm name required.', status: 400 };
   getDb().prepare(`UPDATE firms SET name = ? WHERE id = ?`).run(n, firmId);
@@ -491,9 +492,8 @@ export function updateClientStatus({
 }) {
   const client = getClientRow(clientId);
   if (!client) return { error: 'Client not found', status: 404 };
-  if (!userCanAccessFirm(userId, client.firmId)) {
-    return { error: 'Not allowed for this firm.', status: 403 };
-  }
+  const denied = assertClientMutator(userId, client.firmId);
+  if (denied) return denied;
   const allowed = TRANSITIONS[client.status] || [];
   if (!allowed.includes(status)) {
     return {

@@ -22,13 +22,13 @@
 | T10 | **STATUS.md outdated blockers** | Still said “need Hub Client ID” after credentials existed | **FIXED this audit** |
 | T11 | **Plan flag `liveHmrc: true`** | Entitlements imply live HMRC path from plan alone; server still gates submit | **FIXED this audit** — renamed/clarified to capability, not entitlement |
 | T12 | **Agent readiness overclaim (2026-07-18)** | Status sold as strong progress toward full operational / HMRC path; treated route matrix + partial sandbox as product completion; journey “okish” counted non-2xx as success; customer app presented as usable while HTML/JS review IDs mismatched (`review-panel` vs `preview-panel`) | **ACKNOWLEDGED** — not fixed as product; control added: `docs/AGENT-TRUTH-PROTOCOL.md`, template, AGENTS.md bind. Stage reset to **2 of 5**. |
-| T13 | **Broken primary app journey after UX redesign** | HTML redesigned; JS still targets old element IDs — sample/import does not show review | **OPEN P0** — Gate 0 |
-| T14 | **Draft submit without ownership check** | `getDraft(id)` on submit/MTD without proving session user/firm owns draft | **OPEN P0** |
-| T15 | **Cross-tenant deadline reminders** | Any firm member can run job; query is all clients | **OPEN P0** |
-| T16 | **Roles not enforced server-side** | Membership treated as enough for invites/admin-ish actions | **OPEN P0** |
-| T17 | **Insecure production defaults** | Token encrypt fallback to SESSION_SECRET or hardcoded dev key; Secure cookie optional | **OPEN P0** |
-| T18 | **Vulnerable xlsx parser** | `xlsx@0.18.5` high severity; no upstream fix on package | **OPEN P0** (replace/isolate/risk-accept with controls) |
-| T19 | **Journey scorer honesty** | Steps with HMRC non-2xx marked `ok: true` / okish inflated | **OPEN** — scorer + reporting must use true HMRC status |
+| T13 | **Broken primary app journey after UX redesign** | HTML redesigned; JS still targets old element IDs — sample/import does not show review | **FIXED 2026-07-18** — app.js ↔ review-panel; e2e app-journey |
+| T14 | **Draft submit without ownership check** | `getDraft(id)` on submit/MTD without proving session user/firm owns draft | **FIXED 2026-07-18** — loadDraftForUser / access-control |
+| T15 | **Cross-tenant deadline reminders** | Any firm member can run job; query is all clients | **FIXED 2026-07-18** — firmId required + role |
+| T16 | **Roles not enforced server-side** | Membership treated as enough for invites/admin-ish actions | **FIXED 2026-07-18** — practice_admin for invite/delete/rename |
+| T17 | **Insecure production defaults** | Token encrypt fallback to SESSION_SECRET or hardcoded dev key; Secure cookie optional | **FIXED 2026-07-18** — production-boot refuses weak config |
+| T18 | **Vulnerable xlsx parser** | `xlsx@0.18.5` high severity; no upstream fix on package | **MITIGATED 2026-07-18** — CSV preferred; prod xlsx opt-in + size/sheet/row limits + sanitize |
+| T19 | **Journey scorer honesty** | Steps with HMRC non-2xx marked `ok: true` / okish inflated | **FIXED 2026-07-18** — e2e scorer uses true HMRC status |
 
 ---
 

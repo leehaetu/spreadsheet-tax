@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Year-end tax steps — Spreadsheet Tax</title>
+  <meta name="description" content="Guided end-of-year steps: annual summaries, adjustments, calculations, BSAS and final declaration." />
+  <meta name="theme-color" content="#f4f6f9" />
+  <link rel="stylesheet" href="/css/site.css" />
+</head>
+<body class="theme-light app-body app-simple">
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a class="logo" href="/"><span class="logo-mark">ST</span> Spreadsheet Tax</a>
+      <nav>
+        <a href="/app">Quarterly update</a>
+        <a href="/year-end">Year end</a>
+        <a href="/history">Submissions</a>
+        <a href="/connect-hmrc">Connect HMRC</a>
+        <a href="/workspace">Practice</a>
+        <span id="connection-status" class="badge">Checking…</span>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap app-main">
+    <div class="app-hero">
+      <h1>Year-end steps</h1>
+      <p class="lead">
+        After your quarterly updates, complete these steps for the tax year.
+        You need to be signed in and connected to HMRC. Figures you send must match your records.
+      </p>
+    </div>
+
+    <p id="gate" class="error" hidden></p>
+
+    <section class="panel">
+      <h2 style="margin-top:0">Your details</h2>
+      <div class="form-row">
+        <label>National Insurance number
+          <input type="text" id="nino" autocomplete="off" />
+        </label>
+        <label>Tax year
+          <input type="text" id="tax-year" value="2024-25" />
+        </label>
+      </div>
+      <div class="form-row">
+        <label>Self-employment business ID
+          <input type="text" id="bid-se" />
+        </label>
+        <label>UK property business ID
+          <input type="text" id="bid-uk" />
+        </label>
+        <label>Foreign property business ID
+          <input type="text" id="bid-fp" />
+        </label>
+      </div>
+      <button type="button" class="btn btn-ghost" id="load-biz">Fill IDs from HMRC</button>
+      <p class="muted" id="biz-note"></p>
+    </section>
+
+    <section class="panel" id="steps">
+      <h2 style="margin-top:0">Guided checklist</h2>
+      <ol class="flow" style="max-width:40rem">
+        <li>
+          <strong>Open year-end obligations</strong>
+          <p class="muted">See final declaration / crystallisation obligations for this tax year.</p>
+          <button type="button" class="btn btn-primary" data-wf="final_obligations">Load obligations</button>
+        </li>
+        <li>
+          <strong>Annual summary (self-employment)</strong>
+          <p class="muted">Send allowances and adjustments for the year (sandbox or live when enabled).</p>
+          <button type="button" class="btn btn-primary" data-wf="se_annual">Submit SE annual</button>
+        </li>
+        <li>
+          <strong>Annual summary (UK property)</strong>
+          <button type="button" class="btn btn-primary" data-wf="uk_annual">Submit UK annual</button>
+        </li>
+        <li>
+          <strong>Annual summary (foreign property)</strong>
+          <button type="button" class="btn btn-primary" data-wf="fp_annual">Submit foreign annual</button>
+        </li>
+        <li>
+          <strong>Other income / losses</strong>
+          <p class="muted">Brought-forward losses where applicable.</p>
+          <button type="button" class="btn btn-primary" data-wf="losses">Create brought-forward loss</button>
+        </li>
+        <li>
+          <strong>Tax calculation</strong>
+          <button type="button" class="btn btn-primary" data-wf="calc">Trigger calculation</button>
+          <button type="button" class="btn btn-ghost" data-wf="calc_list">List calculations</button>
+        </li>
+        <li>
+          <strong>BSAS (adjustable summary)</strong>
+          <button type="button" class="btn btn-primary" data-wf="bsas_trigger">Trigger BSAS</button>
+          <button type="button" class="btn btn-ghost" data-wf="bsas_list">List BSAS</button>
+        </li>
+        <li>
+          <strong>Final declaration intent</strong>
+          <p class="muted">HMRC wording applies: only declare when you are ready to finalise.</p>
+          <button type="button" class="btn btn-primary" data-wf="final_calc">Intent to finalise calculation</button>
+        </li>
+        <li>
+          <strong>Amend a quarterly period</strong>
+          <p class="muted">Corrections: put periodId of the period to amend (SE).</p>
+          <label>Period ID
+            <input type="text" id="period-id" placeholder="2024-04-06_2024-07-05" />
+          </label>
+          <button type="button" class="btn btn-primary" data-wf="se_amend">Amend SE period</button>
+        </li>
+      </ol>
+    </section>
+
+    <section class="panel">
+      <h2 style="margin-top:0">Result &amp; receipt</h2>
+      <p id="wf-error" class="error" hidden></p>
+      <div id="wf-success" class="success-box" hidden>
+        <p id="wf-summary"></p>
+        <p class="muted" id="wf-receipt"></p>
+        <a class="btn btn-ghost" id="wf-receipt-link" href="/history">View submissions</a>
+      </div>
+      <pre id="wf-out" class="code-block" style="max-height:20rem;overflow:auto">Ready. Connect HMRC, fill NINO and business IDs, then run a step.</pre>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap footer-bottom" style="border:0;padding:0">
+      <p class="muted">Customer year-end journey — not the operator console. <a href="/mtd">Internal diagnostics</a> (signed-in).</p>
+    </div>
+  </footer>
+  <script src="/js/year-end.js"></script>
+  <script src="/js/cookie-banner.js"></script>
+</body>
+</html>

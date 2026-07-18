@@ -29,26 +29,26 @@
 
 | ID | Control | Required for | Implemented | Tested | Evidence | Status |
 |----|---------|--------------|-------------|--------|----------|--------|
-| SEC-01 | Secure authentication | Pilot | ☐ | ☐ | | open |
-| SEC-02 | MFA for professional admins | Pilot+ | ☐ | ☐ | | open |
-| SEC-03 | Short-lived secure sessions | Pilot | ☐ | ☐ | | open |
+| SEC-01 | Secure authentication | Pilot | ☑ | ☑ | auth-drafts tests | partial |
+| SEC-02 | MFA for professional admins | Pilot+ | ☐ | ☐ | | open — EXT human |
+| SEC-03 | Short-lived secure sessions | Pilot | ☑ | ☑ | 7-day sessions HttpOnly | partial |
 | SEC-04 | CSRF protection | Pilot | ☐ | ☐ | | open |
-| SEC-05 | Rate limiting | Pilot | ☐ | ☐ | | open |
+| SEC-05 | Rate limiting | Pilot | ☑ | ☑ | submit rate limit | partial |
 | SEC-06 | Account lockout controls | Pilot | ☐ | ☐ | | open |
-| SEC-07 | Role + tenant authz on every protected op | Pilot | ☐ | ☐ | | open |
-| SEC-08 | Encrypted HMRC tokens | Pilot | ☐ | ☐ | | open |
-| SEC-09 | Secret rotation process | Prod | ☐ | ☐ | | open |
-| SEC-10 | Security headers | Staging | ☐ | ☐ | | open |
-| SEC-11 | Input and file validation | Demo+ | ☐ | ☐ | | open |
-| SEC-12 | Safe spreadsheet parser | Pilot | ☐ | ☐ | | open |
+| SEC-07 | Role + tenant authz on every protected op | Pilot | ☑ | ☑ | tenant-isolation.test.js · access-control.js | improved 2026-07-18 |
+| SEC-08 | Encrypted HMRC tokens | Pilot | ☑ | ☑ | crypto-secret + prod boot requires key | partial (prod boot gate) |
+| SEC-09 | Secret rotation process | Prod | ☐ | ☐ | | open — runbook |
+| SEC-10 | Security headers | Staging | ☑ | ☑ | CSP/XFO in server.js | partial |
+| SEC-11 | Input and file validation | Demo+ | ☑ | ☑ | multer + validation | partial |
+| SEC-12 | Safe spreadsheet parser | Pilot | ☑ | ☑ | CSV preferred; xlsx limits + prod opt-in parse-xlsx-safety.test.js | risk-accepted w/ controls |
 | SEC-13 | Malware/malformed-file handling | Prod | ☐ | ☐ | | open |
-| SEC-14 | Server-owned submission drafts | Pilot | ☐ | ☐ | | open |
-| SEC-15 | Idempotency + duplicate prevention | Pilot | ☐ | ☐ | | open |
-| SEC-16 | Redacted logs | Demo+ | ☐ | ☐ | | open |
-| SEC-17 | Immutable audit events | Pilot | ☐ | ☐ | | open |
-| SEC-18 | Dependency / container scanning | Staging | ☐ | ☐ | | open |
-| SEC-19 | No anonymous credentialed HMRC submit | **Demo** | ☐ | ☐ | | open |
-| SEC-20 | Production refuses insecure boot | Prod | ☐ | ☐ | | open |
+| SEC-14 | Server-owned submission drafts | Pilot | ☑ | ☑ | drafts + ownership | improved |
+| SEC-15 | Idempotency + duplicate prevention | Pilot | ☑ | ☑ | user-scoped keys | improved |
+| SEC-16 | Redacted logs | Demo+ | ☑ | ☐ | NINO slice in audit | partial |
+| SEC-17 | Immutable audit events | Pilot | ☑ | ☑ | audit_events | partial |
+| SEC-18 | Dependency / container scanning | Staging | ☐ | ☐ | npm audit known xlsx | open |
+| SEC-19 | No anonymous credentialed HMRC submit | **Demo** | ☑ | ☑ | submit requires user for non-double | improved |
+| SEC-20 | Production refuses insecure boot | Prod | ☑ | ☑ | production-boot.js + tests | improved |
 
 ---
 

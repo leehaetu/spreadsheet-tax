@@ -24,12 +24,38 @@ const evidence = {
 };
 
 function logStep(name, data) {
+  // Honest scoring: only HMRC 2xx (or true double/preview) count as success.
+  // App may wrap HMRC 4xx/5xx as product 502 with body.status — use HMRC status when present.
+  const hmrcStatus =
+    data?.body?.status ??
+    data?.response?.status ??
+    data?.hmrcStatus ??
+    data?.status ??
+    data?.httpStatus ??
+    null;
+  const statusNum = Number(hmrcStatus);
+  const trueHttpOk =
+    Number.isFinite(statusNum) && statusNum >= 200 && statusNum < 300;
+  // Explicit validation / throttle failures are never "ok"
+  const code =
+    data?.body?.body?.code ||
+    data?.body?.code ||
+    data?.validationCode ||
+    data?.body?.validationCode ||
+    null;
+  const forcedFail =
+    code === 'MESSAGE_THROTTLED_OUT' ||
+    code === 'INVALID_HEADERS' ||
+    data?.ok === 'INVALID_HEADERS' ||
+    data?.ok === false;
+  const ok = forcedFail ? false : trueHttpOk;
   evidence.steps.push({
     name,
-    ok: data?.ok ?? data?.status === 200,
-    status: data?.status ?? data?.httpStatus ?? null,
+    ok,
+    status: statusNum || hmrcStatus,
+    hmrcCode: code,
     label: data?.label || null,
-    path: data?.path || null,
+    path: data?.path || data?.body?.path || null,
     snippet: JSON.stringify(data?.body || data?.response || data || {}).slice(
       0,
       400
