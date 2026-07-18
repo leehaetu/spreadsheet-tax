@@ -640,11 +640,60 @@ function sendAppHtml(req, res, filename, returnPath) {
 }
 
 /**
- * Operator / internal tools — not customer product.
- * Requires sign-in; never marketed in primary nav.
+ * True if user holds practice_admin on any firm.
+ * @param {{ id: string }} user
+ */
+function userIsPracticeAdmin(user) {
+  if (!user?.id) return false;
+  return listMemberships(user.id).some((m) => m.role === 'practice_admin');
+}
+
+/**
+ * Platform operators (Lee / ops) via OPERATOR_EMAILS env (comma-separated, lowercased).
+ * @param {{ email?: string }} user
+ */
+function userIsPlatformOperator(user) {
+  const raw = process.env.OPERATOR_EMAILS || process.env.PLATFORM_OPERATOR_EMAILS || '';
+  if (!raw.trim() || !user?.email) return false;
+  const allow = new Set(
+    raw
+      .split(',')
+      .map((s) => s.trim().toLowerCase())
+      .filter(Boolean)
+  );
+  return allow.has(String(user.email).trim().toLowerCase());
+}
+
+/**
+ * Operator / practice-admin tools — not open to every signed-in customer.
+ * /admin: practice_admin OR platform operator email.
+ * /mtd: signed-in product user only (sendAppHtml) — use sendOperatorHtml for admin-like tools.
  */
 function sendOperatorHtml(req, res, filename, returnPath) {
-  return sendAppHtml(req, res, filename, returnPath);
+  const user = getSessionUser(getSessionIdFromRequest(req));
+  if (!user) {
+    const next =
+      returnPath ||
+      (req.originalUrl && !req.originalUrl.startsWith('/api')
+        ? req.originalUrl
+        : req.path) ||
+      '/admin';
+    return res.redirect(302, `/signin?next=${encodeURIComponent(next)}`);
+  }
+  if (!userIsPracticeAdmin(user) && !userIsPlatformOperator(user)) {
+    res.status(403);
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    return res.send(
+      `<!DOCTYPE html><html lang="en-GB"><head><meta charset="utf-8"/><title>Forbidden</title>
+      <link rel="stylesheet" href="/css/site.css"/></head>
+      <body class="theme-light app-simple"><main class="wrap app-main narrow">
+      <h1>Access denied</h1>
+      <p class="muted">This area is for practice administrators only.</p>
+      <p><a href="/home">Back to home</a></p>
+      </main></body></html>`
+    );
+  }
+  return sendPublicHtml(res, filename);
 }
 
 /** Confirm leave app → marketing (sign out, or stay signed in in a new tab). */
@@ -3851,8 +3900,20 @@ app.get('/api/hmrc/service-status', (_req, res) => {
 });
 
 app.put('/api/admin/hmrc-service-status', (req, res) => {
-  const secret = process.env.ADMIN_JOB_SECRET || process.env.JOB_SECRET;
-  if (!secret || req.get('x-job-secret') !== secret) {
+  // Prefer JOBS_SECRET; accept legacy ADMIN_JOB_SECRET / JOB_SECRET header names
+  const secret =
+    process.env.JOBS_SECRET ||
+    process.env.ADMIN_JOB_SECRET ||
+    process.env.JOB_SECRET ||
+    (process.env.NODE_ENV === 'production' ? null : 'dev-jobs-secret');
+  if (!secret) {
+    return res.status(503).json({ error: 'Jobs secret not configured' });
+  }
+  const provided =
+    req.get('x-jobs-secret') ||
+    req.get('x-job-secret') ||
+    (typeof req.body?.secret === 'string' ? req.body.secret : '');
+  if (provided !== secret) {
     return res.status(401).json({ error: 'Admin secret required' });
   }
   const status = String(req.body?.status || 'unknown').slice(0, 40);

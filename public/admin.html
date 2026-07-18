@@ -84,22 +84,19 @@
           'Practice administrator role required. Use Settings or Workspace for normal work.';
         return;
       }
-      document.getElementById('stats').hidden = false;
+      // Global metrics require ops secret — not available in browser for practice admins
+      document.getElementById('stats').hidden = true;
       document.getElementById('invite-panel').hidden = false;
       document.getElementById('audit-panel').hidden = false;
-      const m = await fetch('/api/metrics/summary').then((r) => r.json());
-      document.getElementById('m-users').textContent = m.users ?? '—';
-      document.getElementById('m-drafts').textContent = m.drafts ?? '—';
-      document.getElementById('m-subs').textContent = m.submissionAttempts ?? '—';
-      document.getElementById('m-cta').textContent = m.ctaEvents ?? '—';
       const sel = document.getElementById('firm-select');
       const auditSel = document.getElementById('audit-firm');
       sel.innerHTML = '';
       auditSel.innerHTML = '';
       for (const x of me.memberships || []) {
+        if (x.role !== 'practice_admin') continue;
         const o = document.createElement('option');
         o.value = x.firmId;
-        o.textContent = x.firmName;
+        o.textContent = x.firmName || x.firmId;
         sel.appendChild(o);
         const o2 = o.cloneNode(true);
         auditSel.appendChild(o2);
@@ -107,6 +104,9 @@
       if (!sel.options.length) {
         document.getElementById('invite-panel').hidden = true;
         document.getElementById('audit-panel').hidden = true;
+        document.getElementById('gate').hidden = false;
+        document.getElementById('gate').textContent =
+          'No practice_admin firm membership found.';
       } else {
         loadAudit();
       }

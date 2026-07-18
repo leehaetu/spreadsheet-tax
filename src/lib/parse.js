@@ -6,6 +6,13 @@
 import * as XLSX from 'xlsx';
 
 /**
+ * SheetJS community build has known CVEs with no npm fix (prototype pollution / ReDoS).
+ * Mitigation: prefer isolated worker path, size caps, magic-byte check, no formula execution.
+ * Kill-switch: EXCEL_KILL_SWITCH=1 rejects workbook parses (CSV still works).
+ * @see GHSA-4r6h-8v6p-xvw6
+ */
+
+/**
  * Normalize a header cell to a stable key.
  * @param {unknown} h
  * @returns {string}
