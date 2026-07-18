@@ -276,25 +276,69 @@ async function postSandboxPeriod(opts, route) {
  * Drop preview-only keys so HMRC Property API does not reject unknown fields.
  * @param {object} body
  */
-export function sanitizeUkPropertyPeriodBody(body) {
-  if (!body || typeof body !== 'object') return body;
-  return {
-    fromDate: body.fromDate,
-    toDate: body.toDate,
-    ukOtherProperty: body.ukOtherProperty,
-  };
+/**
+ * Property Business MTD 6.0:
+ * - tax years ≤ 2023-24: ukOtherProperty / foreignProperty (def1)
+ * - tax year 2024-25: ukNonFhlProperty / foreignNonFhlProperty (def2)
+ * @param {string} [taxYear]
+ */
+export function propertyPeriodFieldStyle(taxYear) {
+  const y = String(taxYear || '');
+  // 2024-25 and later use def2 names until cumulative endpoints take over 2025-26+
+  if (y >= '2024-25') return 'def2';
+  return 'def1';
 }
 
 /**
  * @param {object} body
+ * @param {string} [taxYear]
  */
-export function sanitizeForeignPropertyPeriodBody(body) {
+export function sanitizeUkPropertyPeriodBody(body, taxYear) {
   if (!body || typeof body !== 'object') return body;
-  return {
-    fromDate: body.fromDate,
-    toDate: body.toDate,
-    foreignProperty: body.foreignProperty,
-  };
+  const fromDate = body.fromDate || body.periodDates?.periodStartDate;
+  const toDate = body.toDate || body.periodDates?.periodEndDate;
+  const nonFhl =
+    body.ukNonFhlProperty || body.ukOtherProperty || null;
+  const fhl = body.ukFhlProperty || null;
+  const style = propertyPeriodFieldStyle(
+    taxYear || taxYearFromPeriodStart(fromDate)
+  );
+  /** @type {Record<string, unknown>} */
+  const out = { fromDate, toDate };
+  if (style === 'def2') {
+    if (nonFhl) out.ukNonFhlProperty = nonFhl;
+    if (fhl) out.ukFhlProperty = fhl;
+  } else {
+    if (nonFhl) out.ukOtherProperty = nonFhl;
+    if (fhl) out.ukFhlProperty = fhl;
+  }
+  return out;
+}
+
+/**
+ * @param {object} body
+ * @param {string} [taxYear]
+ */
+export function sanitizeForeignPropertyPeriodBody(body, taxYear) {
+  if (!body || typeof body !== 'object') return body;
+  const fromDate = body.fromDate || body.periodDates?.periodStartDate;
+  const toDate = body.toDate || body.periodDates?.periodEndDate;
+  const nonFhl =
+    body.foreignNonFhlProperty || body.foreignProperty || null;
+  const fhl = body.foreignFhlEea || null;
+  const style = propertyPeriodFieldStyle(
+    taxYear || taxYearFromPeriodStart(fromDate)
+  );
+  /** @type {Record<string, unknown>} */
+  const out = { fromDate, toDate };
+  if (style === 'def2') {
+    if (nonFhl) out.foreignNonFhlProperty = nonFhl;
+    if (fhl) out.foreignFhlEea = fhl;
+  } else {
+    if (nonFhl) out.foreignProperty = nonFhl;
+    if (fhl) out.foreignFhlEea = fhl;
+  }
+  return out;
 }
 
 /**

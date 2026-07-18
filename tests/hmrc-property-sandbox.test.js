@@ -8,30 +8,49 @@ import {
 import { buildSubmitRequest } from '../src/lib/hmrc-client.js';
 
 describe('property sandbox body sanitizers', () => {
-  it('strips periodDates from UK property body', () => {
-    const clean = sanitizeUkPropertyPeriodBody({
-      fromDate: '2024-04-06',
-      toDate: '2024-07-05',
-      ukOtherProperty: { income: { periodAmount: 1000 } },
-      periodDates: { periodStartDate: '2024-04-06', periodEndDate: '2024-07-05' },
-    });
-    assert.deepEqual(clean, {
-      fromDate: '2024-04-06',
-      toDate: '2024-07-05',
-      ukOtherProperty: { income: { periodAmount: 1000 } },
-    });
+  it('maps ukOtherProperty to ukNonFhlProperty for TY 2024-25', () => {
+    const clean = sanitizeUkPropertyPeriodBody(
+      {
+        fromDate: '2024-04-06',
+        toDate: '2024-07-05',
+        ukOtherProperty: { income: { periodAmount: 1000 } },
+        periodDates: { periodStartDate: '2024-04-06', periodEndDate: '2024-07-05' },
+      },
+      '2024-25'
+    );
+    assert.equal(clean.fromDate, '2024-04-06');
+    assert.deepEqual(clean.ukNonFhlProperty, { income: { periodAmount: 1000 } });
+    assert.equal('ukOtherProperty' in clean, false);
     assert.equal('periodDates' in clean, false);
   });
 
-  it('strips periodDates from foreign property body', () => {
-    const clean = sanitizeForeignPropertyPeriodBody({
-      fromDate: '2024-04-06',
-      toDate: '2024-07-05',
-      foreignProperty: [{ countryCode: 'ESP', income: { rentIncome: { rentAmount: 500 } } }],
-      periodDates: { periodStartDate: '2024-04-06', periodEndDate: '2024-07-05' },
-    });
-    assert.equal(clean.foreignProperty[0].countryCode, 'ESP');
-    assert.equal('periodDates' in clean, false);
+  it('keeps ukOtherProperty for earlier tax years', () => {
+    const clean = sanitizeUkPropertyPeriodBody(
+      {
+        fromDate: '2023-04-06',
+        toDate: '2023-07-05',
+        ukOtherProperty: { income: { periodAmount: 1000 } },
+      },
+      '2023-24'
+    );
+    assert.ok(clean.ukOtherProperty);
+    assert.equal('ukNonFhlProperty' in clean, false);
+  });
+
+  it('maps foreignProperty to foreignNonFhlProperty for TY 2024-25', () => {
+    const clean = sanitizeForeignPropertyPeriodBody(
+      {
+        fromDate: '2024-04-06',
+        toDate: '2024-07-05',
+        foreignProperty: [
+          { countryCode: 'ESP', income: { rentIncome: { rentAmount: 500 } } },
+        ],
+        periodDates: { periodStartDate: '2024-04-06', periodEndDate: '2024-07-05' },
+      },
+      '2024-25'
+    );
+    assert.equal(clean.foreignNonFhlProperty[0].countryCode, 'ESP');
+    assert.equal('foreignProperty' in clean, false);
   });
 });
 

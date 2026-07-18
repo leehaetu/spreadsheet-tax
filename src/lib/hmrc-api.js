@@ -190,10 +190,14 @@ export function taxYearFromPeriodId(periodId) {
 export async function createUkPropertyPeriod(opts) {
   const nino = ninoClean(opts.nino);
   const taxYear = opts.taxYear;
-  const body = sanitizeUkPropertyPeriodBody(opts.body);
-  if (!body?.fromDate || !body?.toDate || !body?.ukOtherProperty) {
+  const body = sanitizeUkPropertyPeriodBody(opts.body, taxYear);
+  if (
+    !body?.fromDate ||
+    !body?.toDate ||
+    !(body.ukNonFhlProperty || body.ukOtherProperty || body.ukFhlProperty)
+  ) {
     throw new Error(
-      'UK property period body must include fromDate, toDate, ukOtherProperty'
+      'UK property period body must include fromDate, toDate, and a UK property income/expenses object'
     );
   }
   return hmrcFetch({
@@ -218,16 +222,21 @@ export async function retrieveUkPropertyPeriod(opts) {
 
 export async function createForeignPropertyPeriod(opts) {
   const nino = ninoClean(opts.nino);
-  const body = sanitizeForeignPropertyPeriodBody(opts.body);
-  if (!body?.fromDate || !body?.toDate || !body?.foreignProperty) {
+  const taxYear = opts.taxYear;
+  const body = sanitizeForeignPropertyPeriodBody(opts.body, taxYear);
+  if (
+    !body?.fromDate ||
+    !body?.toDate ||
+    !(body.foreignNonFhlProperty || body.foreignProperty || body.foreignFhlEea)
+  ) {
     throw new Error(
-      'Foreign property period body must include fromDate, toDate, foreignProperty'
+      'Foreign property period body must include fromDate, toDate, and foreign property income/expenses'
     );
   }
   return hmrcFetch({
     ...opts,
     method: 'POST',
-    path: `/individuals/business/property/foreign/${nino}/${opts.businessId}/period/${opts.taxYear}`,
+    path: `/individuals/business/property/foreign/${nino}/${opts.businessId}/period/${taxYear}`,
     accept: `application/vnd.hmrc.${PROP()}+json`,
     body,
     label: 'foreign_property_period_create',

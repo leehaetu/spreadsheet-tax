@@ -106,12 +106,12 @@ export function buildSubmitRequest(req, config) {
     headers.Authorization = `Bearer ${config.accessToken}`;
   }
 
-  // Property payloads keep periodDates for UI preview; strip before HMRC HTTP.
+  // Property payloads: strip preview keys; map to TY 2024-25+ field names (def2)
   let outboundBody = body;
   if (source === 'uk_property') {
-    outboundBody = sanitizeUkPropertyPeriodBody(body);
+    outboundBody = sanitizeUkPropertyPeriodBody(body, taxYear);
   } else if (source === 'foreign_property') {
-    outboundBody = sanitizeForeignPropertyPeriodBody(body);
+    outboundBody = sanitizeForeignPropertyPeriodBody(body, taxYear);
   }
 
   return {
