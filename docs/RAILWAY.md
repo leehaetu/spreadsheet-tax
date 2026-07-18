@@ -82,7 +82,9 @@ App scale features already shipped for large books:
 - Paginated `GET /api/me/clients` (limit/offset/q/status/needsAction)
 - SQL aggregate practice dashboard (no full-table load)
 
-**Honest limit:** one SQLite file on one volume cannot be multi-replica. At full 600k multi-tenant concurrent load, add **Railway Postgres** and point the app at `DATABASE_URL` (future workstream). Volume remains for uploads/exports.
+**Honest limit:** one SQLite file on one volume cannot be multi-replica.  
+
+**Capacity gate (2026-07-18):** product **must** support **200 practices + 800,000** SE/landlord customers before any pilot/production/market claim. See **[CAPACITY-REQUIREMENTS.md](./CAPACITY-REQUIREMENTS.md)**. Current SQLite single-service setup is **P0 blocker**, not an acceptable end-state. Target: managed HA PostgreSQL, Redis, queues, workers, object storage, multi-instance app — not “SQLite forever.”
 
 ### Re-attach volume (if missing)
 

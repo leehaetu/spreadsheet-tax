@@ -13,8 +13,10 @@
 ## Do first
 
 1. Read `docs/AGENT-TRUTH-PROTOCOL.md` before any readiness/progress answer.  
-2. Gate 0 safety before new Practice features. One code writer at a time.  
-3. Default stage claim: **Stage 2 — Sandbox engineering** until STATUS.md is re-verified with evidence.
+2. Read `docs/CAPACITY-REQUIREMENTS.md` — **200 practices + 800k customers is a hard gate**.  
+3. **Never** claim pilot-ready / production-ready / complete / marketable while capacity gate is NOT MET.  
+4. Gate 0 + capacity platform before expanding product claims. One code writer at a time.  
+5. Default: **not pilot-ready** until capacity acceptance tests pass with recorded evidence.
 
 ## Truth-first (mandatory — overrides cleverness, optimism, and “helpful” spin)
 

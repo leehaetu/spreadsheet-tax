@@ -2,39 +2,49 @@
 
 **Last updated:** 2026-07-18  
 **Protocol:** [AGENT-TRUTH-PROTOCOL.md](./AGENT-TRUTH-PROTOCOL.md)  
+**Capacity gate:** [CAPACITY-REQUIREMENTS.md](./CAPACITY-REQUIREMENTS.md) — **NOT MET**  
 **Live:** https://spreadsheet-tax-production.up.railway.app  
-**Goal (aspirational):** HMRC Recognised — **not achieved**  
-**Evidence ledger:** [hmrc/ENDPOINT-EVIDENCE-LEDGER.md](./hmrc/ENDPOINT-EVIDENCE-LEDGER.md)  
-**External deps:** [EXTERNAL-DEPENDENCIES.md](./EXTERNAL-DEPENDENCIES.md)  
-**Cutover:** [PRODUCTION-CUTOVER.md](./PRODUCTION-CUTOVER.md)  
 
 ---
 
 ## Truth status (2026-07-18)
 
-- **Stage: 2 of 5 — Sandbox engineering** (Gate 0 code unblocked; pilot/HMRC still external)
-- **Not claiming:** production-ready · pilot-ready · HMRC Recognised · production-verified · every ledger row live 2xx
-- **Customer quarterly journey (local):** sample → `#review-panel` → submit **WORKS** — `tests/e2e/app-journey.spec.js`
-- **Practice isolation/roles:** draft ownership, firm-scoped reminders, admin invite/delete — `tests/tenant-isolation.test.js`
-- **Year-end product workflows:** 16 known names on `/year-end` + `POST /api/workflows/run`; unknown rejected before preview; all names store receipt in preview — `tests/workflows-year-end.test.js`
-- **Sandbox journey (rescored):** true2xx=**16** failed=**4** okish=**null** — `docs/hmrc/sandbox-journey-run.json` (live Playwright re-run blocked without Hub env — EXT)
-- **Open remaining:** CSRF, MFA, launch-gate human sign-off, pilot, SDSTeam send, quiet live re-run of pending rows, Railway deploy of latest commit
-- **Version:** **1.16.0**
-- **Recognised:** **Not yet**
-- **Sandbox app ID:** `e6751be5-fd22-4447-9e77-aa51729b1b46`
-- **Production app:** not applied for
+### Capacity (P0 — blocks all readiness claims)
 
-## Capability tags (summary)
+- **Required:** **200** accounting practices + **800,000** self-employed/landlord customers  
+- **Proven:** **No**  
+- **Current platform:** 1× Railway web service, SQLite on single volume (~5 GB), in-process jobs/rate limits, no Redis/queue/object-storage workers  
+- **Verdict:** **Not pilot-ready. Not production-ready. Not marketable at scale. Not complete.**  
+- Infrastructure migration + load evidence **must** come before any readiness claim  
 
-| Area | Tag |
-|------|-----|
-| Unit suite 133 pass | UNIT_TESTED |
-| Gate 0 browser journey | CUSTOMER_WORKFLOW (local e2e) |
-| Tenant isolation | UNIT_TESTED |
-| Production boot refusal | UNIT_TESTED |
-| HMRC sandbox endpoints | Mixed SANDBOX_HTTP / preview — see ledger (exact statuses) |
-| Production / Recognised | External |
+### HMRC / product (secondary until capacity gate opens)
 
-## Demo login
+- Stage for **software bridging features** may progress, but **must not** be sold as pilot/production ready while capacity gate is open  
+- Gate 0 customer journey fixes, isolation work, year-end workflows exist in code — **insufficient alone**  
+- HMRC Recognised / Production credentials: **external**, separate  
+- Not HMRC-recognised  
 
-`demo@spreadsheet-tax.example` / `DemoPass123!` — demo only.
+### Forbidden claims until CAPACITY-REQUIREMENTS acceptance gate passes
+
+- pilot-ready  
+- production-ready  
+- complete (as a product for market)  
+- supports 200 practices / 800k customers  
+- marketable at national scale  
+
+### Version / deploy
+
+- App code version may be **1.16.x** on Railway — **version ≠ capacity**  
+- Sandbox app ID: `e6751be5-fd22-4447-9e77-aa51729b1b46`  
+- Production HMRC app: not applied for  
+
+## Immediate engineering priority order
+
+1. **P0** Capacity platform: Postgres, Redis, queues, workers, object storage, monitoring, backups  
+2. **P0** Secure Excel workers (first-class xls/xlsx) on isolated workers  
+3. **P0** Load/endurance/recovery tests against 200 practices + 800k records  
+4. Then only: pilot claims, HMRC Production package, marketing  
+
+## Demo login (dev only)
+
+`demo@spreadsheet-tax.example` / `DemoPass123!` — **not** a scale test user base.
