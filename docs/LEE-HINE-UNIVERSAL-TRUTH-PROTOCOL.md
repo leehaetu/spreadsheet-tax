@@ -122,21 +122,27 @@ Do **not** re-claim without new evidence:
 
 ---
 
-## 7. How Lee should load this (durable memory)
+## 7. How this auto-loads (Grok Terminal / TUI — all models)
 
-AI chat “memory” is unreliable across sessions and products. **This file is the durable memory.**
+Grok **automatically** injects global project rules at session start:
 
-**Every new project / repo:**
+| Path | Effect |
+|------|--------|
+| **`~/.grok/AGENTS.md`** | Global instructions for **every** project and every Grok model |
+| **`~/.grok/rules/*.md`** | Additional global rules (includes a copy of this protocol) |
+| **`~/.grok/LEE-HINE-UNIVERSAL-TRUTH-PROTOCOL.md`** | Full standing orders (referenced by AGENTS.md — **read when making status claims**) |
+| **`~/.grok/memory/MEMORY.md`** | Cross-session memory (enable `[memory] enabled = true` in `~/.grok/config.toml`) |
 
-1. Copy or symlink:  
-   `~/.grok/LEE-HINE-UNIVERSAL-TRUTH-PROTOCOL.md`  
-   → `docs/LEE-HINE-UNIVERSAL-TRUTH-PROTOCOL.md` (or root `TRUTH.md`).  
-2. First line of `AGENTS.md` / project instructions:  
-   `Mandatory: read ~/.grok/LEE-HINE-UNIVERSAL-TRUTH-PROTOCOL.md (or docs copy) before any status claim.`  
-3. First user message of a big goal:  
-   `Follow LEE-HINE-UNIVERSAL-TRUTH-PROTOCOL. Blockers first. Owner complete definition is <attach brief>.`
+Lee should **not** need to re-paste these rules every time in Terminal if `~/.grok/AGENTS.md` exists.
 
-**Agent obligation:** If this file is in context or discoverable under `~/.grok/`, **every Grok model** must **obey it for all Lee Hine work**, not only Spreadsheet Tax and not only Grok 4.5.
+**Still recommended on huge goals:** attach the owner’s full completion brief (e.g. principal-engineer checklist) so project-specific gates are not lost.
+
+**Every new project / repo (optional mirror):**
+
+1. Copy this file into `docs/LEE-HINE-UNIVERSAL-TRUTH-PROTOCOL.md`.  
+2. Point project `AGENTS.md` at the universal protocol.
+
+**Agent obligation:** If this file or `~/.grok/AGENTS.md` is discoverable, **every Grok model** must **obey it for all Lee Hine work**, not only Spreadsheet Tax and not only Grok 4.5.
 
 ---
 
