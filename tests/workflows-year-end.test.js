@@ -90,11 +90,12 @@ after(async () => {
 });
 
 describe('year-end workflows', () => {
-  it('serves guided year-end case with EOY workflow buttons', async () => {
+  it('serves guided year-end product case with EOY workflow buttons', async () => {
     const res = await request('GET', '/year-end');
     assert.equal(res.status, 200);
-    assert.match(res.body, /Tax return|year end|Guided year-end/i);
-    // Quarterly period creates live on /app; year-end is annual/calc/BSAS/final
+    assert.match(res.body, /Tax return|year end|guided/i);
+    assert.match(res.body, /eoy-progress|Mark step done|Your tax return progress/i);
+    // Advanced section keeps full HMRC action surface for product + tests
     for (const name of [
       'final_obligations',
       'se_annual',
@@ -114,6 +115,51 @@ describe('year-end workflows', () => {
         `year-end.html missing data-wf=${name}`
       );
     }
+  });
+
+  it('persists guided eoy-case stages for signed-in user', async () => {
+    const get1 = await request('GET', '/api/me/eoy-case?taxYear=2024-25');
+    assert.equal(get1.status, 200);
+    const j1 = JSON.parse(get1.body);
+    assert.equal(j1.ok, true);
+    assert.equal(j1.case.taxYear, '2024-25');
+    assert.ok(Array.isArray(j1.case.stages));
+    assert.ok(j1.case.stages.length >= 8);
+    assert.equal(j1.case.stageId, 'quarterly_complete');
+
+    const put = await request(
+      'PUT',
+      '/api/me/eoy-case',
+      JSON.stringify({
+        taxYear: '2024-25',
+        completeCurrent: true,
+        note: 'Quarterlies confirmed in test',
+      })
+    );
+    assert.equal(put.status, 200);
+    const jPut = JSON.parse(put.body);
+    assert.ok(jPut.case.completedStages.includes('quarterly_complete'));
+    assert.equal(jPut.case.stageId, 'review_totals');
+    assert.match(jPut.case.notes.quarterly_complete || '', /Quarterlies/);
+
+    const get2 = await request('GET', '/api/me/eoy-case?taxYear=2024-25');
+    const j2 = JSON.parse(get2.body);
+    assert.equal(j2.case.stageId, 'review_totals');
+
+    const jump = await request(
+      'PUT',
+      '/api/me/eoy-case',
+      JSON.stringify({ taxYear: '2024-25', stageId: 'calculation' })
+    );
+    assert.equal(jump.status, 200);
+    assert.equal(JSON.parse(jump.body).case.stageId, 'calculation');
+
+    const bad = await request(
+      'PUT',
+      '/api/me/eoy-case',
+      JSON.stringify({ taxYear: '2024-25', stageId: 'not_a_stage' })
+    );
+    assert.equal(bad.status, 400);
   });
 
   it('rejects unknown workflow before preview success', async () => {

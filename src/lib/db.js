@@ -340,6 +340,17 @@ function migrate(database) {
     );
     CREATE INDEX IF NOT EXISTS idx_ss_reviews_user ON spreadsheet_reviews(user_id, created_at);
     CREATE INDEX IF NOT EXISTS idx_cell_comments_draft ON cell_comments(draft_id);
+
+    CREATE TABLE IF NOT EXISTS eoy_cases (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      tax_year TEXT NOT NULL,
+      stage_id TEXT NOT NULL,
+      completed_json TEXT,
+      notes_json TEXT,
+      updated_at TEXT NOT NULL,
+      UNIQUE(user_id, tax_year)
+    );
   `);
 
   // Scale indexes for large firm books (hundreds of thousands of clients)

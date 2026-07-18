@@ -1,9 +1,8 @@
 # Evaluation — Spreadsheet Tax current state
 
 **Date:** 2026-07-18  
-**Local HEAD:** `33d19f3` / product entry fixes follow  
-**App version:** **1.19.0** (not the older 1.18.0 audit that missed later commits)  
-**Branch:** `main` **ahead of origin** — production Railway may still be older until push/deploy  
+**App version:** **1.20.0**  
+**Branch:** `main`  
 
 ## Verdict (truth protocol)
 
@@ -11,7 +10,9 @@
 |-------|---------|
 | Credible local sandbox / demo product | **Yes** |
 | Unified SE + UK + foreign journey foundation | **Yes** |
-| Cell-to-HMRC “Check your spreadsheet” | **Yes in 1.19** (sanitised grid + proof; not Excel Online) |
+| Cell-to-HMRC “Check your spreadsheet” | **Yes** (sanitised grid + proof; not Excel Online) |
+| End-of-year product journey (guided case) | **Yes in 1.20** (stages/notes API + UI; live HMRC EOY not fully proven) |
+| Practice beyond demo labels | **Partial** — full pipeline + action labels + ~10-client demo book; not production book size |
 | Pilot-ready | **No** |
 | Production-ready / marketable | **No** |
 | 200 practices / 800k customers | **No — capacity gate NOT MET** |
@@ -21,27 +22,26 @@
 
 | Area | Evidence |
 |------|----------|
-| Unit/integration tests | **159 pass** (`npm test`) |
+| Unit/integration tests | See `npm test` on this release |
 | Quarterly sample → review → preview submit | e2e app-journey |
 | Cumulative YTD table | `/app` after import |
 | Spreadsheet check model | `spreadsheetCheck` on pipeline; gridRows, sheets, reuploadDiff, comments |
 | Taxpayer home / onboarding / records | Routes + APIs |
-| Guided year-end surface | `/year-end` (still operator-heavy in places) |
+| Guided year-end case | `/year-end` + `GET/PUT /api/me/eoy-case` (stages, completeCurrent, notes) |
+| Practice work queue | `/workspace` + transitions with `actionLabel`; catalog ≥15 statuses |
 | Platform foundations | Postgres/Redis/queue/worker code when env set |
-| Capacity seed (CI) | 200 practices / 5k clients script |
+| Capacity seed (CI) | 200 practices / 5k clients script — **not** 800k proof |
 
 ## Critical gaps (still)
 
-1. **Sales vs app confusion** — fixed in this pass: signed-in `/` → `/home`; sign-in default `/home`; sales CTAs → app  
-2. **Deploy lag** — commits not on origin/Railway until push  
-3. **Capacity** — SQLite default; no proven 800k  
-4. **Excel production** — xlsx vuln; LibreOffice container; ClamAV stub  
-5. **EOY** — guided labels but still API-ish steps  
-6. **Practice** — demo book, not 25k-client proof  
-7. **Security launch gate** — CSRF/MFA/sign-off open  
-8. **HMRC live sandbox full ledger** — partial; some non-2xx  
+1. **Capacity** — SQLite default; no proven 800k on HA Postgres + deadline load  
+2. **Excel production** — xlsx vuln residual; LibreOffice container; ClamAV stub  
+3. **EOY live HMRC** — case product complete; full sandbox ledger / production EOY still open  
+4. **Practice scale** — demo book only, not 25k-client firm proof  
+5. **Security launch gate** — CSRF/MFA/sign-off open  
+6. **HMRC Production / Recognised** — external  
 
-## Product surfaces (after entry fix)
+## Product surfaces
 
 | URL | Role |
 |-----|------|
@@ -50,11 +50,11 @@
 | `/app` | Quarterly update + Check your spreadsheet |
 | `/onboarding` | Income sources setup |
 | `/records` | Sources + drafts + receipts |
-| `/year-end` | Tax return case |
-| `/workspace` | Practice |
+| `/year-end` | Guided tax return case |
+| `/workspace` | Practice work queue |
 | `/mtd` | Internal diagnostics |
 
 ## Bottom line
 
-Direction is right. **Not** ready for real customers or 800k claims.  
-**Do:** push + deploy 1.19, then Postgres/Redis cutover and capacity suite.
+Product journeys for quarterly, spreadsheet confidence, EOY stages, and practice pipeline are in place.  
+**Not** ready for real customers at national scale. Capacity gate **NOT MET**. Pilot/production/marketable = **No**.

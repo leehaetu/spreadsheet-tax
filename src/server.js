@@ -176,13 +176,19 @@ import {
   addCellComment,
   listCellComments,
 } from './lib/spreadsheet-review-store.js';
+import {
+  getEoyCase,
+  updateEoyCase,
+  stageToWorkflow,
+  EOY_STAGES,
+} from './lib/eoy-case.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, '..');
 const publicDir = path.join(root, 'public');
 const templatesDir = path.join(root, 'templates');
 const testSpreadsheetsDir = path.join(root, 'test-spreadsheets');
-const APP_VERSION = '1.19.1';
+const APP_VERSION = '1.20.0';
 
 /**
  * Serve HTML with site-chrome (HMRC recognition banner/footer) injected once.
@@ -2190,6 +2196,59 @@ app.post('/api/me/nil-update', (req, res) => {
 
 app.get('/api/practice/workflow-states', (_req, res) => {
   res.json({ ok: true, states: PRACTICE_CLIENT_STATES });
+});
+
+/**
+ * End-of-year guided tax-return case (product stages, not API checklist).
+ */
+app.get('/api/me/eoy-case', (req, res) => {
+  const user = requireUser(req, res);
+  if (!user) return;
+  const taxYear =
+    typeof req.query.taxYear === 'string' && req.query.taxYear
+      ? req.query.taxYear
+      : defaultTaxYear();
+  const eoy = getEoyCase(user.id, taxYear);
+  res.json({
+    ok: true,
+    case: eoy,
+    stageWorkflow: stageToWorkflow(eoy.stageId),
+    stages: EOY_STAGES,
+  });
+});
+
+app.put('/api/me/eoy-case', (req, res) => {
+  const user = requireUser(req, res);
+  if (!user) return;
+  const patch = {
+    taxYear:
+      typeof req.body?.taxYear === 'string' && req.body.taxYear
+        ? req.body.taxYear
+        : undefined,
+    stageId:
+      typeof req.body?.stageId === 'string' ? req.body.stageId : undefined,
+    completeCurrent: Boolean(req.body?.completeCurrent),
+    note: typeof req.body?.note === 'string' ? req.body.note : undefined,
+  };
+  if (patch.stageId && !EOY_STAGES.some((s) => s.id === patch.stageId)) {
+    return res.status(400).json({
+      error: 'Unknown stage',
+      known: EOY_STAGES.map((s) => s.id),
+    });
+  }
+  const eoy = updateEoyCase(user.id, patch);
+  writeAudit({
+    userId: user.id,
+    action: 'eoy_case_updated',
+    entityType: 'eoy_case',
+    entityId: `${user.id}:${eoy.taxYear}`,
+    meta: { stageId: eoy.stageId, taxYear: eoy.taxYear },
+  });
+  res.json({
+    ok: true,
+    case: eoy,
+    stageWorkflow: stageToWorkflow(eoy.stageId),
+  });
 });
 
 /** Preparer/reviewer comments on a cell or range */

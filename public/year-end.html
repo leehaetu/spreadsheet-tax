@@ -4,9 +4,59 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Tax return / year end — Spreadsheet Tax</title>
-  <meta name="description" content="Guided year-end case: annual totals, adjustments, calculation and final declaration for SE, UK and foreign property." />
+  <meta name="description" content="Guided year-end tax return: confirm quarterlies, adjustments, calculation and final declaration for SE, UK and foreign property." />
   <meta name="theme-color" content="#f4f6f9" />
   <link rel="stylesheet" href="/css/site.css" />
+  <style>
+    .eoy-progress {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin: 1rem 0 1.25rem;
+    }
+    .eoy-chip {
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--muted);
+      border-radius: 999px;
+      padding: 0.35rem 0.75rem;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .eoy-chip.active {
+      background: var(--primary-soft);
+      color: var(--text);
+      border-color: var(--primary);
+    }
+    .eoy-chip.done {
+      color: var(--accent);
+      border-color: rgba(52, 211, 153, 0.4);
+    }
+    .eoy-stage-panel h2 { margin-top: 0; }
+    .eoy-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin: 1rem 0;
+    }
+    .eoy-source-list {
+      list-style: none;
+      padding: 0;
+      margin: 0.5rem 0 0;
+    }
+    .eoy-source-list li {
+      padding: 0.45rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.95rem;
+    }
+    .eoy-advanced summary {
+      cursor: pointer;
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+    }
+    .eoy-advanced .flow { margin-top: 0.5rem; }
+  </style>
 </head>
 <body class="theme-light app-body app-simple">
   <header class="site-header">
@@ -27,17 +77,17 @@
     <div class="app-hero">
       <h1>Tax return (year end)</h1>
       <p class="lead">
-        After all quarterly updates for the year, correct digital records if needed,
-        then add tax adjustments, other income, run a calculation, and finalise.
-        This is a guided case — not an API console.
+        One guided case for the year: confirm quarterly updates, review totals,
+        add tax adjustments, run HMRC’s calculation, then finalise when ready.
+        Not an API console — steps match the real tax return journey.
       </p>
     </div>
 
     <p id="gate" class="error" hidden></p>
 
     <section class="panel">
-      <h2 style="margin-top:0">Your details</h2>
-      <p class="muted">Prefer IDs from HMRC connection and saved income sources.</p>
+      <h2 style="margin-top:0">Tax year &amp; businesses</h2>
+      <p class="muted">IDs prefer your saved income sources and HMRC connection.</p>
       <div class="form-row">
         <label>National Insurance number
           <input type="text" id="nino" autocomplete="off" />
@@ -57,69 +107,33 @@
           <input type="text" id="bid-fp" />
         </label>
       </div>
-      <button type="button" class="btn btn-ghost" id="load-biz">Fill IDs from HMRC / sources</button>
+      <div class="eoy-actions">
+        <button type="button" class="btn btn-ghost" id="load-biz">Fill IDs from HMRC / sources</button>
+        <button type="button" class="btn btn-ghost" id="reload-case">Reload case</button>
+      </div>
       <p class="muted" id="biz-note"></p>
+      <ul class="eoy-source-list" id="source-list" aria-live="polite"></ul>
     </section>
 
-    <section class="panel">
-      <h2 style="margin-top:0">Guided year-end case</h2>
-      <ol class="flow" style="max-width:48rem">
-        <li>
-          <strong>Confirm fourth updates received</strong>
-          <p class="muted">Open final-declaration / crystallisation obligations.</p>
-          <button type="button" class="btn btn-primary" data-wf="final_obligations">Load year-end obligations</button>
-        </li>
-        <li>
-          <strong>Review annual totals by business</strong>
-          <p class="muted">Quarterly digital records first — corrections if needed via history.</p>
-          <a class="btn btn-ghost" href="/history">Open submission history / corrections</a>
-        </li>
-        <li>
-          <strong>Self-employment annual adjustments</strong>
-          <p class="muted">Allowances and accounting adjustments (not quarterly totals).</p>
-          <button type="button" class="btn btn-primary" data-wf="se_annual">Submit SE annual</button>
-        </li>
-        <li>
-          <strong>UK property annual adjustments</strong>
-          <button type="button" class="btn btn-primary" data-wf="uk_annual">Submit UK annual</button>
-        </li>
-        <li>
-          <strong>Foreign property annual adjustments</strong>
-          <button type="button" class="btn btn-primary" data-wf="fp_annual">Submit foreign annual</button>
-        </li>
-        <li>
-          <strong>Losses, other income and reliefs</strong>
-          <button type="button" class="btn btn-primary" data-wf="losses">Brought-forward loss</button>
-          <button type="button" class="btn btn-primary" data-wf="other_income">Other income adjustment</button>
-        </li>
-        <li>
-          <strong>Generate HMRC calculation</strong>
-          <button type="button" class="btn btn-primary" data-wf="calc">Trigger calculation</button>
-          <button type="button" class="btn btn-ghost" data-wf="calc_list">List calculations</button>
-        </li>
-        <li>
-          <strong>BSAS where required</strong>
-          <label>BSAS calculation ID
-            <input type="text" id="bsas-calc-id" placeholder="From trigger/list" />
-          </label>
-          <button type="button" class="btn btn-primary" data-wf="bsas_trigger">Trigger BSAS</button>
-          <button type="button" class="btn btn-ghost" data-wf="bsas_list">List BSAS</button>
-          <button type="button" class="btn btn-primary" data-wf="bsas_adjust">Adjust BSAS (SE)</button>
-        </li>
-        <li>
-          <strong>Final declaration</strong>
-          <p class="muted">Only when you are ready to finalise with HMRC wording.</p>
-          <button type="button" class="btn btn-primary" data-wf="final_calc">Intent to finalise</button>
-        </li>
-        <li>
-          <strong>Amend a quarterly period (correction)</strong>
-          <label>Period ID
-            <input type="text" id="period-id" placeholder="2024-04-06_2024-07-05" />
-          </label>
-          <button type="button" class="btn btn-primary" data-wf="se_amend">Amend SE period</button>
-        </li>
-      </ol>
-      <p class="muted">Advanced operators: <a href="/mtd">internal MTD diagnostics</a> (not the customer product).</p>
+    <section class="panel eoy-stage-panel">
+      <h2 style="margin-top:0">Your tax return progress</h2>
+      <p class="muted" id="case-meta">Loading guided case…</p>
+      <div class="eoy-progress" id="eoy-progress" role="list" aria-label="Year-end stages"></div>
+
+      <div id="stage-current">
+        <h3 id="stage-title">—</h3>
+        <p class="muted" id="stage-detail"></p>
+        <label>Notes for this step
+          <textarea id="stage-note" rows="3" placeholder="Optional notes (saved on your case)"></textarea>
+        </label>
+        <div class="eoy-actions" id="stage-actions">
+          <!-- Primary HMRC actions for this stage injected by year-end.js -->
+        </div>
+        <div class="eoy-actions">
+          <button type="button" class="btn btn-primary" id="complete-stage">Mark step done &amp; continue</button>
+          <button type="button" class="btn btn-ghost" id="save-note">Save note only</button>
+        </div>
+      </div>
     </section>
 
     <section class="panel">
@@ -130,28 +144,74 @@
         <p class="muted" id="wf-receipt"></p>
         <a class="btn btn-ghost" id="wf-receipt-link" href="/history">View submissions</a>
       </div>
-      <pre id="wf-out" class="code-block" style="max-height:20rem;overflow:auto">Connect HMRC, confirm sources, then run a step.</pre>
+      <pre id="wf-out" class="code-block" style="max-height:20rem;overflow:auto">Connect HMRC, confirm sources, then run the current step.</pre>
+    </section>
+
+    <section class="panel eoy-advanced">
+      <details>
+        <summary>All year-end actions (advanced)</summary>
+        <p class="muted">
+          Full list of HMRC-backed steps. Prefer the guided stages above.
+          Corrections for a single quarterly period are here if needed.
+        </p>
+        <ol class="flow" style="max-width:48rem">
+          <li>
+            <strong>Confirm fourth updates received</strong>
+            <button type="button" class="btn btn-primary" data-wf="final_obligations">Load year-end obligations</button>
+          </li>
+          <li>
+            <strong>Review annual totals</strong>
+            <a class="btn btn-ghost" href="/history">Open submission history / corrections</a>
+            <a class="btn btn-ghost" href="/records">Digital records</a>
+          </li>
+          <li>
+            <strong>Self-employment annual adjustments</strong>
+            <button type="button" class="btn btn-primary" data-wf="se_annual">Submit SE annual</button>
+          </li>
+          <li>
+            <strong>UK property annual adjustments</strong>
+            <button type="button" class="btn btn-primary" data-wf="uk_annual">Submit UK annual</button>
+          </li>
+          <li>
+            <strong>Foreign property annual adjustments</strong>
+            <button type="button" class="btn btn-primary" data-wf="fp_annual">Submit foreign annual</button>
+          </li>
+          <li>
+            <strong>Losses, other income and reliefs</strong>
+            <button type="button" class="btn btn-primary" data-wf="losses">Brought-forward loss</button>
+            <button type="button" class="btn btn-primary" data-wf="other_income">Other income adjustment</button>
+          </li>
+          <li>
+            <strong>Generate HMRC calculation</strong>
+            <button type="button" class="btn btn-primary" data-wf="calc">Trigger calculation</button>
+            <button type="button" class="btn btn-ghost" data-wf="calc_list">List calculations</button>
+          </li>
+          <li>
+            <strong>BSAS where required</strong>
+            <label>BSAS calculation ID
+              <input type="text" id="bsas-calc-id" placeholder="From trigger/list" />
+            </label>
+            <button type="button" class="btn btn-primary" data-wf="bsas_trigger">Trigger BSAS</button>
+            <button type="button" class="btn btn-ghost" data-wf="bsas_list">List BSAS</button>
+            <button type="button" class="btn btn-primary" data-wf="bsas_adjust">Adjust BSAS (SE)</button>
+          </li>
+          <li>
+            <strong>Final declaration</strong>
+            <button type="button" class="btn btn-primary" data-wf="final_calc">Intent to finalise</button>
+          </li>
+          <li>
+            <strong>Amend a quarterly period (correction)</strong>
+            <label>Period ID
+              <input type="text" id="period-id" placeholder="2024-04-06_2024-07-05" />
+            </label>
+            <button type="button" class="btn btn-primary" data-wf="se_amend">Amend SE period</button>
+          </li>
+        </ol>
+        <p class="muted">Internal diagnostics: <a href="/mtd">MTD tools</a> (not the customer product).</p>
+      </details>
     </section>
   </main>
   <script src="/js/year-end.js"></script>
   <script src="/js/cookie-banner.js"></script>
-  <script>
-    // Prefill business IDs from income sources
-    (async () => {
-      try {
-        const r = await fetch('/api/me/income-sources');
-        if (!r.ok) return;
-        const d = await r.json();
-        for (const s of d.sources || []) {
-          if (s.type === 'self_employment' && s.businessId)
-            document.getElementById('bid-se').value = s.businessId;
-          if (s.type === 'uk_property' && s.businessId)
-            document.getElementById('bid-uk').value = s.businessId;
-          if (s.type === 'foreign_property' && s.businessId)
-            document.getElementById('bid-fp').value = s.businessId;
-        }
-      } catch (_) {}
-    })();
-  </script>
 </body>
 </html>

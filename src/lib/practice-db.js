@@ -9,44 +9,103 @@ import {
   assertPracticeAdmin,
 } from './access-control.js';
 
+/** Full practice pipeline (design language). */
 const TRANSITIONS = {
-  awaiting_records: ['records_received', 'mapping_required'],
-  records_received: ['mapping_required', 'needs_review'],
-  mapping_required: ['needs_review', 'client_query'],
-  needs_review: ['ready_for_approval', 'client_query', 'ready_to_submit'],
-  client_query: ['records_received', 'needs_review'],
-  ready_for_approval: ['ready_to_submit', 'needs_review'],
-  ready_to_submit: ['submitted', 'needs_review'],
-  submitted: ['rejected', 'correction_required'],
+  not_started: ['awaiting_records'],
+  awaiting_records: ['processing', 'records_received', 'mapping_required'],
+  records_received: ['processing', 'mapping_required', 'needs_review'],
+  processing: ['needs_mapping', 'mapping_required', 'ready_for_preparation', 'client_query'],
+  needs_mapping: ['ready_for_preparation', 'client_query', 'mapping_required'],
+  mapping_required: ['needs_review', 'ready_for_preparation', 'client_query'],
+  needs_review: [
+    'ready_for_preparation',
+    'ready_for_approval',
+    'awaiting_reviewer',
+    'client_query',
+    'ready_to_submit',
+  ],
+  client_query: ['records_received', 'processing', 'needs_review', 'awaiting_records'],
+  ready_for_preparation: ['awaiting_reviewer', 'ready_for_approval', 'client_query'],
+  awaiting_reviewer: ['ready_for_approval', 'awaiting_client_approval', 'needs_review'],
+  ready_for_approval: ['awaiting_client_approval', 'ready_to_submit', 'needs_review'],
+  awaiting_client_approval: ['ready_to_submit', 'needs_review', 'client_query'],
+  ready_to_submit: ['queued', 'submitted', 'needs_review'],
+  queued: ['submitted', 'ready_to_submit'],
+  submitted: ['hmrc_rejected', 'rejected', 'correction_required', 'year_complete'],
+  hmrc_rejected: ['correction_required', 'needs_review'],
   rejected: ['correction_required', 'needs_review'],
-  correction_required: ['mapping_required', 'needs_review'],
+  correction_required: ['mapping_required', 'needs_review', 'processing'],
+  year_complete: [],
 };
 
 const LABELS = {
+  not_started: 'Not started',
   awaiting_records: 'Awaiting records',
   records_received: 'Records received',
+  processing: 'Processing',
+  needs_mapping: 'Needs mapping',
   mapping_required: 'Mapping required',
   needs_review: 'Needs review',
   client_query: 'Client query',
+  ready_for_preparation: 'Ready for preparation',
+  awaiting_reviewer: 'Awaiting reviewer',
   ready_for_approval: 'Ready for approval',
+  awaiting_client_approval: 'Awaiting client approval',
   ready_to_submit: 'Ready to submit',
+  queued: 'Queued',
   submitted: 'Submitted',
+  hmrc_rejected: 'HMRC rejected',
   rejected: 'Rejected',
   correction_required: 'Correction required',
+  year_complete: 'Year complete',
 };
 
 /** Statuses that typically need practice attention (not terminal success). */
 const NEEDS_ACTION = new Set([
+  'not_started',
   'awaiting_records',
   'records_received',
+  'processing',
+  'needs_mapping',
   'mapping_required',
   'needs_review',
   'client_query',
+  'ready_for_preparation',
+  'awaiting_reviewer',
   'ready_for_approval',
+  'awaiting_client_approval',
   'ready_to_submit',
+  'queued',
+  'hmrc_rejected',
   'rejected',
   'correction_required',
 ]);
+
+/** Human next-action labels for UI (not raw “Advance”). */
+export function nextActionLabel(fromStatus, toStatus) {
+  const map = {
+    awaiting_records: 'Mark records received',
+    processing: 'Start processing',
+    needs_mapping: 'Flag mapping needed',
+    ready_for_preparation: 'Send to preparer',
+    awaiting_reviewer: 'Send to reviewer',
+    awaiting_client_approval: 'Request client approval',
+    ready_to_submit: 'Mark ready to submit',
+    queued: 'Queue for HMRC',
+    submitted: 'Mark submitted',
+    client_query: 'Raise client query',
+    year_complete: 'Mark year complete',
+  };
+  return map[toStatus] || `Move to ${LABELS[toStatus] || toStatus}`;
+}
+
+export function listAllowedTransitions(status) {
+  return (TRANSITIONS[status] || []).map((id) => ({
+    id,
+    label: LABELS[id] || id,
+    actionLabel: nextActionLabel(status, id),
+  }));
+}
 
 export function listWorkflowStatusCatalog() {
   return Object.entries(LABELS).map(([id, label]) => ({ id, label }));
@@ -142,25 +201,26 @@ export function getClientRow(clientId) {
 }
 
 function mapClient(row) {
+  const status = row.workflow_status;
   return {
     id: row.id,
     firmId: row.firm_id,
     name: row.display_name,
-    status: row.workflow_status,
-    statusLabel: LABELS[row.workflow_status] || row.workflow_status,
+    status,
+    statusLabel: LABELS[status] || status,
     assigneeUserId: row.assignee_user_id,
     dueDate: row.due_date,
     portalAccess: Boolean(row.portal_enabled),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    transitions: listAllowedTransitions(status),
+    needsAction: NEEDS_ACTION.has(status),
   };
 }
 
+/** @deprecated prefer listAllowedTransitions — kept for callers expecting {id,label} */
 export function allowedTransitions(status) {
-  return (TRANSITIONS[status] || []).map((id) => ({
-    id,
-    label: LABELS[id] || id,
-  }));
+  return listAllowedTransitions(status);
 }
 
 /**
@@ -522,5 +582,9 @@ export function updateClientStatus({
       note || null,
       now
     );
-  return { client: getClientRow(clientId), transitions: allowedTransitions(status) };
+  const updated = getClientRow(clientId);
+  return {
+    client: updated,
+    transitions: updated?.transitions || listAllowedTransitions(status),
+  };
 }

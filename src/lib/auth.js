@@ -355,16 +355,32 @@ export function ensureDemoAuthSeed() {
       `INSERT INTO firm_memberships (id, firm_id, user_id, role) VALUES (?, ?, ?, ?)`
     )
     .run(newId(), firmId, user.id, ROLE_PRACTICE_ADMIN);
-  for (const [name, status] of [
-    ['Jordan Mills Plumbing', 'ready_to_submit'],
-    ['Aisha Khan Properties', 'awaiting_records'],
-  ]) {
+  // Richer demo portfolio (still demo-scale — not 800k proof)
+  const demoClients = [
+    ['Jordan Mills Plumbing', 'ready_to_submit', '2026-11-07'],
+    ['Aisha Khan Properties', 'awaiting_records', '2026-11-07'],
+    ['Chen Foreign Lets', 'processing', '2026-11-07'],
+    ['Patel Combined Trade+Property', 'awaiting_client_approval', '2026-11-07'],
+    ['Roberts Sole Trader', 'ready_for_preparation', '2026-08-07'],
+    ['Singh UK Rentals', 'needs_mapping', '2026-08-07'],
+    ['Williams Hair Studio', 'client_query', '2026-08-07'],
+    ['Garcia Overseas Portfolio', 'awaiting_reviewer', '2026-11-07'],
+    ['Okafor Plumbing Ltd', 'queued', '2026-05-07'],
+    ['Taylor Year Complete', 'year_complete', '2026-01-31'],
+  ];
+  for (const [name, status, due] of demoClients) {
+    const exists = database
+      .prepare(
+        `SELECT 1 FROM clients WHERE firm_id = ? AND display_name = ?`
+      )
+      .get(firmId, name);
+    if (exists) continue;
     database
       .prepare(
         `INSERT INTO clients (id, firm_id, display_name, workflow_status, assignee_user_id, due_date, portal_enabled, created_at, updated_at)
          VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?)`
       )
-      .run(newId(), firmId, name, status, user.id, '2025-07-05', now, now);
+      .run(newId(), firmId, name, status, user.id, due, now, now);
   }
   return user;
 }

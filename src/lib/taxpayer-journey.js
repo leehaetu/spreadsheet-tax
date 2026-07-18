@@ -517,20 +517,25 @@ function flattenExpenses(periodExpenses) {
   return out;
 }
 
-/** Practice client workflow states from design */
+/** Practice client workflow states from design (full pipeline) */
 export const PRACTICE_CLIENT_STATES = [
   'not_started',
   'awaiting_records',
+  'records_received',
   'processing',
   'needs_mapping',
+  'mapping_required',
+  'needs_review',
   'client_query',
   'ready_for_preparation',
   'awaiting_reviewer',
+  'ready_for_approval',
   'awaiting_client_approval',
   'ready_to_submit',
   'queued',
   'submitted',
   'hmrc_rejected',
+  'rejected',
   'correction_required',
   'year_complete',
 ];

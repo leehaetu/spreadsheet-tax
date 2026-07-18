@@ -156,16 +156,46 @@ async function init() {
       const overdue =
         c.dueDate &&
         c.dueDate < new Date().toISOString().slice(0, 10) &&
-        c.status !== 'submitted';
+        c.status !== 'submitted' &&
+        c.status !== 'year_complete';
+      const transitions = c.transitions || [];
+      const primary = transitions[0];
+      const advanceLabel = primary
+        ? esc(primary.actionLabel || primary.label || 'Next step')
+        : 'No next step';
+      const moreOpts = transitions
+        .slice(1)
+        .map(
+          (t) =>
+            `<option value="${esc(t.id)}">${esc(
+              t.actionLabel || t.label || t.id
+            )}</option>`
+        )
+        .join('');
       tr.innerHTML = `
-        <td><strong>${esc(c.name)}</strong>${overdue ? ' <span class="status-pill review">Overdue</span>' : ''}</td>
+        <td><strong>${esc(c.name)}</strong>${overdue ? ' <span class="status-pill review">Overdue</span>' : ''}${
+          c.needsAction ? ' <span class="status-pill">Action</span>' : ''
+        }</td>
         <td><span class="status-pill">${esc(c.statusLabel || c.status)}</span></td>
         <td>${esc(c.dueDate || '—')}</td>
         <td>
           <button type="button" class="btn btn-primary btn-sm import-for" data-id="${esc(c.id)}" data-name="${esc(c.name)}">Import file</button>
           <button type="button" class="btn btn-ghost btn-sm invite" data-id="${esc(c.id)}">Portal link</button>
           <button type="button" class="btn btn-ghost btn-sm due" data-id="${esc(c.id)}" data-due="${esc(c.dueDate || '')}">Due date</button>
-          <button type="button" class="btn btn-ghost btn-sm advance" data-id="${esc(c.id)}" data-status="${esc(c.status)}">Advance</button>
+          ${
+            primary
+              ? `<button type="button" class="btn btn-ghost btn-sm advance" data-id="${esc(
+                  c.id
+                )}" data-next="${esc(primary.id)}">${advanceLabel}</button>`
+              : `<span class="muted" style="font-size:0.85rem">${advanceLabel}</span>`
+          }
+          ${
+            moreOpts
+              ? `<select class="advance-more btn-sm" data-id="${esc(
+                  c.id
+                )}" aria-label="Other workflow steps"><option value="">More steps…</option>${moreOpts}</select>`
+              : ''
+          }
           <button type="button" class="btn btn-ghost btn-sm del-client" data-id="${esc(c.id)}" data-name="${esc(c.name)}">Delete</button>
         </td>`;
       tbody.appendChild(tr);
@@ -239,28 +269,41 @@ async function init() {
         panel?.scrollIntoView({ behavior: 'smooth' });
       });
     });
+    async function advanceClient(id, nextStatus, note) {
+      const res2 = await fetch(
+        `/api/me/clients/${encodeURIComponent(id)}/workflow`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            status: nextStatus,
+            note: note || 'Advanced from workspace',
+          }),
+        }
+      );
+      const body = await res2.json();
+      if (!res2.ok) {
+        alert(body.error || 'Could not update workflow');
+        return;
+      }
+      loadClients();
+    }
+
     tbody.querySelectorAll('.advance').forEach((btn) => {
       btn.addEventListener('click', async () => {
         const id = btn.getAttribute('data-id');
-        const cur = btn.getAttribute('data-status');
-        const statuses = await fetch('/api/me/workflow-statuses').then((r) =>
-          r.json()
-        );
-        // Ask server for allowed via client GET transitions — fetch client list transitions from advance map
-        const order = (statuses.statuses || []).map((s) => s.id);
-        const idx = order.indexOf(cur);
-        const next = order[idx + 1] || order[0];
-        const res2 = await fetch(`/api/me/clients/${encodeURIComponent(id)}/workflow`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status: next, note: 'Advanced from workspace' }),
-        });
-        const body = await res2.json();
-        if (!res2.ok) {
-          alert(body.error || 'Could not update');
-          return;
-        }
-        loadClients();
+        const next = btn.getAttribute('data-next');
+        if (!id || !next) return;
+        await advanceClient(id, next);
+      });
+    });
+    tbody.querySelectorAll('.advance-more').forEach((sel) => {
+      sel.addEventListener('change', async () => {
+        const id = sel.getAttribute('data-id');
+        const next = sel.value;
+        if (!id || !next) return;
+        await advanceClient(id, next, 'Workflow step from workspace menu');
+        sel.value = '';
       });
     });
   }
