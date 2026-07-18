@@ -130,13 +130,12 @@ describe('bridging app customer focus', () => {
     assert.equal(res.status, 200);
     const html = res.body.toString('utf8');
     assert.ok(html.length > 400, 'app HTML must be non-empty');
-    // Customer task flow
-    assert.match(html, /Upload your spreadsheet|Upload your/i);
-    assert.match(html, /Check your figures|Review my figures|before sending/i);
-    assert.match(html, /Run preview submit|Confirm and send|preview only/i);
+    // Customer task flow (plain language for non-technical users)
+    assert.match(html, /Upload your spreadsheet|Upload the file|Drop your spreadsheet/i);
+    assert.match(html, /Check my figures|Check these figures|Looks right/i);
+    assert.match(html, /Send quarterly update|Send to HMRC|Send this quarter/i);
     // Polished multi-step product surface
-    assert.match(html, /Drop your spreadsheet|Choose a CSV|Review my figures/i);
-    assert.match(html, /Total income|Total expenses|Continue to send/i);
+    assert.match(html, /Drop your spreadsheet|free template|Self-employed plumber/i);
     // Must not surface implementer/dev defaults as primary copy
     assert.doesNotMatch(html, /test double/i);
     assert.doesNotMatch(html, /sandbox client/i);

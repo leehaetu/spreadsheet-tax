@@ -121,7 +121,7 @@ const root = path.join(__dirname, '..');
 const publicDir = path.join(root, 'public');
 const templatesDir = path.join(root, 'templates');
 const testSpreadsheetsDir = path.join(root, 'test-spreadsheets');
-const APP_VERSION = '1.14.2';
+const APP_VERSION = '1.15.0';
 
 /**
  * Serve HTML with site-chrome (HMRC recognition banner/footer) injected once.

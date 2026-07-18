@@ -84,10 +84,11 @@ describe('HMRC recognition display', () => {
     }
   });
 
-  it('static site-chrome.js contains goal + not yet wording', async () => {
+  it('static site-chrome.js has quiet legal honesty (not a status banner)', async () => {
     const res = await request('/js/site-chrome.js');
     assert.equal(res.status, 200);
-    assert.match(res.body, /HMRC Recognised/);
-    assert.match(res.body, /not yet recognised/i);
+    assert.match(res.body, /recognised software list/i);
+    assert.match(res.body, /Not affiliated with HMRC/i);
+    assert.doesNotMatch(res.body, /hmrc-recognition-banner/);
   });
 });

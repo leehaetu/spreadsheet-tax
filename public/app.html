@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Submit your quarterly update — Spreadsheet Tax</title>
-  <meta name="description" content="Upload your spreadsheet, review your figures, and submit HMRC Making Tax Digital quarterly updates for self-employment and property." />
-  <meta name="theme-color" content="#0b1220" />
+  <title>Send your quarterly update — Spreadsheet Tax</title>
+  <meta name="description" content="Upload your business spreadsheet, check the figures, and send your HMRC quarterly update. Built for self-employed trades and landlords." />
+  <meta name="theme-color" content="#f4f6f9" />
   <link rel="stylesheet" href="/css/site.css" />
 </head>
-<body class="app-body">
+<body class="theme-light app-body app-simple">
   <header class="site-header">
     <div class="wrap header-inner">
       <a class="logo" href="/">
@@ -17,198 +17,118 @@
       </a>
       <nav>
         <a href="/">Home</a>
+        <a href="/download/template">Free template</a>
+        <a href="/history">My submissions</a>
+        <a href="/connect-hmrc">Connect HMRC</a>
         <a href="/signin">Sign in</a>
-        <a href="/workspace">Workspace</a>
-        <a href="/connect-hmrc">HMRC</a>
-        <a href="/mtd">MTD</a>
-        <a href="/account">Account</a>
-        <a href="/history">History</a>
-        <a href="/download/template">Download template</a>
-        <span id="connection-status" class="badge">Checking connection…</span>
+        <a href="/workspace">I’m an accountant</a>
+        <span id="connection-status" class="badge">Checking…</span>
       </nav>
     </div>
   </header>
 
   <main class="wrap app-main">
     <div class="app-hero">
-      <h1>Submit your quarterly update</h1>
+      <h1>Send this quarter’s tax update</h1>
       <p class="lead">
-        Upload the spreadsheet you already keep for your business or property.
-        We match your income and expenses to HMRC Making Tax Digital quarterly updates —
-        <strong>no retyping totals</strong>.
+        If you keep your money in a spreadsheet, you’re in the right place.
+        Upload the file, check the numbers, connect HMRC, and send.
       </p>
-      <div class="panel" id="scope-panel" style="margin-top:1rem;padding:0.9rem 1rem">
-        <p style="margin:0 0 0.4rem"><strong>Product scope (in-year bridging)</strong></p>
-        <ul class="muted" style="margin:0;padding-left:1.2rem">
-          <li><strong>Not HMRC-recognised software</strong> — sandbox/pilot until recognition is granted.</li>
-          <li>Supports <strong>self-employment</strong>, <strong>UK property</strong> and <strong>foreign property</strong> quarterly period updates (standard quarterly periods).</li>
-          <li>Figures come from <strong>your spreadsheet digital records</strong> (import → review → submit). Do not retype totals in the submit step.</li>
-          <li>Tax estimate: open your <a href="https://www.gov.uk/log-in-register-hmrc-online-services" target="_blank" rel="noopener noreferrer">HMRC online account</a> — we do not invent a tax bill in this app.</li>
-          <li><strong>Not included yet:</strong> end-of-year final declaration, losses, BSAS, and other non-mandated income types.
-            Use HMRC-listed software for those:
-            <a href="https://www.gov.uk/guidance/find-software-thats-compatible-with-making-tax-digital-for-income-tax" target="_blank" rel="noopener noreferrer">find software compatible with MTD for Income Tax</a>.</li>
-          <li>Export your submission history any time from <a href="/history">History</a>.</li>
-        </ul>
+      <div class="audience-pills" role="navigation" aria-label="I am">
+        <a href="/app?mode=self-employed" data-mode="self-employed">I’m self-employed</a>
+        <a href="/app?mode=landlord" data-mode="landlord">I’m a landlord</a>
+        <a href="/app?mode=both" data-mode="both">Both trade and property</a>
       </div>
     </div>
 
     <div class="wizard-steps" id="wizard-steps" aria-label="Progress">
-      <div class="wizard-step active" data-step="1">
-        <span class="num">1</span>
-        <span class="label-hide-sm">Upload</span>
-      </div>
-      <div class="wizard-step" data-step="2">
-        <span class="num">2</span>
-        <span class="label-hide-sm">Review</span>
-      </div>
-      <div class="wizard-step" data-step="3">
-        <span class="num">3</span>
-        <span class="label-hide-sm">Submit</span>
-      </div>
-      <div class="wizard-step" data-step="4">
-        <span class="num">4</span>
-        <span class="label-hide-sm">Done</span>
-      </div>
+      <div class="wizard-step active" data-step="1"><span class="num">1</span><span class="label-hide-sm">Upload</span></div>
+      <div class="wizard-step" data-step="2"><span class="num">2</span><span class="label-hide-sm">Check</span></div>
+      <div class="wizard-step" data-step="3"><span class="num">3</span><span class="label-hide-sm">Send</span></div>
+      <div class="wizard-step" data-step="4"><span class="num">4</span><span class="label-hide-sm">Done</span></div>
     </div>
 
-    <div class="help-strip">
-      <span>New here? Start with the free template so every line maps cleanly.</span>
-      <a href="/download/template">Download template</a>
-      <a href="#samples">Or try a sample file</a>
+    <div class="help-tip">
+      <strong>Tip:</strong> First time? Download the free template, fill in one quarter, then upload it here.
+      You do not need to understand tax software — only your own figures.
+      <a href="/download/template">Get the free template</a>
     </div>
 
     <section class="panel" id="upload-panel">
       <div class="panel-header">
         <div>
           <h2>1. Upload your spreadsheet</h2>
-          <p class="muted">Excel or CSV. Self-employment, UK property and foreign property can share one file.</p>
+          <p class="muted">Excel or CSV. One file can include your trade and any rental property.</p>
         </div>
       </div>
-
       <form id="upload-form">
         <label class="dropzone" id="dropzone" for="file-input">
           <input type="file" id="file-input" name="file" accept=".csv,.xlsx,.xls" />
           <div class="dropzone-icon">↑</div>
           <strong>Drop your spreadsheet here</strong>
-          <p>or click to choose a CSV / Excel file (max 5&nbsp;MB)</p>
+          <p>or tap to choose a file (max 5&nbsp;MB)</p>
           <div class="file-chosen" id="file-chosen">
             <span class="tag green" id="file-label">No file chosen</span>
           </div>
         </label>
-
         <div class="upload-actions">
-          <button type="submit" class="btn btn-primary btn-lg" id="import-btn">Review my figures</button>
+          <button type="submit" class="btn btn-primary btn-lg" id="import-btn">Check my figures</button>
           <a class="btn btn-ghost" href="/download/template">Get free template</a>
         </div>
       </form>
       <p id="upload-error" class="error" hidden></p>
 
-      <div class="or-divider" id="samples">Try without preparing a file</div>
-      <p class="muted" style="margin-bottom:0.75rem">Load a realistic sample period so you can walk through review and submit.</p>
+      <div class="or-divider" id="samples">Or try a sample first</div>
+      <p class="muted" style="margin-bottom:0.75rem">See how it works with made-up example figures — nothing is sent to HMRC.</p>
       <div class="sample-grid" id="sample-grid">
-        <button type="button" class="sample-btn" data-sample="combined">
-          <strong>Trade + property</strong>
-          <span>Combined self-employment and property</span>
-        </button>
         <button type="button" class="sample-btn" data-sample="self_employment">
           <strong>Self-employed plumber</strong>
-          <span>Trade income for one quarter</span>
+          <span>Example trade income and expenses</span>
         </button>
         <button type="button" class="sample-btn" data-sample="uk_property">
           <strong>UK landlord</strong>
-          <span>Rental income and costs</span>
+          <span>Example rental income and costs</span>
         </button>
         <button type="button" class="sample-btn" data-sample="foreign_property">
           <strong>Foreign property</strong>
-          <span>Overseas rental example</span>
+          <span>Example overseas rental</span>
         </button>
-        <button type="button" class="sample-btn" data-sample="hairdresser">
-          <strong>Hairdresser</strong>
-          <span>Salon trade with sales labels</span>
+        <button type="button" class="sample-btn" data-sample="combined">
+          <strong>Trade + property</strong>
+          <span>Both in one file</span>
         </button>
       </div>
     </section>
 
-    <section class="panel" id="preview-panel" hidden>
+    <section class="panel" id="review-panel" hidden>
       <div class="panel-header">
         <div>
-          <h2>2. Check your figures before sending</h2>
-          <p class="muted">Confirm everything looks right. You can still go back and fix your spreadsheet if needed.</p>
-        </div>
-        <button type="button" class="btn btn-ghost btn-sm" id="reset-upload">Upload a different file</button>
-      </div>
-
-      <div id="period-meta" class="sources-summary"></div>
-      <div id="sources-summary" class="sources-summary"></div>
-
-      <div id="validation-summary" class="validation-summary" hidden aria-live="polite">
-        <h3 id="validation-title">Spreadsheet checks</h3>
-        <ul id="validation-list"></ul>
-      </div>
-
-      <div class="metric-row" id="metric-row">
-        <div class="metric">
-          <div class="label">Total income</div>
-          <div class="value" id="metric-income">—</div>
-        </div>
-        <div class="metric">
-          <div class="label">Total expenses</div>
-          <div class="value" id="metric-expenses">—</div>
-        </div>
-        <div class="metric">
-          <div class="label">Net</div>
-          <div class="value" id="metric-net">—</div>
-        </div>
-        <div class="metric">
-          <div class="label">Income sources</div>
-          <div class="value" id="metric-sources">—</div>
+          <h2>2. Check these figures carefully</h2>
+          <p class="muted">These numbers will go to HMRC. If something looks wrong, fix your spreadsheet and upload again.</p>
         </div>
       </div>
-
-      <div id="source-cards"></div>
-
-      <h3 style="margin:1.5rem 0 0.35rem;font-size:1.05rem">How your spreadsheet lines match the update</h3>
-      <p class="muted">Each amount below comes from a field in your file — so you can see exactly what is included.</p>
-      <div class="table-wrap">
-        <table id="links-table">
-          <thead>
-            <tr>
-              <th>Income source</th>
-              <th>Line in your file</th>
-              <th>Included as</th>
-              <th class="amount-cell">Amount</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-
-      <details class="details-toggle">
-        <summary>Show submission readiness details</summary>
-        <pre id="payloads-out" class="code-block"></pre>
-      </details>
-
+      <div id="validation-panel"></div>
+      <div id="summary-cards" class="stat-cards"></div>
+      <div id="mapping-table-wrap" class="table-wrap"></div>
       <div class="action-bar">
-        <button type="button" class="btn btn-primary btn-lg" id="goto-submit">Continue to send</button>
-        <button type="button" class="btn btn-ghost" id="reset-upload-2">Start over</button>
+        <button type="button" class="btn btn-primary btn-lg" id="goto-submit">Looks right — continue</button>
+        <button type="button" class="btn btn-ghost" id="back-to-upload">Upload a different file</button>
       </div>
     </section>
 
     <section class="panel" id="submit-panel" hidden>
       <div class="panel-header">
         <div>
-          <h2>3. Confirm and send</h2>
+          <h2>3. Send to HMRC</h2>
           <p class="muted">
-            Enter your tax identifiers if they were not already in the file.
-            <strong>Public demo default is preview only</strong> — the app builds the real HMRC request shape and stores a local receipt, but does <strong>not</strong> call HMRC until sandbox/live credentials and the live-submit control are enabled.
+            You need to be signed in and connected to HMRC.
+            <a href="/connect-hmrc">Connect HMRC</a> if you have not already.
           </p>
         </div>
       </div>
-
       <div class="form-row">
         <label>National Insurance number
-          <input type="text" id="nino" placeholder="e.g. QQ123456C" autocomplete="off" />
-          <span class="field-hint">As shown on your tax letters</span>
+          <input type="text" id="nino" placeholder="e.g. QQ 12 34 56 C" autocomplete="off" />
         </label>
         <label>Tax year
           <input type="text" id="tax-year" placeholder="e.g. 2024-25" />
@@ -217,24 +137,23 @@
       </div>
       <div class="form-row">
         <label>Self-employment business ID
-          <input type="text" id="bid-se" placeholder="From your HMRC account" />
+          <input type="text" id="bid-se" placeholder="From HMRC when connected" />
         </label>
         <label>UK property business ID
-          <input type="text" id="bid-uk" placeholder="From your HMRC account" />
+          <input type="text" id="bid-uk" placeholder="If you have UK rentals" />
         </label>
         <label>Foreign property business ID
-          <input type="text" id="bid-fp" placeholder="From your HMRC account" />
+          <input type="text" id="bid-fp" placeholder="If you have overseas rentals" />
         </label>
       </div>
-
       <div class="help-strip" id="hmrc-helpers" style="flex-wrap:wrap;gap:0.5rem">
-        <button type="button" class="btn btn-ghost" id="load-businesses-btn">Load businesses from HMRC</button>
-        <button type="button" class="btn btn-ghost" id="load-obligations-btn">Load open obligations</button>
-        <a class="btn btn-ghost" href="https://www.gov.uk/log-in-register-hmrc-online-services" target="_blank" rel="noopener noreferrer">View tax estimate on GOV.UK</a>
+        <button type="button" class="btn btn-ghost" id="load-businesses-btn">Fill business IDs from HMRC</button>
+        <button type="button" class="btn btn-ghost" id="load-obligations-btn">Show due periods</button>
+        <a class="btn btn-ghost" href="https://www.gov.uk/log-in-register-hmrc-online-services" target="_blank" rel="noopener noreferrer">My HMRC account</a>
       </div>
       <p class="muted" id="hmrc-helpers-note" style="margin-top:0.5rem">
-        Business IDs and due periods come from HMRC when you are connected.
-        Spreadsheet Tax does <strong>not</strong> invent a tax bill — open your HMRC account for liability estimates.
+        After you connect HMRC, use “Fill business IDs” so you do not have to type them.
+        For a tax estimate, use your HMRC online account — we do not invent a tax bill.
       </p>
       <div id="hmrc-businesses-panel" class="panel" hidden style="margin:0.75rem 0;padding:0.75rem">
         <h3 style="margin-top:0;font-size:1rem">Your HMRC businesses</h3>
@@ -242,24 +161,22 @@
         <p id="hmrc-businesses-error" class="error" hidden></p>
       </div>
       <div id="hmrc-obligations-panel" class="panel" hidden style="margin:0.75rem 0;padding:0.75rem">
-        <h3 style="margin-top:0;font-size:1rem">Open obligations</h3>
+        <h3 style="margin-top:0;font-size:1rem">Open periods</h3>
         <ul id="hmrc-obligations-list" class="result-list"></ul>
         <p id="hmrc-obligations-error" class="error" hidden></p>
       </div>
-
       <div class="action-bar">
-        <button type="button" class="btn btn-primary btn-lg" id="submit-btn">Run preview submit</button>
+        <button type="button" class="btn btn-primary btn-lg" id="submit-btn">Send quarterly update</button>
         <button type="button" class="btn btn-ghost" id="back-to-review">Back to figures</button>
       </div>
       <p id="submit-error" class="error" hidden></p>
-
       <div id="submit-success" class="success-box" hidden>
-        <h3>Submission result</h3>
+        <h3>Result</h3>
         <p id="submit-summary" class="muted" style="margin:0"></p>
         <ul id="submit-result-list" class="result-list"></ul>
         <div class="action-bar" style="border:0;padding-top:0.5rem">
-          <button type="button" class="btn btn-primary" id="another-file">Submit another period</button>
-          <a class="btn btn-ghost" href="/">Back to home</a>
+          <button type="button" class="btn btn-primary" id="another-file">Do another period</button>
+          <a class="btn btn-ghost" href="/history">View my submissions</a>
         </div>
       </div>
     </section>
@@ -268,9 +185,8 @@
   <footer class="site-footer">
     <div class="wrap footer-bottom" style="border:0;padding:0">
       <p class="muted">
-        Bridging only — keep your books in your spreadsheet. A period file is uploaded for mapping and review only.
-        Need the template? <a href="/download/template">Download it free</a>.
-        <a href="/">Back to home</a>
+        Your books stay in your spreadsheet. We only use the file you upload for this quarter’s update.
+        <a href="/help">Help</a> · <a href="/">Home</a>
       </p>
       <p class="muted">© Lee Hine · Spreadsheet Tax</p>
     </div>
@@ -282,5 +198,20 @@
   </script>
   <script src="/js/app.js"></script>
   <script src="/js/cookie-banner.js"></script>
+  <script>
+    (function () {
+      const mode = new URLSearchParams(location.search).get('mode') || '';
+      document.querySelectorAll('.audience-pills a').forEach((a) => {
+        const m = a.getAttribute('data-mode') || '';
+        if (
+          (mode === 'self-employed' || mode === 'self_employment') && m === 'self-employed'
+        )
+          a.classList.add('active');
+        if ((mode === 'landlord' || mode === 'property' || mode === 'landlords') && m === 'landlord')
+          a.classList.add('active');
+        if ((mode === 'both' || mode === 'combined') && m === 'both') a.classList.add('active');
+      });
+    })();
+  </script>
 </body>
 </html>

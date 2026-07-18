@@ -640,40 +640,15 @@ nav a.btn-ghost { color: var(--text); }
 .cta-banner h2 { margin: 0 0 0.4rem; font-size: 1.55rem; }
 .cta-banner p { margin: 0; color: var(--muted); max-width: 42ch; }
 
-/* HMRC recognition status — always visible until recognition granted */
-.hmrc-recognition-banner {
-  background: var(--warn-soft);
-  border-bottom: 1px solid rgba(251, 191, 36, 0.35);
-  color: var(--text-soft);
-  font-size: 0.88rem;
-  padding: 0.55rem 0;
-}
-.hmrc-recognition-inner {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.55rem 0.85rem;
-}
-.hmrc-recognition-badge {
-  display: inline-block;
-  background: rgba(251, 191, 36, 0.2);
-  color: #fde68a;
-  border: 1px solid rgba(251, 191, 36, 0.45);
-  border-radius: 999px;
-  padding: 0.15rem 0.65rem;
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.01em;
-  white-space: nowrap;
-}
-.hmrc-recognition-text {
-  flex: 1 1 16rem;
+/* Quiet legal line — not a project-status banner */
+.legal-quiet-line {
+  width: 100%;
+  margin: 0.65rem 0 0;
+  padding-top: 0.65rem;
+  border-top: 1px solid var(--border);
   color: var(--muted);
-  line-height: 1.4;
-}
-.hmrc-recognition-link {
-  font-weight: 600;
-  white-space: nowrap;
+  font-size: 0.8rem;
+  line-height: 1.45;
 }
 .hmrc-recognition-footer-line {
   width: 100%;
@@ -681,11 +656,190 @@ nav a.btn-ghost { color: var(--text); }
   padding-top: 0.65rem;
   border-top: 1px solid var(--border);
   color: var(--muted);
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   line-height: 1.45;
 }
-.hmrc-recognition-footer-line strong {
-  color: #fde68a;
+
+/* ——— Light customer theme (sales + simple app) ——— */
+body.theme-light {
+  --bg: #f4f6f9;
+  --bg-elevated: #ffffff;
+  --bg-alt: #eef2f7;
+  --surface: #ffffff;
+  --surface-2: #f8fafc;
+  --surface-hover: #eef2f7;
+  --text: #0f172a;
+  --text-soft: #334155;
+  --muted: #64748b;
+  --muted-2: #94a3b8;
+  --primary: #0b6bcb;
+  --primary-hover: #0958a8;
+  --primary-soft: rgba(11, 107, 203, 0.1);
+  --primary-ink: #ffffff;
+  --accent: #0d9488;
+  --accent-soft: rgba(13, 148, 136, 0.12);
+  --border: #dbe3ee;
+  --border-strong: #b8c7d9;
+  --shadow: 0 12px 40px rgba(15, 23, 42, 0.08);
+  --shadow-sm: 0 4px 14px rgba(15, 23, 42, 0.06);
+  background: var(--bg);
+  color: var(--text);
+}
+body.theme-light .site-header {
+  background: rgba(255, 255, 255, 0.92);
+  border-bottom-color: var(--border);
+}
+body.theme-light .site-footer {
+  background: #e8eef5;
+  color: var(--muted);
+}
+body.theme-light .panel,
+body.theme-light .card,
+body.theme-light .hero-card,
+body.theme-light .price-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+body.theme-light .btn-ghost {
+  border-color: var(--border-strong);
+  color: var(--text-soft);
+}
+body.theme-light nav a { color: var(--text-soft); }
+body.theme-light .logo { color: var(--text); }
+body.theme-light .muted { color: var(--muted); }
+
+/* Simple personal app */
+body.app-simple .app-main { max-width: 720px; }
+body.app-simple .app-hero h1 { font-size: 1.75rem; }
+body.app-simple .wizard-steps { margin: 1.25rem 0 1.5rem; }
+body.app-simple .dropzone {
+  padding: 2rem 1.25rem;
+  border: 2px dashed var(--border-strong);
+  border-radius: var(--radius);
+  text-align: center;
+  background: var(--surface-2);
+  cursor: pointer;
+}
+body.app-simple .dropzone:hover { border-color: var(--primary); background: var(--primary-soft); }
+body.app-simple .dropzone-icon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+  color: var(--primary);
+}
+body.app-simple .help-tip {
+  background: var(--accent-soft);
+  border: 1px solid rgba(13, 148, 136, 0.25);
+  border-radius: var(--radius-sm);
+  padding: 0.85rem 1rem;
+  margin: 1rem 0;
+  color: var(--text-soft);
+  font-size: 0.95rem;
+}
+body.app-simple .audience-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1rem 0 0.5rem;
+}
+body.app-simple .audience-pills a {
+  display: inline-block;
+  padding: 0.45rem 0.9rem;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-soft);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+body.app-simple .audience-pills a:hover,
+body.app-simple .audience-pills a.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+  text-decoration: none;
+}
+
+/* Practice shell — denser, software-like */
+body.practice-shell {
+  --bg: #e9eef4;
+  --surface: #ffffff;
+  --text: #0f172a;
+  --muted: #64748b;
+  --primary: #0b6bcb;
+  --border: #d0d9e6;
+  background: var(--bg);
+  color: var(--text);
+}
+body.practice-shell .practice-layout {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  min-height: calc(100vh - 60px);
+  max-width: 1400px;
+  margin: 0 auto;
+}
+@media (max-width: 860px) {
+  body.practice-shell .practice-layout { grid-template-columns: 1fr; }
+}
+body.practice-shell .practice-nav {
+  background: #0f2744;
+  color: #e2e8f0;
+  padding: 1.25rem 0.85rem;
+}
+body.practice-shell .practice-nav a {
+  display: block;
+  color: #cbd5e1;
+  padding: 0.55rem 0.75rem;
+  border-radius: 8px;
+  margin: 0.15rem 0;
+  font-size: 0.92rem;
+  font-weight: 500;
+}
+body.practice-shell .practice-nav a:hover,
+body.practice-shell .practice-nav a.active {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  text-decoration: none;
+}
+body.practice-shell .practice-nav .nav-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #94a3b8;
+  padding: 0.75rem 0.75rem 0.35rem;
+}
+body.practice-shell .practice-main {
+  padding: 1.25rem 1.5rem 2rem;
+}
+body.practice-shell .panel {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem 1.15rem;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+body.practice-shell table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+body.practice-shell th {
+  text-align: left;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b;
+  border-bottom: 1px solid var(--border);
+  padding: 0.55rem 0.4rem;
+}
+body.practice-shell td {
+  border-bottom: 1px solid #eef2f7;
+  padding: 0.65rem 0.4rem;
+  vertical-align: middle;
+}
+body.practice-shell .site-header {
+  background: #fff;
+  border-bottom: 1px solid var(--border);
 }
 
 /* Footer */

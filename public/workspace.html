@@ -4,85 +4,115 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Practice workspace — Spreadsheet Tax</title>
+  <meta name="description" content="Client list, deadlines and quarterly spreadsheet imports for bookkeepers and accountants." />
+  <meta name="theme-color" content="#0f2744" />
   <link rel="stylesheet" href="/css/site.css" />
 </head>
-<body class="app-body">
+<body class="practice-shell">
   <header class="site-header">
-    <div class="wrap header-inner">
+    <div class="wrap header-inner" style="max-width:1400px">
       <a class="logo" href="/"><span class="logo-mark">ST</span> Spreadsheet Tax</a>
       <nav>
         <span class="badge" id="user-badge">Checking session…</span>
-        <a href="/app">Personal app</a>
-        <a href="/accountant">Demo portfolio</a>
+        <a href="/app">Client-style app</a>
         <button type="button" class="btn btn-ghost btn-sm" id="logout-btn">Sign out</button>
       </nav>
     </div>
   </header>
-  <main class="wrap app-main">
-    <div class="app-hero">
-      <h1>Practice workspace</h1>
-      <p class="lead">Authenticated client book for your firm. Demo login seeds a practice with sample clients.</p>
-    </div>
-    <p id="gate" class="error" hidden></p>
-    <section class="panel" id="ws-panel" hidden>
-      <div class="form-row">
-        <label>Firm
-          <select id="firm-select"></select>
-        </label>
-        <div style="display:flex;align-items:flex-end;gap:0.5rem;flex-wrap:wrap">
-          <button type="button" class="btn btn-primary" id="add-client-btn">Add client</button>
-          <button type="button" class="btn btn-ghost" id="rename-firm-btn">Rename firm</button>
-          <button type="button" class="btn btn-ghost" id="export-clients-btn">Export CSV</button>
-          <button type="button" class="btn btn-ghost" id="reminders-btn">Send due reminders</button>
+
+  <div class="practice-layout">
+    <aside class="practice-nav" aria-label="Practice menu">
+      <div class="nav-label">Practice</div>
+      <a href="/workspace" class="active">Clients</a>
+      <a href="/history">Submissions</a>
+      <a href="/connect-hmrc">HMRC connection</a>
+      <div class="nav-label">Shortcuts</div>
+      <a href="/app">Personal bridging app</a>
+      <a href="/portal">Client portal</a>
+      <a href="/help">Help</a>
+    </aside>
+
+    <main class="practice-main">
+      <div style="margin-bottom:1rem">
+        <h1 style="margin:0 0 0.35rem;font-size:1.45rem">Clients</h1>
+        <p class="muted" style="margin:0;max-width:52ch">
+          Work your book like other practice software: pick a firm, scan who is due,
+          import their spreadsheet, move status, invite to portal.
+        </p>
+      </div>
+
+      <p id="gate" class="error" hidden></p>
+
+      <section class="panel" id="ws-panel" hidden>
+        <div class="form-row" style="align-items:end">
+          <label>Firm
+            <select id="firm-select"></select>
+          </label>
+          <div style="display:flex;gap:0.45rem;flex-wrap:wrap">
+            <button type="button" class="btn btn-primary" id="add-client-btn">Add client</button>
+            <button type="button" class="btn btn-ghost" id="rename-firm-btn">Rename firm</button>
+            <button type="button" class="btn btn-ghost" id="export-clients-btn">Export CSV</button>
+            <button type="button" class="btn btn-ghost" id="reminders-btn">Due reminders</button>
+          </div>
         </div>
-      </div>
-      <div class="stat-cards" id="dash-stats" aria-live="polite">
-        <div class="stat-card"><div class="n" id="dash-total">—</div><div class="l">Clients</div></div>
-        <div class="stat-card"><div class="n" id="dash-needs">—</div><div class="l">Needs action</div></div>
-        <div class="stat-card"><div class="n" id="dash-overdue">—</div><div class="l">Overdue</div></div>
-        <div class="stat-card"><div class="n" id="dash-soon">—</div><div class="l">Due in 14 days</div></div>
-      </div>
-      <div class="form-row">
-        <label>Filter by status
-          <select id="status-filter">
-            <option value="">All statuses</option>
-          </select>
-        </label>
-        <label>Search clients
-          <input type="search" id="client-search" placeholder="Name contains…" autocomplete="off" />
-        </label>
-        <div style="display:flex;align-items:flex-end">
-          <button type="button" class="btn btn-ghost btn-sm" id="needs-action-btn">Show needs action</button>
+
+        <div class="stat-cards" id="dash-stats" aria-live="polite" style="margin:1rem 0">
+          <div class="stat-card"><div class="n" id="dash-total">—</div><div class="l">Clients</div></div>
+          <div class="stat-card"><div class="n" id="dash-needs">—</div><div class="l">Needs action</div></div>
+          <div class="stat-card"><div class="n" id="dash-overdue">—</div><div class="l">Overdue</div></div>
+          <div class="stat-card"><div class="n" id="dash-soon">—</div><div class="l">Due in 14 days</div></div>
         </div>
-      </div>
-      <p class="muted" id="client-count" aria-live="polite"></p>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr><th>Client</th><th>Status</th><th>Due</th><th>Actions</th></tr>
-          </thead>
-          <tbody id="client-body"></tbody>
-        </table>
-      </div>
-      <p style="margin-top:0.75rem">
-        <button type="button" class="btn btn-ghost btn-sm" id="load-more-clients" hidden>Load more clients</button>
-      </p>
-    </section>
-    <section class="panel" id="import-panel" hidden>
-      <h2>Import spreadsheet for client</h2>
-      <p class="muted" id="import-client-label">Select a client, then choose a CSV/Excel file.</p>
-      <form id="client-import-form" class="upload-form">
-        <input type="hidden" id="import-client-id" />
-        <label class="file-drop" for="client-file">
-          <input type="file" id="client-file" accept=".csv,.xlsx,.xls" required />
-          <span>Choose client period file…</span>
-        </label>
-        <button type="submit" class="btn btn-primary">Import for client</button>
-      </form>
-      <p id="import-msg" class="muted" hidden></p>
-      <p id="import-err" class="error" hidden></p>
-    </section>
-  </main>
+
+        <div class="form-row">
+          <label>Status
+            <select id="status-filter">
+              <option value="">All statuses</option>
+            </select>
+          </label>
+          <label>Search
+            <input type="search" id="client-search" placeholder="Client name…" autocomplete="off" />
+          </label>
+          <div style="display:flex;align-items:flex-end">
+            <button type="button" class="btn btn-ghost btn-sm" id="needs-action-btn">Needs action only</button>
+          </div>
+        </div>
+
+        <p class="muted" id="client-count" aria-live="polite"></p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Client</th>
+                <th>Workflow</th>
+                <th>Deadline</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="client-body"></tbody>
+          </table>
+        </div>
+        <p style="margin-top:0.75rem">
+          <button type="button" class="btn btn-ghost btn-sm" id="load-more-clients" hidden>Load more</button>
+        </p>
+      </section>
+
+      <section class="panel" id="import-panel" hidden style="margin-top:1rem">
+        <h2 style="margin-top:0;font-size:1.1rem">Import spreadsheet for client</h2>
+        <p class="muted" id="import-client-label">Choose a client, then their period file.</p>
+        <form id="client-import-form" class="upload-form">
+          <input type="hidden" id="import-client-id" />
+          <label class="file-drop" for="client-file">
+            <input type="file" id="client-file" accept=".csv,.xlsx,.xls" required />
+            <span>Choose client period file…</span>
+          </label>
+          <button type="submit" class="btn btn-primary">Import for client</button>
+        </form>
+        <p id="import-result" class="muted" hidden></p>
+      </section>
+    </main>
+  </div>
+
   <script src="/js/workspace.js"></script>
+  <script src="/js/cookie-banner.js"></script>
 </body>
 </html>
