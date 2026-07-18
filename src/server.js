@@ -182,7 +182,7 @@ const root = path.join(__dirname, '..');
 const publicDir = path.join(root, 'public');
 const templatesDir = path.join(root, 'templates');
 const testSpreadsheetsDir = path.join(root, 'test-spreadsheets');
-const APP_VERSION = '1.19.0';
+const APP_VERSION = '1.19.1';
 
 /**
  * Serve HTML with site-chrome (HMRC recognition banner/footer) injected once.
@@ -374,7 +374,12 @@ app.get('/readyz', (_req, res) => {
   }
 });
 
-app.get('/', (_req, res) => {
+app.get('/', (req, res) => {
+  // Product vs sales: signed-in users enter the app shell, not the marketing site
+  const user = getSessionUser(getSessionIdFromRequest(req));
+  if (user) {
+    return res.redirect(302, '/home');
+  }
   sendPublicHtml(res, 'sales.html');
 });
 

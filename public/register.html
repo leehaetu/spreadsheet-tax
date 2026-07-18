@@ -6,16 +6,19 @@
   <title>Create account — Spreadsheet Tax</title>
   <link rel="stylesheet" href="/css/site.css" />
 </head>
-<body class="app-body">
+<body class="theme-light app-body app-simple">
   <header class="site-header">
     <div class="wrap header-inner">
-      <a class="logo" href="/"><span class="logo-mark">ST</span> Spreadsheet Tax</a>
-      <nav><a href="/signin">Sign in</a></nav>
+      <a class="logo" href="/home"><span class="logo-mark">ST</span> Spreadsheet Tax</a>
+      <nav>
+        <a href="/signin?next=/home">Sign in</a>
+        <a href="/">Marketing site</a>
+      </nav>
     </div>
   </header>
   <main class="wrap app-main" style="max-width:480px">
     <h1>Create account</h1>
-    <p class="muted">You can still try a free spreadsheet check without an account.</p>
+    <p class="muted">Creates an app account (tax home, records, quarterly updates) — not just a website visit.</p>
     <form id="reg-form" class="panel">
       <div class="form-row">
         <label>Name <input type="text" id="name" autocomplete="name" /></label>
@@ -50,7 +53,7 @@
         err.hidden = false;
         return;
       }
-      location.href = '/app';
+      location.href = '/onboarding';
     });
   </script>
 </body>

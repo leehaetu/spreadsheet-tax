@@ -32,6 +32,8 @@ test.describe('Taxpayer app journey (Gate 0)', () => {
     await page.locator('#tax-year').fill('2024-25');
     await page.locator('#bid-se').fill('XAIS12345678901');
 
+    // Explicit cell/mapping approval required before send
+    await page.locator('#approve-cells').check();
     await page.locator('#submit-btn').click();
     await expect(page.locator('#submit-success')).toBeVisible({
       timeout: 15_000,

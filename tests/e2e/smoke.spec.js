@@ -58,6 +58,8 @@ test.describe('Gate 0 smoke — sales and personal app', () => {
     await page.locator('#bid-se').fill('XAIS12345678901');
     await page.locator('#bid-uk').fill('XPIS12345678901');
     await page.locator('#bid-fp').fill('XFIS12345678901');
+    await page.locator('#approve-cells').check({ force: true });
+    await expect(page.locator('#submit-btn')).toBeEnabled({ timeout: 5_000 });
     await page.locator('#submit-btn').click();
     await expect(page.locator('#submit-success')).toBeVisible({ timeout: 15_000 });
   });

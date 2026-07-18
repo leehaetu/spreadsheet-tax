@@ -27,7 +27,7 @@ test.describe('Visual regression snapshots (smoke)', () => {
   test('app after sample import visual', async ({ page }) => {
     await page.goto('/app');
     await page.locator('.sample-btn').first().click();
-    await expect(page.locator('#preview-panel')).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator('#review-panel')).toBeVisible({ timeout: 15_000 });
     await shot(page, 'app-review');
   });
 
@@ -58,12 +58,17 @@ test.describe('Visual regression snapshots (smoke)', () => {
 });
 
 test.describe('Auth workspace journey', () => {
-  test('demo login opens workspace clients', async ({ page }) => {
-    await page.goto('/signin');
+  test('demo login opens product home then workspace', async ({ page }) => {
+    await page.goto('/signin?next=/home');
     await page.fill('#email', 'demo@spreadsheet-tax.example');
     await page.fill('#password', 'DemoPass123!');
     await page.click('button[type=submit]');
-    await page.waitForURL(/workspace/);
+    await page.waitForURL(/home/);
+    await expect(page.getByRole('heading', { name: /tax year|Your tax/i })).toBeVisible({
+      timeout: 10_000,
+    });
+    await shot(page, 'product-home-signed-in');
+    await page.goto('/workspace');
     await expect(page.locator('#ws-panel')).toBeVisible({ timeout: 10_000 });
     await expect(page.locator('#client-body tr').first()).toBeVisible();
     await shot(page, 'workspace-signed-in');

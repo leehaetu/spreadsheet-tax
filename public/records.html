@@ -17,34 +17,126 @@
         <a href="/app?flow=quarterly">Quarterly</a>
         <a href="/year-end">Tax return</a>
         <a href="/history">Messages</a>
+        <a href="/account">Settings</a>
       </nav>
     </div>
   </header>
   <main class="wrap app-main">
     <h1>Records</h1>
-    <p class="lead">Businesses and properties you report. Nicknames stay with you; HMRC business IDs come from your connection when possible.</p>
+    <p class="lead">Income sources, uploaded workbooks and drafts linked to submissions — not a marketing page.</p>
+    <p id="gate" class="error" hidden></p>
+
     <section class="panel">
       <h2 style="margin-top:0">Income sources</h2>
-      <ul id="list" class="result-list"></ul>
+      <ul id="source-list" class="result-list"></ul>
       <a class="btn btn-primary" href="/onboarding">Edit sources</a>
       <a class="btn btn-ghost" href="/download/template">Template</a>
     </section>
+
+    <section class="panel">
+      <h2 style="margin-top:0">Uploaded workbooks &amp; drafts</h2>
+      <p class="muted">Each draft keeps filename, tax year and state. Full file hash is stored on import when you are signed in.</p>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>File</th>
+              <th>State</th>
+              <th>Created</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="draft-body"></tbody>
+        </table>
+      </div>
+      <p id="draft-empty" class="muted" hidden>No drafts yet. <a href="/app?flow=quarterly">Upload a spreadsheet</a>.</p>
+    </section>
+
+    <section class="panel">
+      <h2 style="margin-top:0">Submissions &amp; receipts</h2>
+      <ul id="sub-list" class="result-list"></ul>
+      <a class="btn btn-ghost" href="/history">Full history</a>
+    </section>
   </main>
-  <script type="module">
-    const res = await fetch('/api/me/income-sources');
-    const data = await res.json();
-    const list = document.getElementById('list');
-    if (!res.ok) {
-      list.innerHTML = `<li class="error">${data.error || 'Sign in required'}</li>`;
-    } else if (!data.sources?.length) {
-      list.innerHTML = '<li class="muted">No sources yet. <a href="/onboarding">Set up</a></li>';
-    } else {
-      for (const s of data.sources) {
-        const li = document.createElement('li');
-        li.innerHTML = `<strong>${s.nickname || s.label}</strong> · ${s.type.replace(/_/g,' ')}${s.businessId ? ` · <code>${s.businessId}</code>` : ''}${s.countryCode ? ` · ${s.countryCode}` : ''}`;
-        list.appendChild(li);
+  <script>
+    function esc(s) {
+      return String(s ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+    async function load() {
+      const gate = document.getElementById('gate');
+      const srcRes = await fetch('/api/me/income-sources');
+      if (srcRes.status === 401) {
+        gate.hidden = false;
+        gate.innerHTML = 'Sign in to see your records. <a href="/signin?next=/records">Sign in</a>';
+        return;
+      }
+      const srcData = await srcRes.json();
+      const sl = document.getElementById('source-list');
+      if (!srcData.sources?.length) {
+        sl.innerHTML = '<li class="muted">No sources. <a href="/onboarding">Set up</a></li>';
+      } else {
+        sl.innerHTML = srcData.sources
+          .map(
+            (s) =>
+              `<li><strong>${esc(s.nickname || s.label)}</strong> · ${esc(
+                s.type.replace(/_/g, ' ')
+              )}${s.businessId ? ` · <code>${esc(s.businessId)}</code>` : ''}${
+                s.countryCode ? ` · ${esc(s.countryCode)}` : ''
+              }</li>`
+          )
+          .join('');
+      }
+
+      const dr = await fetch('/api/drafts');
+      const dd = await dr.json();
+      const body = document.getElementById('draft-body');
+      const empty = document.getElementById('draft-empty');
+      const drafts = dd.drafts || [];
+      if (!drafts.length) {
+        empty.hidden = false;
+        body.innerHTML = '';
+      } else {
+        empty.hidden = true;
+        body.innerHTML = drafts
+          .map(
+            (d) =>
+              `<tr>
+            <td>${esc(d.filename || 'workbook')}</td>
+            <td><span class="tag">${esc(d.state || 'ready')}</span></td>
+            <td>${esc((d.createdAt || '').slice(0, 10))}</td>
+            <td><a class="btn btn-ghost btn-sm" href="/app?draftId=${encodeURIComponent(
+              d.id
+            )}">Open</a></td>
+          </tr>`
+          )
+          .join('');
+      }
+
+      const sr = await fetch('/api/me/submissions');
+      if (sr.ok) {
+        const sd = await sr.json();
+        const ul = document.getElementById('sub-list');
+        const subs = sd.submissions || [];
+        if (!subs.length) {
+          ul.innerHTML = '<li class="muted">No submissions yet.</li>';
+        } else {
+          ul.innerHTML = subs
+            .slice(0, 10)
+            .map(
+              (s) =>
+                `<li><code>${esc(s.id.slice(0, 8))}</code> · ${esc(s.mode)} · ${
+                  s.ok ? 'OK' : 'Failed'
+                } · ${esc((s.createdAt || '').slice(0, 19))}
+                <a href="/api/receipts/${encodeURIComponent(s.id)}">Receipt</a></li>`
+            )
+            .join('');
+        }
       }
     }
+    load();
   </script>
 </body>
 </html>

@@ -1529,8 +1529,42 @@ th.amount-cell { text-align: right !important; }
   border-top: 1px solid var(--border);
 }
 
+/* Product shell: keep app nav usable on small screens */
+body.app-simple .site-header .header-inner {
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+body.app-simple .site-header nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.65rem;
+  align-items: center;
+  max-width: 100%;
+}
+body.app-simple .site-header nav a:not(.btn) {
+  white-space: nowrap;
+}
+
 /* Mobile nav tweaks */
 @media (max-width: 700px) {
   nav a:not(.btn) { font-size: 0.85rem; }
   .wizard-step .label-hide-sm { display: none; }
+  body.app-simple .site-header nav {
+    width: 100%;
+    padding-bottom: 0.35rem;
+    border-top: 1px solid var(--border);
+    padding-top: 0.45rem;
+  }
+  body.theme-light.app-simple .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+  }
+  #ss-virtual,
+  #ss-grid {
+    font-size: 0.85rem;
+  }
+  #spreadsheet-check-panel .hero-grid {
+    display: block !important;
+  }
 }
