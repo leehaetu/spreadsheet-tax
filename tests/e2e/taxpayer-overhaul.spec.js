@@ -9,14 +9,13 @@ async function signIn(page, next = '/onboarding') {
 }
 
 test.describe('approved taxpayer overhaul', () => {
-  test('sets up SE, UK and two foreign properties then starts quarterly', async ({ page }) => {
+  test('sets up SE, UK and the single HMRC foreign-property business then starts quarterly', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 1024 });
     await signIn(page);
     const fixtureSources = [
       { id: 'se-1', type: 'self_employment', label: 'Self-employment', nickname: 'Design services' },
       { id: 'uk-1', type: 'uk_property', label: 'UK property', nickname: 'Bath rental' },
-      { id: 'fp-1', type: 'foreign_property', label: 'Foreign property', nickname: 'Madrid flat', countryCode: 'ESP' },
-      { id: 'fp-2', type: 'foreign_property', label: 'Foreign property', nickname: 'Nice flat', countryCode: 'FRA' },
+      { id: 'fp-1', type: 'foreign_property', label: 'Foreign property', nickname: 'Foreign property business' },
     ];
     await page.evaluate((sources) => fetch('/api/me/income-sources', {
       method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sources })
@@ -24,44 +23,41 @@ test.describe('approved taxpayer overhaul', () => {
     await page.reload();
     await expect(page.getByRole('heading', { name: 'Welcome to Spreadsheet Tax' })).toBeVisible();
     await page.getByRole('button', { name: 'Continue' }).click();
-    await expect(page.locator('.chosen-source')).toHaveCount(4);
+    await expect(page.locator('.chosen-source')).toHaveCount(3);
 
     await page.locator('[data-remove-source]').last().click();
     await expect(page.getByRole('heading', { name: 'Remove this source?' })).toBeVisible();
     await page.getByRole('button', { name: 'Cancel' }).click();
-    await expect(page.locator('.chosen-source')).toHaveCount(4);
+    await expect(page.locator('.chosen-source')).toHaveCount(3);
     await page.locator('[data-remove-source]').last().click();
     await page.getByRole('button', { name: 'Remove source' }).click();
-    await expect(page.locator('.chosen-source')).toHaveCount(3);
+    await expect(page.locator('.chosen-source')).toHaveCount(2);
     await page.evaluate((sources) => fetch('/api/me/income-sources', {
       method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sources })
     }), fixtureSources);
     await page.reload();
     await page.getByRole('button', { name: 'Continue' }).click();
-    await expect(page.locator('.chosen-source')).toHaveCount(4);
+    await expect(page.locator('.chosen-source')).toHaveCount(3);
     await page.getByRole('button', { name: 'Continue' }).click();
 
-    for (let sourceNumber = 0; sourceNumber < 4; sourceNumber += 1) {
+    for (let sourceNumber = 0; sourceNumber < 3; sourceNumber += 1) {
       const detail = page.locator('.source-detail');
       const visibleSource = await detail.innerText();
       if (visibleSource.includes('Design services')) await detail.locator('[data-detail="trade"]').fill('Design services');
-      if (visibleSource.includes('Bath rental')) await detail.locator('[data-detail="address"]').fill('10 High Street, Bath');
-      if (visibleSource.includes('Madrid flat')) await detail.locator('[data-detail="address"]').fill('Calle Mayor 10, Madrid');
-      if (visibleSource.includes('Nice flat')) await detail.locator('[data-detail="address"]').fill('20 Rue Victor Hugo, Nice');
       await page.locator('#next-step').click();
     }
-    await expect(page.locator('.review-source')).toHaveCount(4);
+    await expect(page.locator('.review-source')).toHaveCount(3);
     const lastReviewSource = page.locator('.review-source').last();
     const lastReviewName = await lastReviewSource.locator('strong').innerText();
     await lastReviewSource.locator('[data-review-edit]').click();
     await expect(page.locator('.source-detail')).toContainText(lastReviewName);
     await page.locator('#next-step').click();
-    await expect(page.locator('.review-source')).toHaveCount(4);
+    await expect(page.locator('.review-source')).toHaveCount(3);
     await page.getByRole('button', { name: 'Save setup and go home' }).click();
     await page.waitForURL(/\/home$/);
 
     await page.goto('/app?flow=quarterly');
-    await expect(page.locator('.quarterly-source-row')).toHaveCount(4);
+    await expect(page.locator('.quarterly-source-row')).toHaveCount(3);
     await page.locator('.quarterly-source-row').nth(2).click();
     await expect(page.locator('#quarterly-source-note')).toContainText('Source selected');
     await expect(page.locator('#upload-panel')).toBeVisible();
@@ -69,6 +65,10 @@ test.describe('approved taxpayer overhaul', () => {
 
   test('year-end exposes source-specific adjustment forms and declaration gate', async ({ page }) => {
     await signIn(page, '/year-end');
+    await page.evaluate(() => fetch('/api/import/sample', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sample: 'foreign_property' })
+    }));
+    await page.reload();
     await page.locator('[data-stage-id="se_adjustments"]').click();
     await expect(page.getByRole('heading', { name: 'Self-employment annual adjustments' })).toBeVisible();
     await page.locator('[data-stage-id="uk_adjustments"]').click();

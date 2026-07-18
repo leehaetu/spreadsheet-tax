@@ -41,13 +41,14 @@
     </section>
 
     <section class="setup-step" data-step="2" hidden>
-      <h2>Confirm your HMRC income sources</h2><p class="muted">Spreadsheet Tax retrieves the self-employment and property businesses held by HMRC. It does not create an HMRC business by adding a local card.</p>
+      <h2>Confirm your HMRC income sources</h2><p class="muted">Spreadsheet Tax retrieves the self-employment and property businesses already held by HMRC. It cannot create an HMRC business.</p>
       <div class="setup-inline hmrc-source-sync"><button class="btn btn-primary" type="button" id="load-hmrc-sources">Retrieve businesses from HMRC</button><span id="hmrc-note" class="muted">Requires an authorised HMRC sandbox or production connection.</span></div>
       <div id="chosen-sources" class="chosen-sources" aria-live="polite"></div>
+      <div class="setup-callout setup-rule"><strong>Is a business missing?</strong><p>Add or update the income source in your HMRC online account, then return here and retrieve the list again. Do not create a replacement inside Spreadsheet Tax.</p><a href="https://www.gov.uk/guidance/use-making-tax-digital-for-income-tax/add-or-cease-income-sources" target="_blank" rel="noopener">Read HMRC’s income-source guidance</a></div>
     </section>
 
     <section class="setup-step" data-step="3" hidden>
-      <h2>Tell us about each source</h2><p class="muted">These details keep records and submissions clearly separated.</p>
+      <h2>Name each HMRC source</h2><p class="muted">A display name helps you recognise the source. Individual UK properties and overseas countries stay as records in your spreadsheet: HMRC treats all UK property as one business and all foreign property as one business.</p>
       <div id="source-details"></div>
     </section>
 

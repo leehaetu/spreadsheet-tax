@@ -264,6 +264,14 @@ describe('year-end workflows', () => {
       assert.equal(sj.previewOnly, true);
       assert.ok(sj.attemptId || sj.ok);
     }
+    const eoy = await request('GET', '/api/me/eoy-case?taxYear=2024-25');
+    assert.equal(eoy.status, 200);
+    const eoyBody = JSON.parse(eoy.body);
+    assert.ok(
+      (eoyBody.case?.foreignPropertyRecords || []).some(
+        (record) => record.countryCode === 'ESP'
+      )
+    );
   });
 
   it('requires auth', async () => {

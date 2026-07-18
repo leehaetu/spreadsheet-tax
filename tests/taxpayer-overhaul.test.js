@@ -171,9 +171,10 @@ describe('taxpayer overhaul authenticated APIs', () => {
 
     const get = await request('GET', '/api/me/income-sources');
     assert.equal(get.status, 200);
-    assert.equal((get.json.sources || []).length, 4);
+    assert.equal((get.json.sources || []).length, 3);
     const foreign = (get.json.sources || []).filter((s) => s.type === 'foreign_property');
-    assert.equal(foreign.length, 2);
+    assert.equal(foreign.length, 1);
+    assert.equal(foreign[0].countryCode, null);
 
     const pages = ['/onboarding', '/history', '/app', '/year-end'];
     for (const p of pages) {

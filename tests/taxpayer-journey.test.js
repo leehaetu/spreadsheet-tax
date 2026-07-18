@@ -155,7 +155,7 @@ describe('taxpayer journey APIs', () => {
     const list = JSON.parse(sources.body).sources;
     assert.equal(list.length, 3);
     assert.ok(list.every((source) => source.origin === 'preview'));
-    assert.ok(list.some((s) => s.type === 'foreign_property' && s.countryCode === 'ESP'));
+    assert.ok(list.some((s) => s.type === 'foreign_property' && s.countryCode === null));
 
     const dash = await request('GET', '/api/me/dashboard');
     assert.equal(dash.status, 200);
@@ -221,6 +221,16 @@ describe('taxpayer journey APIs', () => {
     assert.equal(mapped[0].type, 'self_employment');
     assert.equal(mapped[1].type, 'uk_property');
     assert.equal(mapped[2].type, 'foreign_property');
+  });
+
+  it('keeps one HMRC property business while spreadsheet countries remain records', () => {
+    const mapped = mapHmrcBusinessesToSources([
+      { typeOfBusiness: 'uk-property', businessId: 'UK-1' },
+      { typeOfBusiness: 'uk-property', businessId: 'UK-2' },
+      { typeOfBusiness: 'foreign-property', businessId: 'FP-1' },
+      { typeOfBusiness: 'foreign-property', businessId: 'FP-2' },
+    ]);
+    assert.deepEqual(mapped.map((source) => source.businessId), ['UK-1', 'FP-1']);
   });
 
   it('buildCumulativeReview adds previous into YTD', () => {
