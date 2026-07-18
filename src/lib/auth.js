@@ -39,12 +39,24 @@ export function createUser({ email, password, name }) {
   const id = newId();
   const now = new Date().toISOString();
   const normalized = String(email).trim().toLowerCase();
+  const passwordHash = hashPassword(password);
   database
     .prepare(
       `INSERT INTO users (id, email, password_hash, name, created_at)
        VALUES (?, ?, ?, ?, ?)`
     )
-    .run(id, normalized, hashPassword(password), name || normalized, now);
+    .run(id, normalized, passwordHash, name || normalized, now);
+  const user = {
+    id,
+    email: normalized,
+    name: name || normalized,
+    createdAt: now,
+    passwordHash,
+  };
+  // Postgres SoR dual-write when DATABASE_URL set
+  import('./operational-store.js')
+    .then((m) => m.scheduleMirror(() => m.mirrorUserToPostgres(user)))
+    .catch(() => {});
   return { id, email: normalized, name: name || normalized, createdAt: now };
 }
 
@@ -175,7 +187,13 @@ export function createSession(userId) {
       `INSERT INTO sessions (id, user_id, expires_at, created_at) VALUES (?, ?, ?, ?)`
     )
     .run(id, userId, expires.toISOString(), now.toISOString());
-  return { id, expiresAt: expires };
+  const session = { id, expiresAt: expires };
+  import('./operational-store.js')
+    .then((m) =>
+      m.scheduleMirror(() => m.mirrorSessionToPostgres(session, userId))
+    )
+    .catch(() => {});
+  return session;
 }
 
 export function getSessionUser(sessionId) {
@@ -204,6 +222,11 @@ export function getSessionUser(sessionId) {
 export function destroySession(sessionId) {
   if (!sessionId) return;
   getDb().prepare(`DELETE FROM sessions WHERE id = ?`).run(sessionId);
+  import('./operational-store.js')
+    .then((m) =>
+      m.scheduleMirror(() => m.deleteSessionFromPostgres(sessionId))
+    )
+    .catch(() => {});
 }
 
 /**

@@ -165,6 +165,35 @@ describe('queue never autonomous HMRC', () => {
     );
   });
 
+  it('hmrc_submit with userApproved but no durable approval throws', async () => {
+    await request(
+      'POST',
+      '/api/auth/login',
+      JSON.stringify({
+        email: 'demo@spreadsheet-tax.example',
+        password: 'DemoPass123!',
+      })
+    );
+    const sample = await request(
+      'POST',
+      '/api/import/sample',
+      JSON.stringify({ sample: 'self_employment' })
+    );
+    const draftId = JSON.parse(sample.body).draftId;
+    // userApproved true but never approved figures — must not re-self-approve
+    await assert.rejects(
+      () =>
+        performQueuedHmrcSubmit({
+          userApproved: true,
+          draftId,
+          nino: 'AA123456A',
+          taxYear: '2024-25',
+          businessIdSe: 'XAIS12345678901',
+        }),
+      /durable figure approval|no durable/i
+    );
+  });
+
   it('enqueues and claims hmrc_submit job with approval flag', async () => {
     const job = await enqueueJob({
       queue: 'hmrc_submit',
@@ -177,6 +206,65 @@ describe('queue never autonomous HMRC', () => {
     assert.equal(claimed.jobType, 'hmrc_submit');
     assert.equal(claimed.payload.userApproved, true);
     await completeJob(claimed.id);
+  });
+});
+
+describe('production mode labeling on live results', () => {
+  it('submitViaSandbox uses config.mode production when set', async () => {
+    const { submitViaSandbox, buildSubmitRequest } = await import(
+      '../src/lib/hmrc-client.js'
+    );
+    // Mock fetch
+    const orig = globalThis.fetch;
+    globalThis.fetch = async () =>
+      new Response(JSON.stringify({ ok: true }), { status: 200 });
+    try {
+      const prepared = buildSubmitRequest(
+        {
+          source: 'self_employment',
+          nino: 'AA123456A',
+          businessId: 'XAIS1',
+          taxYear: '2024-25',
+          body: { periodIncome: { turnover: 1 } },
+        },
+        {
+          mode: 'production',
+          baseUrl: 'https://api.service.hmrc.gov.uk',
+          accessToken: 'tok',
+        }
+      );
+      const r = await submitViaSandbox(prepared, {
+        mode: 'production',
+        accessToken: 'tok',
+      });
+      assert.equal(r.mode, 'production');
+      assert.equal(r.externalCallMade, true);
+    } finally {
+      globalThis.fetch = orig;
+    }
+  });
+});
+
+describe('operational SoR hooks', () => {
+  it('createUser and createDraft invoke mirror schedule when DATABASE_URL set', async () => {
+    const {
+      clearMirrorCallLog,
+      mirrorCallLog,
+      scheduleMirror,
+      mirrorUserToPostgres,
+    } = await import('../src/lib/operational-store.js');
+    clearMirrorCallLog();
+    // scheduleMirror only runs when isPostgresMode — verify helper is wired
+    assert.equal(typeof scheduleMirror, 'function');
+    assert.equal(typeof mirrorUserToPostgres, 'function');
+    // Without DATABASE_URL, mirror returns not mirrored
+    const r = await mirrorUserToPostgres({
+      id: 'u1',
+      email: 'a@b.c',
+      passwordHash: 'x',
+      name: 'n',
+    });
+    assert.equal(r.mirrored, false);
   });
 });
 

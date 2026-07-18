@@ -10,6 +10,7 @@ import {
   buildEvidencePack,
   newCorrelationId,
   figureHash,
+  getLatestApproval,
 } from './submission-integrity.js';
 import {
   getDraft,
@@ -21,6 +22,12 @@ import {
   getActiveConnection,
   isMockAccessToken,
 } from './hmrc-oauth.js';
+import {
+  getDraftFromPostgres,
+  mirrorDraftToPostgres,
+  mirrorSubmissionAttemptToPostgres,
+} from './operational-store.js';
+import { isPostgresMode } from './platform-config.js';
 
 /**
  * @param {{
@@ -33,7 +40,12 @@ import {
  * }} opts
  */
 export async function performProductSubmit(opts) {
-  const draft = getDraft(opts.draftId);
+  let draft = getDraft(opts.draftId);
+  // Prefer Postgres SoR when configured
+  if (isPostgresMode()) {
+    const pgDraft = await getDraftFromPostgres(opts.draftId);
+    if (pgDraft) draft = pgDraft;
+  }
   if (!draft) {
     return { error: 'Draft not found', status: 404 };
   }
@@ -216,6 +228,23 @@ function finalize({
       previewOnly: mode === 'double',
     },
   });
+  // SoR dual-write (async fire from sync finalize — caller may await via performProductSubmit tail)
+  const mirrorPromise = Promise.all([
+    mirrorDraftToPostgres(draft),
+    mirrorSubmissionAttemptToPostgres({
+      id: attemptId,
+      draftId: draft.id,
+      userId,
+      mode,
+      ok,
+      results,
+      evidence,
+      correlationId,
+      supersedesAttemptId,
+      status: mode === 'double' ? 'preview' : ok ? 'accepted' : 'failed',
+      createdAt: new Date().toISOString(),
+    }),
+  ]).catch(() => {});
   return {
     ok,
     mode,
@@ -231,11 +260,13 @@ function finalize({
     connectionMock,
     results,
     evidenceUrl: `/api/receipts/${encodeURIComponent(attemptId)}/evidence`,
+    _mirrorPromise: mirrorPromise,
   };
 }
 
 /**
- * Worker entry: requires userApproved and draftId.
+ * Worker entry: requires userApproved flag AND a durable figure-hash approval
+ * already stored for the draft. Does NOT re-self-approve via cellsApproved.
  * @param {object} payload
  */
 export async function performQueuedHmrcSubmit(payload) {
@@ -247,6 +278,23 @@ export async function performQueuedHmrcSubmit(payload) {
   if (!payload.draftId) {
     throw new Error('hmrc_submit requires draftId');
   }
+  const draft = getDraft(payload.draftId);
+  if (!draft) {
+    throw new Error('hmrc_submit: draft not found');
+  }
+  const approval = getLatestApproval(payload.draftId);
+  if (!approval) {
+    throw new Error(
+      'hmrc_submit rejected: no durable figure approval on draft (approve before queue)'
+    );
+  }
+  const currentHash = figureHash(draft.payloads);
+  if (approval.figureHash && approval.figureHash !== currentHash) {
+    throw new Error(
+      'hmrc_submit rejected: figures changed since approval — re-approve required'
+    );
+  }
+  // Pass empty body without cellsApproved — rely on durable approval only
   const result = await performProductSubmit({
     draftId: payload.draftId,
     userId: payload.userId || null,
@@ -256,7 +304,7 @@ export async function performQueuedHmrcSubmit(payload) {
       businessIdSe: payload.businessIdSe,
       businessIdUk: payload.businessIdUk,
       businessIdForeign: payload.businessIdForeign,
-      cellsApproved: true,
+      // Explicitly do NOT set cellsApproved — must use stored approval
       supersedesAttemptId: payload.supersedesAttemptId,
       idempotencyKey: payload.idempotencyKey,
     },
@@ -269,5 +317,6 @@ export async function performQueuedHmrcSubmit(payload) {
     err.status = result.status;
     throw err;
   }
+  if (result._mirrorPromise) await result._mirrorPromise;
   return result;
 }

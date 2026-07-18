@@ -24,7 +24,9 @@ When **production HMRC credentials** and host env are supplied:
 | Evidence pack per attempt | **Yes** |
 | Worker `hmrc_submit` with `userApproved` gate | **Yes** (wired to real submit path) |
 | `ASYNC_HMRC_SUBMIT=1` queue path | **Yes** |
-| Postgres dual-write when `DATABASE_URL` | **Yes** (drafts/attempts) |
+| Postgres SoR dual-write when `DATABASE_URL` | **Yes** (users, sessions, drafts, clients, attempts, audit) |
+| HTTP `/api/submit` uses unified `performProductSubmit` | **Yes** |
+| Queue worker requires durable figure-hash approval | **Yes** (no re-self-approve) |
 | Production boot refuses weak secrets / prod live without Hub client | **Yes** |
 | Capacity 200/800k proven | **NOT MET** — never claimed from DATABASE_URL alone |
 | HMRC Recognised | **No** (external) |

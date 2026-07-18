@@ -38,7 +38,12 @@ export function createDraft({
       now,
       now
     );
-  return getDraft(id);
+  const draft = getDraft(id);
+  // Postgres SoR for every draft creation path (import, nil-update, client import, …)
+  import('./operational-store.js')
+    .then((m) => m.scheduleMirror(() => m.mirrorDraftToPostgres(draft)))
+    .catch(() => {});
+  return draft;
 }
 
 export function getDraft(id) {
@@ -152,6 +157,7 @@ export function recordSubmissionAttempt({
   status = null,
 }) {
   const id = newId();
+  const now = new Date().toISOString();
   const attemptStatus =
     status ||
     (mode === 'double' ? 'preview' : ok ? 'accepted' : 'failed');
@@ -171,7 +177,7 @@ export function recordSubmissionAttempt({
         mode,
         ok ? 1 : 0,
         JSON.stringify(results),
-        new Date().toISOString(),
+        now,
         evidence ? JSON.stringify(evidence) : null,
         correlationId || null,
         supersedesAttemptId || null,
@@ -190,7 +196,7 @@ export function recordSubmissionAttempt({
         mode,
         ok ? 1 : 0,
         JSON.stringify(results),
-        new Date().toISOString()
+        now
       );
   }
   if (idempotencyKey) {
@@ -213,6 +219,25 @@ export function recordSubmissionAttempt({
         new Date().toISOString()
       );
   }
+  import('./operational-store.js')
+    .then((m) =>
+      m.scheduleMirror(() =>
+        m.mirrorSubmissionAttemptToPostgres({
+          id,
+          draftId,
+          userId,
+          mode,
+          ok,
+          results,
+          evidence,
+          correlationId,
+          supersedesAttemptId,
+          status: attemptStatus,
+          createdAt: now,
+        })
+      )
+    )
+    .catch(() => {});
   return id;
 }
 
@@ -289,21 +314,39 @@ export function writeAudit({
   entityId = null,
   meta = null,
 }) {
+  const id = newId();
+  const createdAt = new Date().toISOString();
   getDb()
     .prepare(
       `INSERT INTO audit_events (id, firm_id, user_id, action, entity_type, entity_id, meta_json, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
     )
     .run(
-      newId(),
+      id,
       firmId,
       userId,
       action,
       entityType,
       entityId,
       meta ? JSON.stringify(meta) : null,
-      new Date().toISOString()
+      createdAt
     );
+  import('./operational-store.js')
+    .then((m) =>
+      m.scheduleMirror(() =>
+        m.mirrorAuditToPostgres({
+          id,
+          firmId,
+          userId,
+          action,
+          entityType,
+          entityId,
+          meta,
+          createdAt,
+        })
+      )
+    )
+    .catch(() => {});
 }
 
 /**

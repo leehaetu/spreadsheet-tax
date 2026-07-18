@@ -366,7 +366,8 @@ export async function submitViaSandbox(prepared, config) {
 
   return {
     ok: res.ok,
-    mode: 'sandbox',
+    // Preserve production vs sandbox from config (never hardcode sandbox when live production)
+    mode: config.mode === 'production' ? 'production' : config.mode || 'sandbox',
     externalCallMade: true,
     status: res.status,
     request: {

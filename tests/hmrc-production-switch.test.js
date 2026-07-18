@@ -61,6 +61,38 @@ describe('production switch is env-only', () => {
   });
 });
 
+describe('live result mode label', () => {
+  it('production config yields mode production not hardcoded sandbox', async () => {
+    const { submitViaSandbox, buildSubmitRequest } = await import(
+      '../src/lib/hmrc-client.js'
+    );
+    const orig = globalThis.fetch;
+    globalThis.fetch = async () =>
+      new Response(JSON.stringify({ periodId: 'p1' }), { status: 200 });
+    try {
+      const cfg = {
+        mode: 'production',
+        baseUrl: 'https://api.service.hmrc.gov.uk',
+        accessToken: 'live-token',
+      };
+      const prepared = buildSubmitRequest(
+        {
+          source: 'self_employment',
+          nino: 'AA123456A',
+          businessId: 'XAIS1',
+          taxYear: '2024-25',
+          body: { periodIncome: { turnover: 10 } },
+        },
+        cfg
+      );
+      const out = await submitViaSandbox(prepared, cfg);
+      assert.equal(out.mode, 'production');
+    } finally {
+      globalThis.fetch = orig;
+    }
+  });
+});
+
 describe('SE amend path includes tax year', () => {
   it('PUT path has taxYear segment', () => {
     const req = buildSubmitRequest(

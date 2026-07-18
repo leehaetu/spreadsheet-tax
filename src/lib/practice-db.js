@@ -211,11 +211,19 @@ function mapClient(row) {
     assigneeUserId: row.assignee_user_id,
     dueDate: row.due_date,
     portalAccess: Boolean(row.portal_enabled),
+    portalToken: row.portal_token || null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     transitions: listAllowedTransitions(status),
     needsAction: NEEDS_ACTION.has(status),
   };
+}
+
+function mirrorClientWrite(client) {
+  if (!client?.id) return;
+  import('./operational-store.js')
+    .then((m) => m.scheduleMirror(() => m.mirrorClientToPostgres(client)))
+    .catch(() => {});
 }
 
 /** @deprecated prefer listAllowedTransitions — kept for callers expecting {id,label} */
@@ -294,7 +302,9 @@ export function updateClientDetails({ clientId, userId, dueDate, displayName }) 
       `UPDATE clients SET display_name = ?, due_date = ?, updated_at = ? WHERE id = ?`
     )
     .run(name, due, now, clientId);
-  return { client: getClientRow(clientId) };
+  const updated = getClientRow(clientId);
+  mirrorClientWrite(updated);
+  return { client: updated };
 }
 
 /**
@@ -583,6 +593,7 @@ export function updateClientStatus({
       now
     );
   const updated = getClientRow(clientId);
+  mirrorClientWrite(updated);
   return {
     client: updated,
     transitions: updated?.transitions || listAllowedTransitions(status),

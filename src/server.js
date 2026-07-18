@@ -16,6 +16,7 @@ import {
   ensureOperationalPostgres,
   mirrorDraftToPostgres,
   mirrorSubmissionAttemptToPostgres,
+  mirrorClientToPostgres,
   operationalStoreHealth,
 } from './lib/operational-store.js';
 import { performProductSubmit } from './lib/live-submit.js';
@@ -1018,7 +1019,7 @@ app.post('/api/submit', async (req, res) => {
       }
     }
 
-    // Queue-backed live/preview submit when operational flag set (worker re-loads OAuth)
+    // Queue-backed submit when operational flag set (worker requires durable approval)
     if (
       process.env.ASYNC_HMRC_SUBMIT === '1' &&
       draft &&
@@ -1042,6 +1043,7 @@ app.post('/api/submit', async (req, res) => {
             validation.normalized.businessIdForeign || businessIdForeign,
           idempotencyKey: idempotencyKey ? String(idempotencyKey) : null,
           supersedesAttemptId: req.body?.supersedesAttemptId || null,
+          figureHashAtEnqueue: approvalGate.figureHash || null,
         },
       });
       await mirrorDraftToPostgres(draft).catch(() => {});
@@ -1053,11 +1055,77 @@ app.post('/api/submit', async (req, res) => {
         mode: 'queued',
         previewOnly: process.env.HMRC_ALLOW_LIVE_SUBMIT !== '1',
         message:
-          'Submission queued for worker — no autonomous HMRC send without approval (already recorded).',
+          'Submission queued for worker — durable approval required; no autonomous HMRC send.',
       });
     }
 
-    // Anonymous draft + live external: force double unless signed-in owner
+    // Unified product submit path (same module as worker)
+    if (draft) {
+      if (
+        process.env.HMRC_ALLOW_LIVE_SUBMIT === '1' &&
+        !user &&
+        process.env.ALLOW_ANONYMOUS_LIVE_SUBMIT !== '1'
+      ) {
+        // live without user will force double inside performProductSubmit when no token
+      }
+      if (
+        process.env.HMRC_ALLOW_LIVE_SUBMIT === '1' &&
+        accessToken &&
+        !user
+      ) {
+        return res.status(401).json({
+          error:
+            'Sign in required for HMRC submission. Anonymous live submit is not allowed.',
+        });
+      }
+      if (
+        process.env.HMRC_ALLOW_LIVE_SUBMIT === '1' &&
+        accessToken &&
+        draft &&
+        !draft.userId &&
+        !draft.firmId
+      ) {
+        return res.status(403).json({
+          error:
+            'Anonymous drafts can only be used for preview. Sign in, re-import, then submit.',
+        });
+      }
+
+      const productResult = await performProductSubmit({
+        draftId: draft.id,
+        userId: user?.id || null,
+        body: {
+          ...req.body,
+          nino: validation.normalized.nino,
+          taxYear: validation.normalized.taxYear,
+          businessIdSe:
+            validation.normalized.businessIdSe || businessIdSe,
+          businessIdUk:
+            validation.normalized.businessIdUk || businessIdUk,
+          businessIdForeign:
+            validation.normalized.businessIdForeign || businessIdForeign,
+          // Approval already recorded above; pass through cellsApproved if present
+          cellsApproved: req.body?.cellsApproved,
+          idempotencyKey: idempotencyKey ? String(idempotencyKey) : null,
+          supersedesAttemptId: req.body?.supersedesAttemptId || null,
+        },
+        req,
+        accessToken: user ? accessToken : null,
+        forceDouble: process.env.HMRC_ALLOW_LIVE_SUBMIT !== '1',
+      });
+      if (productResult.error) {
+        return res
+          .status(productResult.status || 400)
+          .json(productResult);
+      }
+      if (productResult._mirrorPromise) {
+        await productResult._mirrorPromise.catch(() => {});
+      }
+      const { _mirrorPromise, ...publicBody } = productResult;
+      return res.json(publicBody);
+    }
+
+    // Rare non-draft path (dev client payloads only — already gated above)
     const client = createSubmitClient({
       accessToken: user ? accessToken : undefined,
       mode: user ? tokenMode : undefined,
@@ -1065,31 +1133,10 @@ app.post('/api/submit', async (req, res) => {
       userId: user?.id || null,
     });
     if (client.mode !== 'double' && process.env.HMRC_ALLOW_LIVE_SUBMIT !== '1') {
-      console.warn(
-        '[security] blocked non-double submit without HMRC_ALLOW_LIVE_SUBMIT'
-      );
       return res.status(403).json({
         error: 'Live HMRC submission is not enabled on this server.',
       });
     }
-    if (client.mode !== 'double' && !user) {
-      return res.status(401).json({
-        error:
-          'Sign in required for HMRC submission. Anonymous live submit is not allowed.',
-      });
-    }
-    if (
-      client.mode !== 'double' &&
-      draft &&
-      !draft.userId &&
-      !draft.firmId
-    ) {
-      return res.status(403).json({
-        error:
-          'Anonymous drafts can only be used for preview. Sign in, re-import, then submit.',
-      });
-    }
-
     const results = await client.submitBundle(payloads, {
       nino: validation.normalized.nino,
       businessIdSe: validation.normalized.businessIdSe || businessIdSe,
@@ -1098,85 +1145,14 @@ app.post('/api/submit', async (req, res) => {
         validation.normalized.businessIdForeign || businessIdForeign,
       taxYear: validation.normalized.taxYear,
     });
-
     const ok = results.every((r) => r.ok);
-    const externalCallMade = results.some((r) => r.externalCallMade === true);
-    const correlationId = newCorrelationId();
-    let attemptId = null;
-    if (draft) {
-      if (ok) markDraftSubmitted(draft.id);
-      const evidence = buildEvidencePack({
-        correlationId,
-        draft,
-        payloads,
-        approval: approvalGate?.approval || null,
-        mode: client.mode,
-        results,
-        mappingVersion: 'v1-deterministic',
-        supersedesAttemptId: req.body?.supersedesAttemptId || null,
-      });
-      attemptId = recordSubmissionAttempt({
-        draftId: draft.id,
-        userId: user?.id,
-        mode: client.mode,
-        ok,
-        results,
-        idempotencyKey: idempotencyKey
-          ? String(idempotencyKey)
-          : null,
-        evidence,
-        correlationId,
-        supersedesAttemptId: req.body?.supersedesAttemptId || null,
-        status: client.mode === 'double' ? 'preview' : ok ? 'accepted' : 'failed',
-      });
-      writeAudit({
-        userId: user?.id || null,
-        action: ok ? 'submit_ok' : 'submit_failed',
-        entityType: 'draft',
-        entityId: draft.id,
-        meta: {
-          mode: client.mode,
-          attemptId,
-          correlationId,
-          figureHash: approvalGate?.figureHash || figureHash(payloads),
-          externalCallMade,
-          previewOnly: client.mode === 'double',
-        },
-      });
-      await mirrorDraftToPostgres(draft).catch(() => {});
-      await mirrorSubmissionAttemptToPostgres({
-        id: attemptId,
-        draftId: draft.id,
-        userId: user?.id,
-        mode: client.mode,
-        ok,
-        results,
-        evidence,
-        correlationId,
-        supersedesAttemptId: req.body?.supersedesAttemptId || null,
-        status: client.mode === 'double' ? 'preview' : ok ? 'accepted' : 'failed',
-        createdAt: new Date().toISOString(),
-      }).catch(() => {});
-    }
-
     res.json({
       ok,
       mode: client.mode,
-      draftId: draft?.id || null,
-      attemptId,
-      correlationId,
-      figureHash: approvalGate?.figureHash || (payloads ? figureHash(payloads) : null),
-      liveSubmitEnabled: process.env.HMRC_ALLOW_LIVE_SUBMIT === '1',
-      previewOnly: client.mode === 'double',
-      externalCallMade,
-      // Headers are prepared on the request descriptor; only "sent" on external calls
-      fraudHeadersPrepared: true,
-      fraudHeadersSentToHmrc: externalCallMade,
-      connectionMock,
+      draftId: null,
       results,
-      evidenceUrl: attemptId
-        ? `/api/receipts/${encodeURIComponent(attemptId)}/evidence`
-        : null,
+      previewOnly: client.mode === 'double',
+      externalCallMade: results.some((r) => r.externalCallMade === true),
     });
   } catch (e) {
     console.error(e);
@@ -2788,7 +2764,9 @@ app.post('/api/me/clients', (req, res) => {
     entityType: 'client',
     entityId: id,
   });
-  res.status(201).json({ ok: true, client: getClientRow(id) });
+  const created = getClientRow(id);
+  mirrorClientToPostgres(created).catch(() => {});
+  res.status(201).json({ ok: true, client: created });
 });
 
 /**
