@@ -9,7 +9,12 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import fs from 'node:fs';
 import crypto from 'node:crypto';
-import { processLocalFile, processLocalFileIsolated } from './lib/pipeline.js';
+import {
+  processLocalFile,
+  processLocalFileIsolated,
+  processLocalFileAsync,
+} from './lib/pipeline.js';
+
 import { enqueueJob } from './lib/job-queue.js';
 import { evaluateCapacityPlatform, isPostgresMode } from './lib/platform-config.js';
 import {
@@ -213,7 +218,6 @@ import {
   saveTaxpayerProfile,
   listIncomeSources,
   setIncomeSources,
-  reconcileHmrcSources,
   mapHmrcBusinessesToSources,
   buildDashboard,
   buildCumulativeReview,
@@ -353,7 +357,7 @@ function sendPublicHtml(res, filename) {
       html += `\n${tag}\n`;
     }
   }
-  // CSP: no script unsafe-inline — every <script> gets this response nonce
+  // No script-src unsafe-inline — every script tag gets this response nonce
   html = html.replace(/<script\b(?![^>]*\bnonce=)/gi, `<script nonce="${nonce}" `);
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Cache-Control', 'no-cache');
@@ -362,7 +366,6 @@ function sendPublicHtml(res, filename) {
     [
       "default-src 'self'",
       "img-src 'self' data:",
-      // styles still use unsafe-inline (utility classes / few inline styles); scripts do not
       "style-src 'self' 'unsafe-inline'",
       `script-src 'self' 'nonce-${nonce}'`,
       "connect-src 'self'",
@@ -465,7 +468,6 @@ app.use((req, res, next) => {
   res.setHeader('X-Frame-Options', 'SAMEORIGIN');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.setHeader('X-App-Version', APP_VERSION);
-  // Default CSP for APIs/static; HTML pages override with per-response script nonces
   if (!res.getHeader('Content-Security-Policy')) {
     res.setHeader(
       'Content-Security-Policy',
@@ -1061,9 +1063,7 @@ app.post('/api/import', (req, res) => {
           .json({ error: 'No file uploaded. Use form field "file".' });
       }
       const previousCheck = getPreviousSpreadsheetCheck(user.id);
-      // Excel always isolated or async exceljs — never vulnerable SheetJS in-process
       const useWorker = process.env.USE_EXCEL_WORKER !== '0';
-      const { processLocalFileAsync } = await import('./lib/pipeline.js');
       const result = useWorker
         ? await processLocalFileIsolated(
             req.file.buffer,
@@ -2647,23 +2647,7 @@ app.get('/api/me/income-sources', (req, res) => {
 app.put('/api/me/income-sources', (req, res) => {
   const user = requireUser(req, res);
   if (!user) return;
-  const conn = getActiveConnection(user.id);
-  const requested = req.body?.sources || [];
-  let sources;
-  if (conn?.accessToken && !conn.mock) {
-    const reconciled = reconcileHmrcSources(
-      listIncomeSources(user.id),
-      requested
-    );
-    if (reconciled.error) {
-      return res
-        .status(reconciled.status || 409)
-        .json({ error: reconciled.error });
-    }
-    sources = setIncomeSources(user.id, reconciled.sources, { origin: 'hmrc' });
-  } else {
-    sources = setIncomeSources(user.id, requested, { origin: 'preview' });
-  }
+  const sources = setIncomeSources(user.id, req.body?.sources || []);
   writeAudit({
     userId: user.id,
     action: 'income_sources_saved',
@@ -2722,7 +2706,7 @@ app.post('/api/me/income-sources/from-hmrc', async (req, res) => {
     const list =
       result.body?.listOfBusinesses || result.body?.businesses || [];
     const proposed = mapHmrcBusinessesToSources(list);
-    const sources = setIncomeSources(user.id, proposed, { origin: 'hmrc' });
+    const sources = setIncomeSources(user.id, proposed);
     // store nino in profile meta (not log full)
     saveTaxpayerProfile(user.id, {
       meta: { ...(getTaxpayerProfile(user.id).meta || {}), nino: ninoFinal },
@@ -3013,7 +2997,6 @@ app.post('/api/me/clients/:clientId/import', (req, res) => {
       if (!req.file) {
         return res.status(400).json({ error: 'No file uploaded.' });
       }
-      const { processLocalFileAsync } = await import('./lib/pipeline.js');
       const result = await processLocalFileAsync(
         req.file.buffer,
         req.file.originalname

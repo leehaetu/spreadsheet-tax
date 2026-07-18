@@ -264,6 +264,22 @@ describe('bridging app customer focus', () => {
 
 describe('sample import API', () => {
   it('returns customer summary for a combined sample period', async () => {
+    const email = `sample-${Date.now()}@example.com`;
+    const reg = await request(
+      'POST',
+      '/api/auth/register',
+      JSON.stringify({ email, password: 'SamplePass123!', name: 'Sample' })
+    );
+    assert.ok([200, 201].includes(reg.status), reg.body.toString());
+    const setCookie = reg.headers['set-cookie'];
+    const cookie = Array.isArray(setCookie)
+      ? setCookie.map((c) => c.split(';')[0]).join('; ')
+      : String(setCookie || '')
+          .split(',')
+          .map((c) => c.split(';')[0].trim())
+          .join('; ');
+    const csrfRes = await request('GET', '/api/csrf', null, { Cookie: cookie });
+    const csrf = JSON.parse(csrfRes.body.toString()).csrfToken;
     const res = await new Promise((resolve, reject) => {
       const body = JSON.stringify({ sample: 'combined' });
       const req = http.request(
@@ -275,6 +291,8 @@ describe('sample import API', () => {
           headers: {
             'Content-Type': 'application/json',
             'Content-Length': Buffer.byteLength(body),
+            Cookie: cookie,
+            ...(csrf ? { 'X-CSRF-Token': csrf } : {}),
           },
         },
         (r) => {
@@ -292,7 +310,7 @@ describe('sample import API', () => {
       req.write(body);
       req.end();
     });
-    assert.equal(res.status, 200);
+    assert.equal(res.status, 200, res.body.toString());
     const data = JSON.parse(res.body.toString('utf8'));
     assert.equal(data.ok, true);
     assert.ok(data.summary);
