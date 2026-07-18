@@ -26,8 +26,9 @@ Non-2xx is **fail**. Never use “okish”.
 | Import SE sample | product import | /app | 200 + draftId | — | true | `CUSTOMER_WORKFLOW` + `UNIT_TESTED` |
 | Import UK sample | product import | /app | 200 + draftId | — | true | same |
 | Import FP sample | product import | /app | 200 + draftId | — | true | same |
-| Create UK test business | SA Test Support POST `.../business/{nino}` | setup | **400** | `RULE_PROPERTY_BUSINESS_ADDED` | **false** | setup fail (already added) |
-| Create FP test business | same | setup | **400** | `RULE_PROPERTY_BUSINESS_ADDED` | **false** | setup fail |
+| Create UK test business | SA Test Support POST `.../business/{nino}` | setup | **400** | `RULE_PROPERTY_BUSINESS_ADDED` | **false** | setup fail (already added) — not success |
+| Create FP test business | same | setup | **400** | `RULE_PROPERTY_BUSINESS_ADDED` | **false** | setup fail — not success |
+| Ensure property businesses | product `POST /api/hmrc/mtd/ensure-property-businesses` | setup | pending re-run | create-or-list | pending | **v1.23** code path: list IDs after already-added; re-run sandbox for `SANDBOX_HTTP` |
 | Business Details list | GET `.../business/details/{nino}/list` | app fill IDs | **200** | — | true | `SANDBOX_HTTP` |
 | Obligations I&E | GET `/obligations/details/{nino}/income-and-expenditure` | app | **200** | — | true | `SANDBOX_HTTP` |
 | SE period create | POST `.../self-employment/{nino}/{bid}/period` | /app submit · workflow se_period | **200** | — | true | `SANDBOX_HTTP` + `CUSTOMER_WORKFLOW` |

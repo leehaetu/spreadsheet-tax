@@ -156,7 +156,7 @@ describe('HMRC OAuth mock connect', () => {
 });
 
 describe('billing plans API', () => {
-  it('lists plans and selects one', async () => {
+  it('lists plans and freezes select-plan without Stripe', async () => {
     cookie = '';
     await request(
       'POST',
@@ -168,14 +168,17 @@ describe('billing plans API', () => {
     );
     const plans = await request('GET', '/api/plans');
     assert.equal(plans.status, 200);
+    const pj = JSON.parse(plans.body);
+    assert.equal(pj.paymentsLive, false);
+    assert.ok(Array.isArray(pj.plans) && pj.plans.length > 0);
     const sel = await request(
       'POST',
       '/api/billing/select-plan',
       JSON.stringify({ planId: 'personal' })
     );
-    assert.equal(sel.status, 200);
-    const me = await request('GET', '/api/auth/me');
-    const mj = JSON.parse(me.body);
-    assert.equal(mj.plan.planId, 'personal');
+    // No STRIPE_SECRET_KEY → honest 503, not a fake paid plan change
+    assert.equal(sel.status, 503);
+    const body = JSON.parse(sel.body);
+    assert.equal(body.code, 'BILLING_NOT_LIVE');
   });
 });

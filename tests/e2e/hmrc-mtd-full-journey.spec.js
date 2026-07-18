@@ -162,34 +162,31 @@ test.describe('Full MTD sandbox journey (operator)', () => {
     bidUk = cached.uk || '';
     bidFp = cached.foreign || '';
 
-    for (const typeOfBusiness of ['uk-property', 'foreign-property']) {
-      const created = await page.evaluate(
-        async ({ n, typeOfBusiness }) => {
-          const r = await fetch('/api/hmrc/mtd/test-business', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ nino: n, typeOfBusiness }),
-          });
-          return { status: r.status, body: await r.json() };
-        },
-        { n: NINO, typeOfBusiness }
-      );
-      const newId =
-        created.body?.body?.businessId ||
-        created.body?.response?.businessId ||
-        null;
-      const already =
-        created.body?.body?.code === 'RULE_PROPERTY_BUSINESS_ADDED' ||
-        created.body?.status === 400;
-      logStep(`create_test_business_${typeOfBusiness}`, {
-        ok: Boolean(newId) || already,
-        status: created.status,
-        body: created.body,
-        path: created.body?.path,
+    // Ensure property businesses: create-or-list. RULE_PROPERTY_BUSINESS_ADDED is NOT success.
+    const ensured = await page.evaluate(async (n) => {
+      const r = await fetch('/api/hmrc/mtd/ensure-property-businesses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nino: n }),
       });
-      if (typeOfBusiness === 'uk-property' && newId) bidUk = newId;
-      if (typeOfBusiness === 'foreign-property' && newId) bidFp = newId;
+      return { status: r.status, body: await r.json() };
+    }, NINO);
+    const ensuredBody = ensured.body?.body || ensured.body || {};
+    for (const step of ensuredBody.steps || []) {
+      logStep(step.step || 'ensure_step', {
+        ok: Boolean(step.ok),
+        status: step.status,
+        body: step,
+        path: step.step,
+      });
     }
+    logStep('ensure_property_businesses', {
+      ok: Boolean(ensuredBody.ok || ensured.body?.ok),
+      status: ensured.status,
+      body: ensuredBody,
+    });
+    if (ensuredBody.uk) bidUk = ensuredBody.uk;
+    if (ensuredBody.foreign) bidFp = ensuredBody.foreign;
 
     // Businesses
     const businesses = await page.evaluate(async (n) => {
@@ -207,7 +204,7 @@ test.describe('Full MTD sandbox journey (operator)', () => {
       businesses.body?.body?.listOfBusinesses ||
       businesses.body?.body?.businesses ||
       [];
-    let bidSe = '';
+    let bidSe = ensuredBody.se || '';
     const nonSe = [];
     for (const row of Array.isArray(list) ? list : []) {
       const id = row.businessId || row.id || '';

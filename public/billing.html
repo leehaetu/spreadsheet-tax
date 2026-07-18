@@ -17,33 +17,43 @@
     </div>
   </header>
   <main class="wrap app-main">
-    <h1>Plan selection</h1>
-    <p class="lead">Experimental packaging only — <strong>no card charges</strong> in this build. Prices remain hypotheses until customer evidence.</p>
-    <p id="current" class="muted">Sign in to see your plan.</p>
+    <h1>Billing</h1>
+    <p class="lead" id="billing-lead">Card payments are <strong>not live</strong> until a payment processor is configured. This page does not charge cards.</p>
+    <p id="current" class="muted">Sign in to see packaging information.</p>
     <div class="pricing-grid" id="plans"></div>
     <p id="msg" class="success-box" hidden></p>
     <p id="err" class="error" hidden></p>
+    <p class="muted"><a href="/pricing">See package paths</a> · <a href="/account">Back to settings</a></p>
   </main>
   <script>
     async function load() {
       const me = await fetch('/api/auth/me').then((r) => r.json());
+      const data = await fetch('/api/plans').then((r) => r.json());
+      const live = Boolean(data.paymentsLive);
+      document.getElementById('billing-lead').innerHTML = live
+        ? 'Payment processor configured. Checkout still requires signed Stripe webhooks before treating a plan as paid.'
+        : 'Card payments are <strong>not live</strong>. No <code>STRIPE_SECRET_KEY</code> — plan buttons are disabled. Packaging only.';
       if (!me.user) {
         document.getElementById('current').innerHTML =
-          '<a href="/signin?next=/billing">Sign in</a> to select a plan.';
+          '<a href="/signin?next=/account">Sign in</a> for account settings.';
       } else {
         document.getElementById('current').textContent =
-          `Signed in as ${me.user.email} · current plan: ${me.plan?.label || me.plan?.planId}`;
+          `Signed in as ${me.user.email} · packaging: ${me.plan?.label || me.plan?.planId || 'free'}`;
       }
-      const data = await fetch('/api/plans').then((r) => r.json());
       const root = document.getElementById('plans');
       root.innerHTML = '';
       for (const p of data.plans || []) {
         const art = document.createElement('article');
         art.className = 'price-card';
         art.innerHTML = `<h3>${p.label}</h3>
-          <p class="price-desc">HMRC path in product packaging: ${p.hmrcPathInProduct || p.liveHmrc ? 'yes (only when operator enables sandbox/live + real OAuth — not automatic)' : 'preview packaging only'}. Workspace: ${p.workspace ? 'yes' : 'no'}. No card charge in this build.</p>
-          <button type="button" class="btn btn-primary btn-block" data-id="${p.id}">Select</button>`;
+          <p class="price-desc">HMRC path in packaging: ${p.hmrcPathInProduct || p.liveHmrc ? 'intended when operator enables live + OAuth' : 'preview packaging only'}. Practice workspace: ${p.workspace ? 'yes' : 'no'}.</p>
+          <button type="button" class="btn btn-primary btn-block" data-id="${p.id}" ${live ? '' : 'disabled'}>${live ? 'Select' : 'Not available'}</button>`;
         root.appendChild(art);
+      }
+      if (!live) {
+        const err = document.getElementById('err');
+        err.textContent = 'Billing is frozen: paymentsLive=false. Use the free product path until checkout is real.';
+        err.hidden = false;
       }
       root.querySelectorAll('button[data-id]').forEach((btn) => {
         btn.onclick = async () => {
@@ -51,9 +61,13 @@
           const msg = document.getElementById('msg');
           err.hidden = true;
           msg.hidden = true;
+          const csrf = await fetch('/api/csrf').then((r) => r.json()).catch(() => ({}));
           const res = await fetch('/api/billing/select-plan', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+              'Content-Type': 'application/json',
+              ...(csrf.csrfToken ? { 'X-CSRF-Token': csrf.csrfToken } : {}),
+            },
             body: JSON.stringify({ planId: btn.getAttribute('data-id') }),
           });
           const body = await res.json();

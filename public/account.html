@@ -11,12 +11,12 @@
     <div class="wrap header-inner">
       <a class="logo" href="/"><span class="logo-mark">ST</span> Spreadsheet Tax</a>
       <nav>
-        <a href="/app">App</a>
-        <a href="/history">History</a>
-        <a href="/workspace">Workspace</a>
-        <a href="/connect-hmrc">HMRC</a>
-        <a href="/billing">Billing</a>
-        <a href="/admin">Admin</a>
+        <a href="/home">Home</a>
+        <a href="/app?flow=quarterly">Quarterly</a>
+        <a href="/history">Receipts</a>
+        <a href="/workspace">Practice</a>
+        <a href="/connect-hmrc">Connect HMRC</a>
+        <a href="/account" class="active">Settings</a>
         <button type="button" class="btn btn-ghost btn-sm" id="out">Sign out</button>
       </nav>
     </div>
@@ -76,6 +76,25 @@
         </table>
       </div>
     </section>
+    <section class="panel" id="mfa-panel" hidden>
+      <h2>Two-factor authentication (authenticator app)</h2>
+      <p class="muted" id="mfa-status">Checking…</p>
+      <p class="muted">Practice administrators should enable MFA before handling client books. MFA is reported to HMRC fraud headers only when a real challenge succeeds.</p>
+      <div id="mfa-enroll" hidden>
+        <p class="muted">Secret (add to authenticator): <code id="mfa-secret"></code></p>
+        <p class="muted" style="word-break:break-all">URI: <code id="mfa-otpauth"></code></p>
+        <label>Confirm code
+          <input type="text" id="mfa-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" />
+        </label>
+        <button type="button" class="btn btn-primary btn-sm" id="mfa-confirm">Confirm MFA</button>
+      </div>
+      <div class="action-bar" style="border:0;padding-top:0.5rem">
+        <button type="button" class="btn btn-ghost btn-sm" id="mfa-begin">Set up authenticator</button>
+        <button type="button" class="btn btn-ghost btn-sm" id="mfa-disable" hidden>Disable MFA</button>
+      </div>
+      <p id="mfa-msg" class="success-box" hidden></p>
+      <p id="mfa-err" class="error" hidden></p>
+    </section>
     <section class="panel" id="pw-panel" hidden>
       <h2>Change password</h2>
       <form id="pw-form" class="form-row">
@@ -124,6 +143,22 @@
       document.getElementById('prefs-panel').hidden = false;
       document.getElementById('activity-panel').hidden = false;
       document.getElementById('subs-panel').hidden = false;
+      document.getElementById('mfa-panel').hidden = false;
+      try {
+        const mfa = await fetch('/api/auth/mfa/status').then((r) => r.json());
+        const st = document.getElementById('mfa-status');
+        if (mfa.enrolled) {
+          st.textContent = 'MFA is enabled for this account.';
+          document.getElementById('mfa-disable').hidden = false;
+          document.getElementById('mfa-begin').hidden = true;
+        } else {
+          st.textContent = mfa.practiceAdminRequiresMfa
+            ? 'MFA not enabled — practice admin MFA is required by policy when MFA_REQUIRE_PRACTICE_ADMIN=1.'
+            : 'MFA is optional for this account. Recommended for practice admins.';
+        }
+      } catch {
+        /* ignore */
+      }
       const prefs = await fetch('/api/me/preferences').then((r) => r.json());
       if (prefs.preferences) {
         document.getElementById('pref-reminders').checked = !!prefs.preferences.emailReminders;
@@ -180,6 +215,68 @@
       await fetch('/api/auth/logout', { method: 'POST' });
       location.href = '/';
     };
+    async function csrfHeaders() {
+      const csrf = await fetch('/api/csrf').then((r) => r.json()).catch(() => ({}));
+      return {
+        'Content-Type': 'application/json',
+        ...(csrf.csrfToken ? { 'X-CSRF-Token': csrf.csrfToken } : {}),
+      };
+    }
+    document.getElementById('mfa-begin')?.addEventListener('click', async () => {
+      const err = document.getElementById('mfa-err');
+      const msg = document.getElementById('mfa-msg');
+      err.hidden = true;
+      msg.hidden = true;
+      const res = await fetch('/api/auth/mfa/begin', {
+        method: 'POST',
+        headers: await csrfHeaders(),
+        body: '{}',
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        err.textContent = data.error || 'Could not start MFA';
+        err.hidden = false;
+        return;
+      }
+      document.getElementById('mfa-enroll').hidden = false;
+      document.getElementById('mfa-secret').textContent = data.secret || '';
+      document.getElementById('mfa-otpauth').textContent = data.otpauth || '';
+    });
+    document.getElementById('mfa-confirm')?.addEventListener('click', async () => {
+      const err = document.getElementById('mfa-err');
+      const msg = document.getElementById('mfa-msg');
+      err.hidden = true;
+      msg.hidden = true;
+      const res = await fetch('/api/auth/mfa/confirm', {
+        method: 'POST',
+        headers: await csrfHeaders(),
+        body: JSON.stringify({ code: document.getElementById('mfa-code').value }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        err.textContent = data.error || 'Invalid code';
+        err.hidden = false;
+        return;
+      }
+      msg.textContent = 'MFA enabled. Session rotated.';
+      msg.hidden = false;
+      location.reload();
+    });
+    document.getElementById('mfa-disable')?.addEventListener('click', async () => {
+      const code = prompt('Enter current authenticator code to disable MFA');
+      if (!code) return;
+      const res = await fetch('/api/auth/mfa/disable', {
+        method: 'POST',
+        headers: await csrfHeaders(),
+        body: JSON.stringify({ code }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || 'Could not disable MFA');
+        return;
+      }
+      location.reload();
+    });
     document.getElementById('pref-save')?.addEventListener('click', async () => {
       const msg = document.getElementById('pref-msg');
       msg.hidden = true;

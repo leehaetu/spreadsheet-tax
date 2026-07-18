@@ -42,6 +42,7 @@ import {
   taxYearFromPeriodStart,
   mtdCapabilityMatrix,
 } from '../lib/hmrc-api.js';
+import { ensurePropertyBusinesses } from '../lib/ensure-property-businesses.js';
 import { writeAudit } from '../lib/drafts.js';
 import { loadDraftForUser } from '../lib/access-control.js';
 
@@ -163,6 +164,26 @@ export function registerHmrcMtdRoutes(app, deps) {
         body: req.body?.body,
       })
     )
+  );
+
+  /**
+   * Sandbox: ensure UK + foreign property businesses exist.
+   * RULE_PROPERTY_BUSINESS_ADDED is not success — we list Business Details and resolve IDs.
+   */
+  app.post('/api/hmrc/mtd/ensure-property-businesses', (req, res) =>
+    run(req, res, 'ensure_property_businesses', async (o) => {
+      const result = await ensurePropertyBusinesses({
+        ...o,
+        nino: req.body?.nino || o.nino,
+      });
+      return {
+        status: result.ok ? 200 : 422,
+        ok: result.ok,
+        body: result,
+        path: 'ensure_property_businesses',
+        label: 'ensure_property_businesses',
+      };
+    })
   );
   app.get('/api/hmrc/mtd/businesses/:businessId', (req, res) =>
     run(req, res, 'business_retrieve', (o) =>

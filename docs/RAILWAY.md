@@ -1,102 +1,85 @@
 # Railway deployment
 
 **Live URL:** https://spreadsheet-tax-production.up.railway.app  
-**Project:** Spreadsheet-Tax · **Service:** spreadsheet-tax · **Env:** production  
+**Project:** Spreadsheet-Tax · **Env:** production  
+
+## What is actually on Railway (honest)
+
+| Resource | Status |
+|----------|--------|
+| **spreadsheet-tax** (web app) | One Node service — serves **sales site + API + product UI** in one process |
+| **Volume** `spreadsheet-tax-volume` → `/app/data` | SQLite + files (legacy / local cache path) |
+| **Postgres** | Provisioned (managed DB service) — app gets `DATABASE_URL` |
+| **Redis** | Provisioned — app gets `REDIS_URL` |
+| **Separate “frontend” service** | **None** — not needed; HTML/JS is static from the same app |
+| **Separate worker service** | **Optional** — code supports `npm run worker`; not always a second Railway service yet |
+| **S3 / object storage bucket** | **Not provisioned** — quarantine uses volume path / `OBJECT_STORAGE_DIR` |
+| **200 practices / 800k proven** | **NOT MET** — wiring infra ≠ load proof |
+
+### Important honesty
+
+- **“Production API ready when you add HMRC keys”** means: the **code path** can flip to production HMRC via env.  
+- It does **not** mean: multi-service HA platform, capacity gate, or “put keys and sell to 800k”.  
+- Live app may still use **SQLite** until `DATABASE_URL` is active and dual-write / cutover is healthy — check `/health` → `dbMode`, `postgresConfigured`, `redisConfigured`.
 
 ## GitHub
 
-Service source should be `leehaetu/spreadsheet-tax` branch `main` with auto-deploy on.
-
-If deploys stall: Settings → Source → reconnect GitHub, or from this repo:
+Source: `leehaetu/spreadsheet-tax` branch `main`, auto-deploy preferred.
 
 ```bash
 railway up --detach -m "manual redeploy"
 ```
 
-## Required variables (set on the service)
-
-| Variable | Example / notes |
-|----------|-----------------|
-| `NODE_ENV` | `production` |
-| `SESSION_SECRET` | long random hex |
-| `TOKEN_ENCRYPTION_KEY` | long random hex |
-| `COOKIE_SECURE` | `1` (HTTPS) |
-| `DATA_DIR` | `/app/data` (**must match volume mount**) |
-| `HMRC_OAUTH_MOCK` | `1` until real Hub credentials |
-| `HMRC_ALLOW_LIVE_SUBMIT` | `0` for public demo |
-| `DEMO_PRACTICE_WRITES` | `0` |
-| `JOBS_SECRET` | random secret for `/api/jobs/run` |
-
-Optional later:
+## Required variables (web service)
 
 | Variable | Notes |
 |----------|--------|
-| `HMRC_CLIENT_ID` / `HMRC_CLIENT_SECRET` | Developer Hub |
+| `NODE_ENV` | `production` |
+| `SESSION_SECRET` | ≥32 chars |
+| `TOKEN_ENCRYPTION_KEY` | ≥32 chars, ≠ session secret |
+| `COOKIE_SECURE` | `1` |
+| `DATA_DIR` | `/app/data` (volume) |
+| `DATABASE_URL` | From Postgres service reference `${{Postgres.DATABASE_URL}}` |
+| `REDIS_URL` | From Redis service reference `${{Redis.REDIS_URL}}` |
+| `HMRC_CLIENT_ID` / `HMRC_CLIENT_SECRET` | Developer Hub (sandbox now; Production later) |
 | `HMRC_REDIRECT_URI` | `https://<domain>/api/hmrc/callback` |
-| `HMRC_OAUTH_ENV` | `sandbox` or `production` |
-| `ALLOW_CLIENT_PAYLOAD_SUBMIT` | Never set in production |
-| `SQLITE_PATH` | Override DB file (default: `$DATA_DIR/db/spreadsheet-tax.sqlite`) |
+| `HMRC_OAUTH_ENV` | `sandbox` until Production credentials |
+| `HMRC_ALLOW_LIVE_SUBMIT` | `1` only when intentional; still needs real OAuth token |
 
-`PORT` is provided by Railway.
-
-## Volume (required for customer data)
-
-| Field | Value |
-|-------|--------|
-| Name | `spreadsheet-tax-volume` |
-| Mount | `/app/data` |
-| Default size | **5 GB** (Hobby plan max default) |
-| Holds | SQLite DB, future uploads/exports/backups |
-
-### Layout on the volume
+## Architecture (current)
 
 ```
-/app/data/
-  db/spreadsheet-tax.sqlite   # primary store
-  uploads/                    # reserved for period files if persisted
-  exports/                    # reserved for large CSV jobs
-  backups/                    # reserved for DB snapshots
+Browser
+   │
+   ▼
+spreadsheet-tax (Express)  ──static HTML/JS (sales + app)
+   │
+   ├─ DATABASE_URL ──► Postgres (SoR dual-write when configured)
+   ├─ REDIS_URL    ──► Redis (rate limits / optional locks)
+   └─ /app/data    ──► Volume (SQLite fallback + uploads)
 ```
 
-`DATA_DIR=/app/data` is set on the service. Without the volume, redeploys wipe SQLite.
+There is **no separate Next.js frontend**. Marketing + product are HTML under `public/` served by the same service.
 
-### Sizing for ~600,000 customers
+## After adding Postgres / Redis
 
-Rough guidance (client metadata + drafts/submissions, not raw spreadsheet archives):
+1. Confirm services **Postgres** and **Redis** are **SUCCESS** in the Railway dashboard.  
+2. Confirm web service variables include `DATABASE_URL` and `REDIS_URL`.  
+3. Redeploy `spreadsheet-tax` if needed.  
+4. Hit `GET /health` and check:
+   - `postgresConfigured: true`
+   - `redisConfigured: true`
+   - `dbMode` may still show `sqlite` for process store until full cutover; dual-write uses Postgres when URL is set  
+5. Capacity gate remains **false** until load evidence.
 
-| Customers | Suggested volume | Notes |
-|-----------|------------------|--------|
-| Pilot (≤5k) | 5 GB | Current Hobby default — **already attached** |
-| Growth (~50–100k) | **50 GB** | Upgrade Railway **Pro**, live-resize volume |
-| Target **600k** | **100–250 GB+** | Pro self-serve up to 1 TB; prefer **Postgres** for multi-instance |
+## Optional next services
 
-**CLI cannot live-resize yet** — use Railway dashboard:
+| Service | Purpose |
+|---------|---------|
+| **worker** | Second deploy of same repo with start command `npm run worker` for queues |
+| **Bucket** | S3-compatible object storage for quarantined spreadsheets |
+| **Staging** environment | Mirror production without touching live |
 
-1. Open project → service **spreadsheet-tax** → volume **spreadsheet-tax-volume**
-2. **Live Resize** → choose larger size (Pro required above 5 GB)
-3. Confirm `DATA_DIR=/app/data` still set
+## Demo (dev only)
 
-App scale features already shipped for large books:
-
-- SQL indexes on clients / drafts / audit
-- Paginated `GET /api/me/clients` (limit/offset/q/status/needsAction)
-- SQL aggregate practice dashboard (no full-table load)
-
-**Honest limit:** one SQLite file on one volume cannot be multi-replica.  
-
-**Capacity gate (2026-07-18):** product **must** support **200 practices + 800,000** SE/landlord customers before any pilot/production/market claim. See **[CAPACITY-REQUIREMENTS.md](./CAPACITY-REQUIREMENTS.md)**. Current SQLite single-service setup is **P0 blocker**, not an acceptable end-state. Target: managed HA PostgreSQL, Redis, queues, workers, object storage, multi-instance app — not “SQLite forever.”
-
-### Re-attach volume (if missing)
-
-```bash
-railway volume list --json
-# only if none attached:
-railway volume add --mount-path /app/data --json
-railway variable set DATA_DIR=/app/data
-```
-
-One volume per service (Railway limit).
-
-## Single service
-
-One web service is enough for the pilot. Add Postgres when multi-instance or 600k concurrent practice load is required; until then SQLite on the volume is intentional.
+`demo@spreadsheet-tax.example` / `DemoPass123!` — not a production customer base.

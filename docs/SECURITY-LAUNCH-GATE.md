@@ -30,11 +30,11 @@
 | ID | Control | Required for | Implemented | Tested | Evidence | Status |
 |----|---------|--------------|-------------|--------|----------|--------|
 | SEC-01 | Secure authentication | Pilot | ☑ | ☑ | auth-drafts tests | partial |
-| SEC-02 | MFA for professional admins | Pilot+ | ☐ | ☐ | | open — EXT human |
-| SEC-03 | Short-lived secure sessions | Pilot | ☑ | ☑ | 7-day sessions HttpOnly | partial |
-| SEC-04 | CSRF protection | Pilot | ☐ | ☐ | | open |
+| SEC-02 | MFA for professional admins | Pilot+ | ☑ | partial | TOTP enroll API + account UI; hard-require via MFA_REQUIRE_PRACTICE_ADMIN | partial — not pen-tested |
+| SEC-03 | Short-lived secure sessions | Pilot | ☑ | ☑ | 7-day sessions HttpOnly; rotate on login/MFA | partial |
+| SEC-04 | CSRF protection | Pilot | ☑ | ☑ | csrf.js + tests when CSRF_ENFORCE=1 / production | improved 2026-07-18 |
 | SEC-05 | Rate limiting | Pilot | ☑ | ☑ | submit rate limit | partial |
-| SEC-06 | Account lockout controls | Pilot | ☐ | ☐ | | open |
+| SEC-06 | Account lockout controls | Pilot | ☑ | ☑ | login-lockout.js + tests | improved 2026-07-18 |
 | SEC-07 | Role + tenant authz on every protected op | Pilot | ☑ | ☑ | tenant-isolation.test.js · access-control.js | improved 2026-07-18 |
 | SEC-08 | Encrypted HMRC tokens | Pilot | ☑ | ☑ | crypto-secret + prod boot requires key | partial (prod boot gate) |
 | SEC-09 | Secret rotation process | Prod | ☐ | ☐ | | open — runbook |

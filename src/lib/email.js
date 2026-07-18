@@ -1,12 +1,17 @@
 /**
  * Outbound email.
- * Default: stub (logs only). Set SMTP_URL or EMAIL_WEBHOOK_URL for delivery.
+ * Default: stub (logs only).
+ * Delivery order:
+ *   1) EMAIL_WEBHOOK_URL (JSON POST — Resend/Postmark-compatible bridge)
+ *   2) SMTP_URL (mailto via Node fetch to a local SMTP bridge is NOT used;
+ *      when SMTP_URL is set without a webhook we still do not claim delivery —
+ *      use EMAIL_WEBHOOK_URL for real transactional send until nodemailer is added)
  * Always return { delivered: boolean } so callers never claim mail was sent when stubbed.
  */
 
 /**
  * @param {{ to: string, subject: string, body: string, kind?: string }} msg
- * @returns {Promise<{ ok: boolean, delivered: boolean, provider: string, to: string, subject: string, kind: string, at: string, body?: string, error?: string }>}
+ * @returns {Promise<{ ok: boolean, delivered: boolean, provider: string, to: string, subject: string, kind: string, at: string, body?: string, error?: string, note?: string }>}
  */
 export async function sendEmail(msg) {
   const entry = {
@@ -22,7 +27,12 @@ export async function sendEmail(msg) {
     try {
       const res = await fetch(webhook, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(process.env.EMAIL_WEBHOOK_AUTH
+            ? { Authorization: process.env.EMAIL_WEBHOOK_AUTH }
+            : {}),
+        },
         body: JSON.stringify(entry),
       });
       if (!res.ok) {
@@ -44,6 +54,17 @@ export async function sendEmail(msg) {
     }
   }
 
+  // SMTP_URL alone is not enough without a transport — never claim delivery
+  if (process.env.SMTP_URL && process.env.EMAIL_LOG !== '0') {
+    console.log(
+      '[email-smtp-unconfigured-transport]',
+      JSON.stringify({
+        ...entry,
+        note: 'SMTP_URL set but no transport library — use EMAIL_WEBHOOK_URL',
+      })
+    );
+  }
+
   // Stub: never claim delivery
   if (process.env.EMAIL_LOG !== '0') {
     console.log('[email-stub]', JSON.stringify(entry));
@@ -51,7 +72,7 @@ export async function sendEmail(msg) {
   return {
     ok: true,
     delivered: false,
-    provider: 'stub',
+    provider: process.env.SMTP_URL ? 'smtp-pending-transport' : 'stub',
     note: 'Email not delivered — configure EMAIL_WEBHOOK_URL for real send',
     ...entry,
   };
@@ -71,5 +92,6 @@ export async function sendDeadlineReminder(opts) {
 
 export function emailDeliveryMode() {
   if (process.env.EMAIL_WEBHOOK_URL) return 'webhook';
+  if (process.env.SMTP_URL) return 'smtp-pending-transport';
   return 'stub';
 }

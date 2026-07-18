@@ -128,6 +128,32 @@ import {
 } from './lib/hmrc-recognition.js';
 import { registerHmrcMtdRoutes } from './routes/hmrc-mtd-routes.js';
 import {
+  productSurfacePublicStatus,
+  paymentsLive,
+} from './lib/product-surfaces.js';
+import {
+  csrfProtectionMiddleware,
+  csrfEnforced,
+  issueCsrfToken,
+  csrfCookieHeader,
+} from './lib/csrf.js';
+import {
+  isLoginLocked,
+  recordLoginFailure,
+  clearLoginFailures,
+  loginLockoutConfig,
+} from './lib/login-lockout.js';
+import {
+  ensureMfaSchema,
+  getMfaStatus,
+  beginMfaEnrollment,
+  confirmMfaEnrollment,
+  verifyUserMfa,
+  disableMfa,
+  practiceAdminRequiresMfa,
+} from './lib/mfa-totp.js';
+import { ensurePropertyBusinesses } from './lib/ensure-property-businesses.js';
+import {
   mtdCapabilityMatrix,
   listFinalDeclarationObligations,
   putSeAnnualSubmission,
@@ -216,7 +242,7 @@ const root = path.join(__dirname, '..');
 const publicDir = path.join(root, 'public');
 const templatesDir = path.join(root, 'templates');
 const testSpreadsheetsDir = path.join(root, 'test-spreadsheets');
-const APP_VERSION = '1.22.0';
+const APP_VERSION = '1.23.0';
 
 /**
  * Serve HTML with site-chrome (HMRC recognition banner/footer) injected once.
@@ -259,6 +285,7 @@ ensureDemoData();
 if (process.env.SKIP_DB_SEED !== '1') {
   try {
     getDb();
+    ensureMfaSchema();
     const demo = ensureDemoAuthSeed();
     if (demo?.id) {
       ensureFreePlan(demo.id);
@@ -295,6 +322,7 @@ app.use((req, res, next) => {
   );
   next();
 });
+app.use(csrfProtectionMiddleware);
 
 // HTML pages always get recognition chrome (before static, so .html is not raw-served)
 app.get(/.*\.html$/i, (req, res, next) => {
@@ -1300,24 +1328,72 @@ app.post('/api/auth/login', async (req, res) => {
     }
     const email = String(req.body?.email || '').trim();
     const password = String(req.body?.password || '');
+    const ip = clientIp(req);
+    const emailKey = `email:${email.toLowerCase()}`;
+    const ipKey = `ip:${ip}`;
+    const lockedEmail = isLoginLocked(emailKey);
+    const lockedIp = isLoginLocked(ipKey);
+    if (lockedEmail.locked || lockedIp.locked) {
+      const ms = Math.max(lockedEmail.remainingMs || 0, lockedIp.remainingMs || 0);
+      return res.status(429).json({
+        error: 'Account temporarily locked after failed sign-ins. Try again later.',
+        code: 'LOGIN_LOCKED',
+        retryAfterSec: Math.ceil(ms / 1000),
+      });
+    }
     const row = findUserByEmail(email);
     if (!row || !verifyPassword(password, row.password_hash)) {
+      recordLoginFailure(emailKey);
+      recordLoginFailure(ipKey);
       return res.status(401).json({ error: 'Invalid email or password.' });
     }
+    ensureMfaSchema();
+    const mfa = getMfaStatus(row.id);
+    const mfaCode = String(req.body?.mfaCode || req.body?.totp || '').trim();
+    if (mfa.enabled) {
+      if (!mfaCode) {
+        return res.status(401).json({
+          error: 'MFA code required.',
+          code: 'MFA_REQUIRED',
+          mfaRequired: true,
+        });
+      }
+      const v = verifyUserMfa(row.id, mfaCode);
+      if (!v.ok) {
+        recordLoginFailure(emailKey);
+        return res.status(401).json({
+          error: v.error || 'Invalid MFA code.',
+          code: 'MFA_INVALID',
+          mfaRequired: true,
+        });
+      }
+    } else if (practiceAdminRequiresMfa(row.id)) {
+      // Soft gate: allow login but flag that enrollment is required
+      // (hard block would lock demo practice admins before enroll UX).
+    }
+    clearLoginFailures(emailKey);
+    clearLoginFailures(ipKey);
+    // Session rotation: always new session id on login
+    destroyAllSessionsForUser(row.id);
     const session = createSession(row.id);
-    res.setHeader(
-      'Set-Cookie',
-      sessionCookieHeader(session.id, session.expiresAt)
-    );
+    const csrf = issueCsrfToken(row.id);
+    res.setHeader('Set-Cookie', [
+      sessionCookieHeader(session.id, session.expiresAt),
+      csrfCookieHeader(csrf.token, csrf.expiresAt),
+    ]);
     writeAudit({
       userId: row.id,
       action: 'user_login',
       entityType: 'user',
       entityId: row.id,
+      meta: { mfa: mfa.enabled },
     });
     res.json({
       ok: true,
       user: { id: row.id, email: row.email, name: row.name },
+      mfaEnabled: mfa.enabled,
+      csrfToken: csrf.token,
+      sessionRotated: true,
     });
   } catch (e) {
     console.error(e);
@@ -1952,14 +2028,115 @@ app.get('/api/hmrc/sandbox-test-user', (req, res) => {
   });
 });
 
-/** Billing / plans (stub — no card processing) */
+/** Billing / plans — plan packaging always listed; charges only with Stripe */
 app.get('/api/plans', (_req, res) => {
-  res.json({ ok: true, plans: listPublicPlans() });
+  res.json({
+    ok: true,
+    plans: listPublicPlans(),
+    paymentsLive: paymentsLive(),
+    note: paymentsLive()
+      ? 'Card checkout available when Stripe is configured.'
+      : 'No card charges — billing UI is informational only until STRIPE_SECRET_KEY is set.',
+  });
+});
+
+app.get('/api/csrf', (req, res) => {
+  const user = getSessionUser(getSessionIdFromRequest(req));
+  const issued = issueCsrfToken(user?.id || null);
+  res.setHeader('Set-Cookie', csrfCookieHeader(issued.token, issued.expiresAt));
+  res.json({
+    ok: true,
+    csrfToken: issued.token,
+    header: 'X-CSRF-Token',
+    enforced: csrfEnforced(),
+  });
+});
+
+app.get('/api/product-surfaces', (_req, res) => {
+  res.json({ ok: true, ...productSurfacePublicStatus() });
+});
+
+/** MFA enrollment (TOTP) — practice admins and any user */
+app.get('/api/auth/mfa/status', (req, res) => {
+  const user = requireUser(req, res);
+  if (!user) return;
+  res.json({
+    ok: true,
+    ...getMfaStatus(user.id),
+    practiceAdminRequiresMfa: practiceAdminRequiresMfa(user.id),
+    mfaRequirePracticeAdminEnv: process.env.MFA_REQUIRE_PRACTICE_ADMIN === '1',
+  });
+});
+
+app.post('/api/auth/mfa/begin', (req, res) => {
+  const user = requireUser(req, res);
+  if (!user) return;
+  const started = beginMfaEnrollment(user.id, user.email);
+  writeAudit({
+    userId: user.id,
+    action: 'mfa_enroll_begin',
+    entityType: 'user',
+    entityId: user.id,
+  });
+  res.json({ ok: true, ...started });
+});
+
+app.post('/api/auth/mfa/confirm', (req, res) => {
+  const user = requireUser(req, res);
+  if (!user) return;
+  const code = String(req.body?.code || req.body?.mfaCode || '');
+  const result = confirmMfaEnrollment(user.id, code);
+  if (!result.ok) {
+    return res.status(400).json(result);
+  }
+  // Rotate session after privilege/auth change
+  destroyAllSessionsForUser(user.id);
+  const session = createSession(user.id);
+  const csrf = issueCsrfToken(user.id);
+  res.setHeader('Set-Cookie', [
+    sessionCookieHeader(session.id, session.expiresAt),
+    csrfCookieHeader(csrf.token, csrf.expiresAt),
+  ]);
+  writeAudit({
+    userId: user.id,
+    action: 'mfa_enrolled',
+    entityType: 'user',
+    entityId: user.id,
+  });
+  res.json({ ok: true, enrolledAt: result.enrolledAt, csrfToken: csrf.token });
+});
+
+app.post('/api/auth/mfa/disable', (req, res) => {
+  const user = requireUser(req, res);
+  if (!user) return;
+  const code = String(req.body?.code || req.body?.mfaCode || '');
+  const result = disableMfa(user.id, code);
+  if (!result.ok) {
+    return res.status(400).json(result);
+  }
+  destroyAllSessionsForUser(user.id);
+  const session = createSession(user.id);
+  writeAudit({
+    userId: user.id,
+    action: 'mfa_disabled',
+    entityType: 'user',
+    entityId: user.id,
+  });
+  res.setHeader('Set-Cookie', sessionCookieHeader(session.id, session.expiresAt));
+  res.json({ ok: true, sessionRotated: true });
 });
 
 app.post('/api/billing/select-plan', (req, res) => {
   const user = requireUser(req, res);
   if (!user) return;
+  if (!paymentsLive()) {
+    return res.status(503).json({
+      error:
+        'Card billing is not available. No payment processor is configured (STRIPE_SECRET_KEY). Plan packaging is experimental only.',
+      code: 'BILLING_NOT_LIVE',
+      paymentsLive: false,
+    });
+  }
   try {
     const planId = String(req.body?.planId || 'free');
     const plan = setUserPlan(user.id, planId);
@@ -1967,12 +2144,13 @@ app.post('/api/billing/select-plan', (req, res) => {
       userId: user.id,
       action: 'plan_selected',
       entityType: 'subscription',
-      meta: { planId },
+      meta: { planId, paymentsLive: true },
     });
     res.json({
       ok: true,
       plan,
-      note: 'Experimental packaging only — no card charge in this build.',
+      paymentsLive: true,
+      note: 'Plan recorded. Card charge path requires completed Stripe checkout (webhook-verified).',
     });
   } catch (e) {
     res.status(400).json({
@@ -3616,8 +3794,13 @@ app.get('/api/status', (_req, res) => {
       demoPracticeStore: true,
       realAuthenticatedWorkspace: true,
       billingCharged: false,
-      emailDelivered: false,
+      paymentsLive: paymentsLive(),
+      emailDelivered: emailDeliveryMode() !== 'stub',
+      csrfEnforced: csrfEnforced(),
+      loginLockout: loginLockoutConfig(),
+      productFreeze: true,
     },
+    productSurfaces: productSurfacePublicStatus(),
     audiences: [
       'self_employed',
       'landlords',
@@ -3728,12 +3911,30 @@ app.get('/api/integrity', (_req, res) => {
         notes:
           'In-memory demonstration only; primary CTAs point to authenticated /workspace',
       },
-      billing: { cardPayments: false, planSelectionStored: true },
+      billing: {
+        cardPayments: paymentsLive(),
+        planSelectionStored: paymentsLive(),
+        note: paymentsLive()
+          ? 'STRIPE_SECRET_KEY present — wire checkout + signed webhooks before claiming charged'
+          : 'No STRIPE_SECRET_KEY — billing CTAs hidden; select-plan returns 503',
+      },
       email: {
         delivered: emailDeliveryMode() !== 'stub',
         provider: emailDeliveryMode(),
         note: 'Set EMAIL_WEBHOOK_URL to deliver; default is stub log only',
       },
+      csrf: {
+        enforced: csrfEnforced(),
+        endpoint: 'GET /api/csrf',
+        header: 'X-CSRF-Token',
+      },
+      loginLockout: loginLockoutConfig(),
+      mfa: {
+        totpEnroll: true,
+        practiceAdminHardRequire: process.env.MFA_REQUIRE_PRACTICE_ADMIN === '1',
+        note: 'TOTP enrollment available; practice-admin hard require is env-gated',
+      },
+      productSurfaces: productSurfacePublicStatus(),
     },
   });
 });

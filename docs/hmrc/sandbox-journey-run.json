@@ -1,5 +1,5 @@
 {
-  "at": "2026-07-18T02:44:02.300Z",
+  "at": "2026-07-18T10:15:43.159Z",
   "base": "https://spreadsheet-tax-production.up.railway.app",
   "nino": "TB****",
   "steps": [
@@ -10,7 +10,7 @@
       "hmrcCode": null,
       "label": null,
       "path": null,
-      "snippet": "{\"connected\":true,\"mock\":false,\"expired\":false,\"mode\":\"sandbox\",\"expiresAt\":\"2026-07-18T06:44:08.810Z\",\"label\":\"HMRC OAuth token stored\"}"
+      "snippet": "{\"connected\":true,\"mock\":false,\"expired\":false,\"mode\":\"sandbox\",\"expiresAt\":\"2026-07-18T14:15:49.591Z\",\"label\":\"HMRC OAuth token stored\"}"
     },
     {
       "name": "import_self_employment",
@@ -19,7 +19,7 @@
       "hmrcCode": null,
       "label": null,
       "path": null,
-      "snippet": "{\"draftId\":\"14db929d-bc97-4c8b-a589-53c38e27f26e\"}"
+      "snippet": "{\"draftId\":\"75f8b55d-7328-4234-b38d-416eb99cc5de\"}"
     },
     {
       "name": "import_uk_property",
@@ -28,7 +28,7 @@
       "hmrcCode": null,
       "label": null,
       "path": null,
-      "snippet": "{\"draftId\":\"05d1c8a9-7f17-42d2-976e-628139ef77fc\"}"
+      "snippet": "{\"draftId\":\"8d5b3367-f5f3-4e34-95dd-2eaedbb046bd\"}"
     },
     {
       "name": "import_foreign_property",
@@ -37,7 +37,7 @@
       "hmrcCode": null,
       "label": null,
       "path": null,
-      "snippet": "{\"draftId\":\"b57ea72b-8ea5-4073-99f3-82f76a06e5f6\"}"
+      "snippet": "{\"draftId\":\"9a23eea7-93bd-4c7e-8cda-9cd1a0b4bece\"}"
     },
     {
       "name": "create_test_business_uk-property",
