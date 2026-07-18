@@ -2682,6 +2682,18 @@ app.put('/api/me/income-sources', (req, res) => {
     }
     sources = setIncomeSources(user.id, reconciled.sources, { origin: 'hmrc' });
   } else {
+    // Customer path: sources must come from HMRC. Preview/local seed only when
+    // explicitly allowed for automated e2e (E2E_RELAX_RATE_LIMIT) or local demos.
+    const allowPreviewWrite =
+      process.env.E2E_RELAX_RATE_LIMIT === '1' ||
+      process.env.ALLOW_PREVIEW_SOURCE_WRITES === '1';
+    if (!allowPreviewWrite) {
+      return res.status(400).json({
+        error:
+          'Connect HMRC and load businesses from HMRC. Spreadsheet Tax does not create or replace income sources locally.',
+        code: 'HMRC_SOURCES_REQUIRED',
+      });
+    }
     sources = setIncomeSources(user.id, requested, { origin: 'preview' });
   }
   writeAudit({
@@ -2689,7 +2701,10 @@ app.put('/api/me/income-sources', (req, res) => {
     action: 'income_sources_saved',
     entityType: 'user',
     entityId: user.id,
-    meta: { count: sources.length },
+    meta: {
+      count: sources.length,
+      origin: conn?.accessToken && !conn.mock ? 'hmrc' : 'preview',
+    },
   });
   res.json({ ok: true, sources });
 });

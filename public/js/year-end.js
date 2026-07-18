@@ -317,32 +317,59 @@ function renderAssistResult(data) {
 }
 
 function renderCalculationResult(data) {
-  const root = document.getElementById('calculation-view');
-  if (!root) return;
+  const roots = [
+    document.getElementById('calculation-view'),
+    document.getElementById('calculation-view-inline'),
+  ].filter(Boolean);
+  if (!roots.length) return;
   const isCalculation = ['calc', 'calc_list', 'final_calc'].includes(data.workflow);
-  if (!isCalculation) { root.hidden = true; root.innerHTML = ''; return; }
-  root.hidden = false;
-  if (data.previewOnly) {
-    root.innerHTML = '<h3>Calculation not available in preview</h3><p>No HMRC calculation HTTP request was made. This preview receipt does not contain a tax estimate.</p>';
-    return;
-  }
-  const source = data.readback?.body || data.body || {};
-  const values = [];
-  const visit = (object, prefix = '') => {
-    if (!object || typeof object !== 'object' || values.length >= 12) return;
-    for (const [key, value] of Object.entries(object)) {
-      const path = prefix ? `${prefix}.${key}` : key;
-      if (typeof value === 'number' && /(tax|income|profit|liability|allowance|expense|amount|due)/i.test(path)) values.push([path, value]);
-      else if (value && typeof value === 'object') visit(value, path);
-      if (values.length >= 12) break;
+  if (!isCalculation) {
+    for (const root of roots) {
+      root.hidden = true;
+      root.innerHTML = '';
     }
-  };
-  visit(source);
-  if (!values.length) {
-    root.innerHTML = '<h3>HMRC response received</h3><p>The response did not contain calculation amounts this screen can safely label. Download the receipt for the complete response.</p>';
     return;
   }
-  root.innerHTML = `<h3>HMRC calculation figures</h3><p>Values below are read from the HMRC response; they are not calculated locally.</p><dl>${values.map(([path,value]) => `<div><dt>${esc(path.replace(/[._]/g,' '))}</dt><dd>${new Intl.NumberFormat('en-GB',{style:'currency',currency:'GBP'}).format(value)}</dd></div>`).join('')}</dl>`;
+  let html;
+  if (data.previewOnly) {
+    html =
+      '<h3>Calculation not available in preview</h3><p>No HMRC calculation HTTP request was made. This preview receipt does not contain a tax estimate.</p>';
+  } else {
+    const source = data.readback?.body || data.body || {};
+    const values = [];
+    const visit = (object, prefix = '') => {
+      if (!object || typeof object !== 'object' || values.length >= 12) return;
+      for (const [key, value] of Object.entries(object)) {
+        const path = prefix ? `${prefix}.${key}` : key;
+        if (
+          typeof value === 'number' &&
+          /(tax|income|profit|liability|allowance|expense|amount|due)/i.test(path)
+        ) {
+          values.push([path, value]);
+        } else if (value && typeof value === 'object') visit(value, path);
+        if (values.length >= 12) break;
+      }
+    };
+    visit(source);
+    if (!values.length) {
+      html =
+        '<h3>HMRC response received</h3><p>The response did not contain calculation amounts this screen can safely label. Continue to HMRC Assist when a calculation reference is stored, or download the receipt for the complete response.</p>';
+    } else {
+      html = `<h3>HMRC calculation figures</h3><p>Values below are read from the HMRC response; they are not calculated locally.</p><dl class="calc-dl">${values
+        .map(
+          ([path, value]) =>
+            `<div><dt>${esc(path.replace(/[._]/g, ' '))}</dt><dd>${new Intl.NumberFormat(
+              'en-GB',
+              { style: 'currency', currency: 'GBP' }
+            ).format(value)}</dd></div>`
+        )
+        .join('')}</dl>`;
+    }
+  }
+  for (const root of roots) {
+    root.hidden = false;
+    root.innerHTML = html;
+  }
 }
 
 function showError(msg) {
@@ -452,7 +479,8 @@ function renderEditor(stageId) {
     root.innerHTML = `<div class="eoy-form">
       <h4>Year-end calculation</h4>
       <p class="help-tip">Spreadsheet Tax requests a tax calculation from HMRC for ${esc(eoyCase?.taxYear || 'this tax year')}. It does not invent or locally calculate your final tax bill.</p>
-      <p class="help-tip">After HMRC returns a calculation, the next step is <strong>HMRC Assist feedback</strong> — HMRC’s own messages about your return, not advice written by Spreadsheet Tax.</p>
+      <p class="help-tip">After HMRC returns a calculation, use <strong>Continue to HMRC Assist feedback</strong> (or open that checklist step). Assist messages are written by HMRC, not Spreadsheet Tax.</p>
+      <div id="calculation-view-inline" class="calculation-view" hidden></div>
     </div>`;
   } else if (stageId === 'hmrc_assist') {
     const calcId =

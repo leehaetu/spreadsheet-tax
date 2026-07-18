@@ -1,7 +1,7 @@
 # Project status
 
 **Last updated:** 2026-07-18  
-**App version:** **1.34.3** (branch; live host may still report 1.34.2 until Railway redeploy)
+**App version:** **1.34.4** (branch; live host may lag until Railway redeploy)
 **Screen audit pack:** [docs/audits/2026-07-18-all-screens/](./audits/2026-07-18-all-screens/) — drives UI fixes (not “image work”)  
 **Sales high-conversion stream:** [docs/audits/2026-07-18-sales-conversion-after/REPORT.md](./audits/2026-07-18-sales-conversion-after/REPORT.md) · [full live pack 0 defects](./audits/2026-07-18-sales-conversion-after-full/REPORT.md) · prior [conversion-review](./audits/2026-07-18-sales-conversion-review/)  
 **Sales weekly readout:** [SALES-WEEKLY-READOUT.md](./SALES-WEEKLY-READOUT.md)  
@@ -16,40 +16,40 @@
 
 ---
 
-## Truth status (2026-07-18) — v1.34.3 missing-work closeout (plan P0–P2/P3 partial)
+## Truth status (2026-07-18) — v1.34.4 software-completable product-finish residuals
 
 ```text
-BLOCKERS:
+BLOCKERS (not closed by UI):
 - Capacity 200 practices / 800k customers NOT MET
 - Release gates OPEN
 - HMRC Recognised: No
-- Live host /health was appVersion 1.34.2 at plan time — may lag this 1.34.3 push
-- Real Assist messages still need connected OAuth + real HMRC calculation [SANDBOX_HTTP prior ledger only for generate/ack]
+- Live host may lag until Railway redeploy of 1.34.4
+- Real Assist 200 messages need live/sandbox OAuth + calculation [prior SANDBOX_HTTP ledger only]
 
-SHIPPED THIS CLOSEOUT (software-completable gaps from session plan):
-- Assist calcId extract/store + Continue to HMRC Assist after calc [UNIT_TESTED + CUSTOMER_WORKFLOW]
-- Assist 204 empty state is honest customer copy [UNIT_TESTED + CUSTOMER_WORKFLOW e2e]
-- Quarterly import filtered to selected HMRC source only [UNIT_TESTED]
-- Year-end BSAS/list calc secondary under Advanced [ROUTE_ONLY UX]
-- Sources drafts reframed as unsent quarterly drafts [ROUTE_ONLY]
-- package 1.34.3 for deploy detection
+SHIPPED 1.34.4 (remaining plan items that code can finish):
+- product-shell class on all customer product pages + shared CSS tokens
+- Period banners on upload/review/submit; YTD only under optional details
+- Spreadsheet viewer primary on map step (no auto-modal block)
+- PUT income-sources requires real HMRC unless E2E/ALLOW_PREVIEW_SOURCE_WRITES
+- Onboarding: individual SE ± UK/foreign property only via HMRC (clear copy)
+- Year-end calc figures can render inline; Assist continue path retained from 1.34.3
 
 PROVEN:
-- Unit 289/289 [UNIT_TESTED]
-- product-finish + taxpayer-overhaul + app-journey e2e 17/17 [CUSTOMER_WORKFLOW] (HMRC connection mocked for UI gates; Assist report mocked 204 in one test)
+- Unit 292/292 [UNIT_TESTED]
+- product e2e pack 17/17 [CUSTOMER_WORKFLOW] (HMRC UI mock gates)
 
-UNPROVEN:
-- Live redeploy of 1.34.3
-- Owner real sandbox: calc → Assist messages 200
-- Full board pixel atlas; full annual field matrix; capacity/pilot
+UNPROVEN / EXTERNAL:
+- Live 1.34.4 deploy + owner browser Assist with real HMRC messages
+- Board pixel atlas 100%
+- Capacity / pilot / Recognised / production-ready
 ```
 
 - Stage: 2 of 5 — Sandbox engineering
-- Not claiming: production-ready · pilot-ready · HMRC Recognised · capacity met · product complete
+- Not claiming: production-ready · pilot-ready · HMRC Recognised · capacity met · “100% complete product”
 
 ### Next honest step
 
-- Redeploy Railway to 1.34.3; owner: Year end → calculation → Continue to Assist → Get report.
+- Redeploy to 1.34.4; walk Home → Connect → Onboarding load sources → Quarterly one-source → Year end Assist.
 
 ---
 

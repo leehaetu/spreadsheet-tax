@@ -23,6 +23,7 @@ export default defineConfig({
       PORT: String(port),
       CSRF_ENFORCE: '0',
       E2E_RELAX_RATE_LIMIT: '1',
+      ALLOW_PREVIEW_SOURCE_WRITES: '1',
       HMRC_ALLOW_LIVE_SUBMIT: '',
       DEMO_PRACTICE_WRITES: '',
     },

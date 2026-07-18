@@ -130,6 +130,8 @@ function showQuarterlyReviewState(state) {
   document.querySelectorAll('[data-quarterly-state]').forEach((element) => {
     element.hidden = element.dataset.quarterlyState !== 'figures';
   });
+  setPeriodBanners(lastPayloads, lastSummary);
+  if (lastDraftId) loadCumulativeReview(lastDraftId);
   setWizardStep(3);
 }
 
@@ -292,6 +294,30 @@ function selectedSourceHasFigures(payloads, selectedType) {
   return true;
 }
 
+function setPeriodBanners(payloads, summary) {
+  const start =
+    summary?.periodStart ||
+    payloads?.meta?.periodStartDate ||
+    '';
+  const end =
+    summary?.periodEnd || payloads?.meta?.periodEndDate || '';
+  const taxYear = summary?.taxYear || payloads?.meta?.taxYear || '';
+  const label =
+    start && end
+      ? `${start} to ${end}${taxYear ? ` · tax year ${taxYear}` : ''}`
+      : taxYear
+        ? `Tax year ${taxYear} (period dates from your spreadsheet when available)`
+        : '';
+  for (const id of ['upload-period-dates', 'review-period-dates', 'submit-period-dates']) {
+    const el = document.getElementById(id);
+    if (el && label) el.textContent = label;
+  }
+  for (const id of ['upload-period-banner', 'review-period-banner', 'submit-period-banner']) {
+    const el = document.getElementById(id);
+    if (el) el.hidden = !label;
+  }
+}
+
 function handleImportSuccess(data) {
   const selectedType =
     sessionStorage.getItem('st_quarterly_source_type') || '';
@@ -321,6 +347,7 @@ function handleImportSuccess(data) {
   lastSpreadsheetCheck = data.spreadsheetCheck || null;
   showReview({ ...data, payloads });
   renderSpreadsheetCheck(lastSpreadsheetCheck);
+  setPeriodBanners(payloads, lastSummary);
   // After upload → map columns (exclusive step). Full sheet opens in the modal viewer.
   if (typeof window.stQuarterlyShowStep === 'function') {
     window.stQuarterlyShowStep('map');
@@ -329,11 +356,16 @@ function handleImportSuccess(data) {
     setWizardStep(3);
   }
   const ssPanel = document.getElementById('spreadsheet-check-panel');
-  if (ssPanel) ssPanel.hidden = true;
+  if (ssPanel) {
+    ssPanel.hidden = true;
+    ssPanel.setAttribute('aria-hidden', 'true');
+  }
+  // Spreadsheet opens in the modal only when the user chooses “Open spreadsheet viewer”
+  // (do not auto-open — it blocks the map-step primary actions).
 
-  if (data.payloads?.meta?.taxYear) {
+  if (payloads?.meta?.taxYear) {
     const ty = document.getElementById('tax-year');
-    if (ty) ty.value = data.payloads.meta.taxYear;
+    if (ty) ty.value = payloads.meta.taxYear;
   }
   if (data.metadata?.nino) {
     const nino = document.getElementById('nino');
@@ -739,7 +771,9 @@ document.getElementById('ss-comment-save')?.addEventListener('click', async () =
  */
 async function loadCumulativeReview(draftId) {
   const host = document.getElementById('cumulative-review');
+  const wrap = document.getElementById('quarterly-ytd');
   if (!host || !draftId) return;
+  if (wrap) wrap.hidden = false;
   host.hidden = false;
   host.innerHTML = '<p class="muted">Loading year-to-date comparison…</p>';
   try {

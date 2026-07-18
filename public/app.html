@@ -8,7 +8,7 @@
   <meta name="theme-color" content="#f4f6f9" />
   <link rel="stylesheet" href="/css/site.css" />
 </head>
-<body class="theme-light app-body app-simple cc-page journey-page">
+<body class="theme-light app-body app-simple cc-page journey-page product-shell">
   <button class="cc-menu-toggle" id="cc-menu-toggle" type="button" aria-controls="cc-sidebar" aria-expanded="false">Menu</button>
   <aside class="cc-sidebar" id="cc-sidebar">
     <a class="cc-brand" href="/home"><span class="logo-mark">ST</span><span><strong>Spreadsheet Tax</strong><small>Making Tax Digital</small></span></a>
@@ -63,7 +63,10 @@
         </div>
       </div>
       <p class="period-upload-note">
-        <strong>What to upload:</strong> a spreadsheet with the <strong>current quarter’s figures</strong> for the selected income source.
+        <strong>What to upload:</strong> a spreadsheet with the <strong>current quarter’s figures</strong> for the selected income source only (one HMRC income source per update).
+      </p>
+      <p class="period-upload-note" id="upload-period-banner" hidden>
+        <strong>Period for this update:</strong> <span id="upload-period-dates">—</span>
       </p>
       <div class="upload-board-grid">
         <form id="upload-form" class="upload-board-main">
@@ -105,10 +108,10 @@
       <div id="mapping-table-wrap" class="table-wrap"></div>
       <div class="action-bar">
         <button type="button" class="btn btn-primary btn-lg" id="goto-figures" disabled>Continue to figures</button>
+        <button type="button" class="btn btn-ghost" id="open-ss-viewer">Open spreadsheet viewer</button>
         <button type="button" class="btn btn-ghost" id="back-to-upload">Upload a different file</button>
-        <button type="button" class="btn btn-ghost btn-sm" id="open-ss-viewer">Open spreadsheet viewer</button>
       </div>
-      <div class="panel" id="spreadsheet-check-panel" style="margin-top:1rem;padding:0.75rem" hidden>
+      <div class="panel" id="spreadsheet-check-panel" style="margin-top:1rem;padding:0.75rem" hidden aria-hidden="true">
         <p class="muted" id="ss-security-note" style="margin-top:0"></p>
         <div id="ss-reupload-diff" class="help-tip" hidden></div>
         <div id="ss-legend" class="muted" style="font-size:0.85rem;margin:0.5rem 0"></div>
@@ -156,8 +159,14 @@
         <p>These figures came from the spreadsheet you uploaded for this period.</p>
       </div>
       <div id="summary-cards" class="stat-cards" data-quarterly-state="figures" hidden></div>
-      <div id="cumulative-review" hidden style="display:none"></div>
-      <details class="quarterly-advanced" id="quarterly-advanced" hidden><summary>Advanced</summary></details>
+      <p class="period-upload-note" id="review-period-banner" data-quarterly-state="figures" hidden>
+        <strong>Period:</strong> <span id="review-period-dates">—</span>
+      </p>
+      <details class="quarterly-advanced" id="quarterly-ytd" data-quarterly-state="figures" hidden>
+        <summary>Optional: year-to-date comparison</summary>
+        <div id="cumulative-review"></div>
+      </details>
+      <details class="quarterly-advanced" id="quarterly-advanced" hidden><summary>Advanced mapping details</summary></details>
       <div class="action-bar" data-quarterly-state="figures" hidden>
         <button type="button" class="btn btn-primary btn-lg" id="goto-submit">Continue to declaration</button>
         <button type="button" class="btn btn-ghost" id="back-to-upload-link">Upload a different file</button>
@@ -217,6 +226,9 @@
         </div>
       </div>
       <div id="declaration-summary" class="declaration-summary" aria-live="polite"></div>
+      <p class="period-upload-note" id="submit-period-banner" hidden>
+        <strong>Period:</strong> <span id="submit-period-dates">—</span>
+      </p>
       <div class="submission-identifiers" hidden>
         <input type="hidden" id="nino" />
         <input type="hidden" id="tax-year" />

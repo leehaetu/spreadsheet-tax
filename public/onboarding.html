@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#ffffff" />
   <link rel="stylesheet" href="/css/site.css" />
 </head>
-<body class="theme-light app-body cc-page">
+<body class="theme-light app-body cc-page product-shell">
   <button class="cc-menu-toggle" id="cc-menu-toggle" type="button" aria-controls="cc-sidebar" aria-expanded="false">Menu</button>
   <aside class="cc-sidebar" id="cc-sidebar">
     <a class="cc-brand" href="/home"><span class="logo-mark">ST</span><span><strong>Spreadsheet Tax</strong><small>Making Tax Digital</small></span></a>
@@ -39,7 +39,7 @@
     <section class="setup-step" data-step="1">
       <div class="setup-callout">
         <h2>Welcome to Spreadsheet Tax</h2>
-        <p>This software bridges your spreadsheet to HMRC Making Tax Digital updates. It mirrors the income sources HMRC already holds for you — it does not create businesses or replace your books.</p>
+        <p>This software bridges your spreadsheet to HMRC Making Tax Digital updates for you as an <strong>individual</strong> (self-employment, and UK or foreign property if HMRC already holds them). It mirrors income sources from HMRC — it does not create businesses or replace your books.</p>
         <div class="mode-compare board-mirror-compare">
           <div>
             <strong>What Spreadsheet Tax does</strong>
@@ -47,17 +47,19 @@
               <li>Loads businesses from your HMRC connection</li>
               <li>Uploads your spreadsheet for a quarterly period</li>
               <li>Lets you check figures before you send</li>
+              <li>Shows HMRC Assist feedback after a tax calculation (year end)</li>
             </ul>
           </div>
           <div>
             <strong>What only HMRC does</strong>
             <ul>
-              <li>Register a new trade or property business</li>
+              <li>Register self-employment or a UK/foreign property business</li>
               <li>Change or cease an income source</li>
               <li>Hold the legal record of your businesses</li>
             </ul>
           </div>
         </div>
+        <p class="help-tip" style="margin-top:1rem">Want to report UK or foreign property as well as self-employment? Add or update those businesses in your <strong>HMRC online account</strong>, then load them here. Spreadsheet Tax will not invent a landlord business for you.</p>
         <div class="detail-grid" style="margin-top:1.25rem">
           <label>National Insurance number
             <input type="text" id="setup-nino" autocomplete="off" placeholder="QQ123456C" maxlength="13" />

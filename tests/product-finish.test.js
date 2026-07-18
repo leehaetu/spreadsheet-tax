@@ -163,6 +163,38 @@ describe('product finish — HMRC mirror & quarterly', () => {
     assert.match(js, /assist-empty/);
   });
 
+  it('product pages share product-shell body class', () => {
+    for (const page of [
+      'home.html',
+      'app.html',
+      'year-end.html',
+      'records.html',
+      'history.html',
+      'account.html',
+      'guide.html',
+      'onboarding.html',
+      'connect-hmrc.html',
+    ]) {
+      const html = fs.readFileSync(path.join(publicDir, page), 'utf8');
+      assert.match(html, /product-shell/, `${page} missing product-shell class`);
+    }
+  });
+
+  it('income-source PUT requires HMRC or explicit e2e preview allowance', () => {
+    const server = fs.readFileSync(path.join(root, 'src/server.js'), 'utf8');
+    assert.match(server, /HMRC_SOURCES_REQUIRED|Connect HMRC and load businesses/);
+    assert.match(server, /ALLOW_PREVIEW_SOURCE_WRITES|E2E_RELAX_RATE_LIMIT/);
+  });
+
+  it('quarterly shows period banners and YTD only under optional details', () => {
+    const html = fs.readFileSync(path.join(publicDir, 'app.html'), 'utf8');
+    assert.match(html, /upload-period-banner/);
+    assert.match(html, /review-period-banner/);
+    assert.match(html, /submit-period-banner/);
+    assert.match(html, /Optional: year-to-date comparison/);
+    assert.match(html, /Open spreadsheet viewer/);
+  });
+
   it('quarterly Assist points customers to year-end, not a fake in-step report', () => {
     const html = fs.readFileSync(path.join(publicDir, 'app.html'), 'utf8');
     assert.match(html, /Open year-end for HMRC Assist/);

@@ -2161,9 +2161,20 @@ body.app-simple .site-header nav a:not(.btn) {
 }
 body.control-centre,
 body.cc-page,
-body.journey-page {
+body.journey-page,
+body.product-shell {
   background: var(--cc-bg) !important;
   color: var(--cc-ink);
+}
+/* Shared product main column */
+body.product-shell .cc-main,
+body.product-shell .journey-main {
+  background: transparent;
+}
+body.product-shell .panel,
+body.product-shell .cc-next-task,
+body.product-shell .cc-sources {
+  border-radius: var(--cc-radius);
 }
 body.control-centre .cc-main,
 body.cc-page .cc-main {
