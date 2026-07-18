@@ -1,0 +1,7 @@
+# Railway config for spreadsheet-tax-worker only (no HTTP healthcheck).
+[build]
+builder = "NIXPACKS"
+
+[deploy]
+startCommand = "npm run worker"
+restartPolicyType = "ALWAYS"
