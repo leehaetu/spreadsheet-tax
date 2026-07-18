@@ -48,15 +48,16 @@ UNPROVEN:
 
 ## Truth status (2026-07-18) — v1.28.0 tenant security + capacity track
 
-### Shipped in 1.28.0 (RBAC/ABAC/RLS/rate limits + capacity track docs)
+### Shipped in 1.28.0 (RBAC/ABAC/RLS/rate limits) + Railway ops (same day)
 
-- RBAC matrix `src/lib/rbac.js` [UNIT_TESTED]
-- ABAC `src/lib/abac.js` (owner, membership, dual-control) [UNIT_TESTED]
-- Tenant firm_id guards `src/lib/tenant-context.js` [UNIT_TESTED]
-- Postgres RLS on clients/drafts/memberships/audit/object_blobs [ROUTE_ONLY until DATABASE_URL]
-- Rate limit tiers + global API middleware `src/lib/rate-limit.js` [UNIT_TESTED]
-- `GET /api/security/posture` [UNIT_TESTED]
-- ADR 0004 Accepted; `docs/CAPACITY-PLATFORM-TRACK.md`; `npm run capacity:evidence`
+- RBAC/ABAC/tenant guards + rate-limit middleware [UNIT_TESTED]
+- **Railway production ops (verified live):**
+  - New DB **Postgres-9ioQ** · app `DATABASE_URL` reference rewired
+  - **Redis** · `REDIS_URL` reference
+  - `OBJECT_STORAGE_DIR=/app/data/objects`
+  - Schema + **10 RLS policies** applied on Postgres-9ioQ
+  - Deploy SUCCESS · `/health` → `appVersion` 1.28.0+, `dbMode: postgres`, `postgresConfigured: true`, `redisConfigured: true`
+  - `/api/security/posture` → `rateLimiting.redis: true`, `postgresRls: true`
 - **Capacity gate remains NOT MET**
 
 ```text
@@ -65,15 +66,16 @@ BLOCKERS:
 - Release gates OPEN
 - HMRC Recognised: No
 - Pen-test / tax sign-off external
+- Worker not a separate Railway service yet
 
-PROVEN:
-- npm test 231 pass including security-controls [UNIT_TESTED]
-- Tenant isolation suite still green [UNIT_TESTED]
-- Rate limit trips after max [UNIT_TESTED]
+PROVEN (live):
+- postgres + redis configured on production [CUSTOMER_WORKFLOW /health]
+- RLS policies present on Postgres-9ioQ after migrate [CUSTOMER_WORKFLOW]
+- Unit security-controls + tenant isolation [UNIT_TESTED]
 
 UNPROVEN:
-- RLS under live Postgres multi-instance
-- Full 800k seed + deadline load claim
+- Full 800k seed + deadline load on Railway Postgres
+- Multi-replica rate-limit behaviour under peak
 ```
 
 ### Implemented in 1.27 taxpayer overhaul checkpoint 1 (not pilot-ready)
