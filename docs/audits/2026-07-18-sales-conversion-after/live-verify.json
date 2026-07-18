@@ -1,0 +1,16 @@
+{
+  "healthVersion": "1.33.0",
+  "metrics": {
+    "trustColor": "rgb(255, 255, 255)",
+    "secondaryColor": "rgb(255, 255, 255)",
+    "secondaryBorder": "rgb(255, 255, 255)",
+    "productSrc": "/images/app-review-fold.png",
+    "deadline": true,
+    "h1": "Quarterly updates from the spreadsheet you already use"
+  },
+  "pricing": {
+    "freeBand": true,
+    "experimental": true
+  },
+  "signinMfa": false
+}
