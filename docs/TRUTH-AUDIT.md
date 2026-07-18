@@ -29,6 +29,7 @@
 | T17 | **Insecure production defaults** | Token encrypt fallback to SESSION_SECRET or hardcoded dev key; Secure cookie optional | **FIXED 2026-07-18** — production-boot refuses weak config |
 | T18 | **Vulnerable xlsx parser** | `xlsx@0.18.5` high severity; no upstream fix on package | **MITIGATED 2026-07-18** — CSV preferred; prod xlsx opt-in + size/sheet/row limits + sanitize |
 | T19 | **Journey scorer honesty** | Steps with HMRC non-2xx marked `ok: true` / okish inflated | **FIXED 2026-07-18** — e2e scorer uses true HMRC status |
+| T20 | **Agent skipped session-end status/commit/push** | Agents.md hard rule 9 requires status (evidence tags), small commits, and push after material work. Product-finish HMRC honesty work landed then waited for owner “commit” / “status add commit push” instead of doing it immediately. Delays truth surface and remote backup. | **CORRECTED 2026-07-18** — STATUS updated with evidence tags; commits + push on `main`. Standing order: commit/push/status after each material pass without waiting to be told. |
 
 ---
 

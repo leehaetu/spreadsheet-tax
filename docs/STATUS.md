@@ -1,17 +1,78 @@
 # Project status
 
 **Last updated:** 2026-07-18  
-**App version:** **1.34.2** (branch; deployed host reported 1.33.5 on 2026-07-18)
+**App version:** **1.34.2** (branch; deployed host may lag until Railway redeploy)
 **Screen audit pack:** [docs/audits/2026-07-18-all-screens/](./audits/2026-07-18-all-screens/) — drives UI fixes (not “image work”)  
 **Sales high-conversion stream:** [docs/audits/2026-07-18-sales-conversion-after/REPORT.md](./audits/2026-07-18-sales-conversion-after/REPORT.md) · [full live pack 0 defects](./audits/2026-07-18-sales-conversion-after-full/REPORT.md) · prior [conversion-review](./audits/2026-07-18-sales-conversion-review/)  
 **Sales weekly readout:** [SALES-WEEKLY-READOUT.md](./SALES-WEEKLY-READOUT.md)  
 **Sales review + plan:** [docs/audits/2026-07-18-sales-site-review/](./audits/2026-07-18-sales-site-review/) · [AFTER-REPORT.md](./audits/2026-07-18-sales-site-review/AFTER-REPORT.md)  
 **Taxpayer overhaul gaps:** [TAXPAYER-OVERHAUL-BACKEND-GAP-REPORT.md](./TAXPAYER-OVERHAUL-BACKEND-GAP-REPORT.md)  
+**Product finish plan:** [PRODUCT-FINISH-PLAN.md](./PRODUCT-FINISH-PLAN.md)  
 **Capacity platform track:** [CAPACITY-PLATFORM-TRACK.md](./CAPACITY-PLATFORM-TRACK.md)  
 **Protocol:** [AGENT-TRUTH-PROTOCOL.md](./AGENT-TRUTH-PROTOCOL.md)  
 **Capacity gate:** [CAPACITY-REQUIREMENTS.md](./CAPACITY-REQUIREMENTS.md) — **NOT MET**  
 **Release gates:** [RELEASE-GATES.md](./RELEASE-GATES.md) — **OPEN**  
 **Live:** https://spreadsheet-tax-production.up.railway.app  
+
+---
+
+## Truth status (2026-07-18) — taxpayer HMRC connection honesty (product finish)
+
+```text
+BLOCKERS:
+- Capacity 200 practices / 800k customers NOT MET
+- Release gates OPEN
+- HMRC Recognised: No
+- Production HMRC access unproven for real taxpayers
+- Full board pixel-atlas match not claimed
+- Live host may still serve pre-dbf4b63 UI until redeploy
+
+PROVEN:
+- Taxpayer /connect-hmrc is individual-only (no Connect as agent) [UNIT_TESTED + CUSTOMER_WORKFLOW]
+  evidence: tests/product-finish.test.js; tests/e2e/product-finish.spec.js; commit dbf4b63
+- Home defaults to Connect HMRC when disconnected; no actionable local sources until connected [UNIT_TESTED + CUSTOMER_WORKFLOW]
+- Sidebar Connected only for real non-mock non-expired HMRC token [UNIT_TESTED]
+- product-finish unit 19/19; product-finish e2e 9/9; full unit suite 282/282 [UNIT_TESTED / CUSTOMER_WORKFLOW]
+- HMRC e2e connection mocks are UI gates only — not SANDBOX_HTTP
+
+UNPROVEN:
+- Live production redeploy of dbf4b63+
+- Owner browser pass on real sandbox OAuth credentials
+- Capacity / pilot / Recognised / production-ready
+
+EXTERNAL:
+- Agent OAuth remains on API/practice surfaces for firm work; removed from taxpayer connect UI only
+```
+
+- Stage: 2 of 5 — Sandbox engineering
+- Not claiming: production-ready · pilot-ready · HMRC Recognised · full operational E2E · capacity met
+- Open P0 blockers: capacity NOT MET; release gates OPEN; live deploy lag possible
+- Customer quarterly journey: WORKS in local product-finish + prior e2e with **mocked** HMRC connection for UI gates [CUSTOMER_WORKFLOW] — not SANDBOX_HTTP proof of live OAuth
+- Practice isolation/roles: unchanged — PASS in automated security tests only [UNIT_TESTED]
+- Latest sandbox journey: unchanged prior ledger 11/22 true 2xx [SANDBOX_HTTP] — not re-run this pass
+- Version: package `1.34.2` · commits `dbf4b63` (+ status/audit follow-up) · deployed host may lag
+
+### Capabilities (this pass only)
+
+| Claim | Tag | Evidence | Explicitly not claiming |
+|-------|-----|----------|-------------------------|
+| Taxpayer connect page has no agent choice | `UNIT_TESTED` + `CUSTOMER_WORKFLOW` | product-finish unit + e2e | Agent OAuth removed from API |
+| Disconnected Home leads with Connect HMRC | `UNIT_TESTED` + `CUSTOMER_WORKFLOW` | home.html defaults; taxpayer-home.js; e2e | Live host already updated |
+| Connected label requires real HMRC token | `UNIT_TESTED` | product-shell.js + product-finish tests | Mock OAuth equals Connected |
+| Product shell / quarterly / year-end finish checklist | `CUSTOMER_WORKFLOW` | product-finish e2e 9/9 | Capacity or HMRC Recognised |
+
+### What is unknown
+
+- Whether production Railway is on `dbf4b63` or later without a redeploy check.
+- Owner acceptance of the individual-only connect UX on a real sandbox login.
+
+### Next honest step
+
+- Push + redeploy if live lags; owner browser check: disconnected Home → Connect HMRC (no agent).
+
+### Agent process note
+
+- Session rule (Agents.md §9): update status with evidence tags; small commits; **push branch**. Missed mid-session commit/push/status until owner ordered — recorded in `docs/TRUTH-AUDIT.md` T20.
 
 ---
 
