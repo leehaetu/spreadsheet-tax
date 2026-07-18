@@ -90,13 +90,12 @@ after(async () => {
 });
 
 describe('year-end workflows', () => {
-  it('serves year-end page with all product workflow buttons', async () => {
+  it('serves guided year-end case with EOY workflow buttons', async () => {
     const res = await request('GET', '/year-end');
     assert.equal(res.status, 200);
+    assert.match(res.body, /Tax return|year end|Guided year-end/i);
+    // Quarterly period creates live on /app; year-end is annual/calc/BSAS/final
     for (const name of [
-      'se_period',
-      'uk_period',
-      'fp_period',
       'final_obligations',
       'se_annual',
       'uk_annual',

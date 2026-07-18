@@ -245,6 +245,74 @@ function handleImportSuccess(data) {
 
   setWizardStep(2);
   panel('review-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  loadCumulativeReview(data.draftId);
+}
+
+/**
+ * HMRC cumulative review: this quarter vs previously recorded vs year-to-date.
+ * @param {string|null|undefined} draftId
+ */
+async function loadCumulativeReview(draftId) {
+  const host = document.getElementById('cumulative-review');
+  if (!host || !draftId) return;
+  host.hidden = false;
+  host.innerHTML = '<p class="muted">Loading year-to-date comparison…</p>';
+  try {
+    const res = await apiFetch(
+      `/api/me/drafts/${encodeURIComponent(draftId)}/cumulative-review`
+    );
+    if (res.status === 401) {
+      host.innerHTML =
+        '<p class="muted">Sign in to see year-to-date totals against prior updates.</p>';
+      return;
+    }
+    const data = await res.json();
+    if (!res.ok) {
+      host.innerHTML = `<p class="muted">${esc(
+        data.error || 'Review unavailable'
+      )}</p>`;
+      return;
+    }
+    const rev = data.review || {};
+    let html = `<p class="muted" style="margin-top:0">${esc(
+      rev.note ||
+        'HMRC updates are cumulative from the start of the tax year through this period end.'
+    )}</p>`;
+    if (rev.periodStart && rev.periodEnd) {
+      html += `<p><strong>Period</strong> ${esc(rev.periodStart)} → ${esc(
+        rev.periodEnd
+      )} · <strong>Tax year</strong> ${esc(rev.taxYear || '—')}</p>`;
+    }
+    for (const sec of rev.sections || []) {
+      html += `<h3 style="font-size:1rem;margin:1rem 0 0.35rem">${esc(
+        sec.title
+      )}</h3>`;
+      html +=
+        '<div class="table-wrap"><table class="data-table"><thead><tr><th>Category</th><th>This period</th><th>Previously recorded</th><th>Year-to-date for HMRC</th></tr></thead><tbody>';
+      for (const row of sec.rows || []) {
+        html += `<tr><td>${esc(row.label)}${
+          row.note
+            ? `<br/><span class="muted" style="font-size:0.85em">${esc(
+                row.note
+              )}</span>`
+            : ''
+        }</td><td class="amount-cell">${esc(
+          formatMoney(row.thisQuarter)
+        )}</td><td class="amount-cell">${esc(
+          formatMoney(row.previouslyRecorded)
+        )}</td><td class="amount-cell"><strong>${esc(
+          formatMoney(row.yearToDate)
+        )}</strong></td></tr>`;
+      }
+      html += '</tbody></table></div>';
+    }
+    if (!(rev.sections || []).length) {
+      html += '<p class="muted">No line items to compare yet.</p>';
+    }
+    host.innerHTML = html;
+  } catch {
+    host.innerHTML = '<p class="muted">Could not load cumulative review.</p>';
+  }
 }
 
 document.getElementById('upload-form')?.addEventListener('submit', async (e) => {
@@ -675,6 +743,14 @@ document.getElementById('submit-btn')?.addEventListener('click', async () => {
     if (successBox) successBox.hidden = false;
     setWizardStep(4);
     successBox?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    // Persist cumulative totals for next update comparison (signed-in)
+    if (lastDraftId) {
+      apiFetch(`/api/me/drafts/${encodeURIComponent(lastDraftId)}/snapshot`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ attemptId: data.attemptId || null }),
+      }).catch(() => {});
+    }
   } catch (err) {
     if (errEl) {
       errEl.textContent = err.message || String(err);
@@ -884,10 +960,85 @@ document
     }
   });
 
+document.getElementById('nil-update-btn')?.addEventListener('click', async () => {
+  const errEl = document.getElementById('upload-error');
+  try {
+    const res = await apiFetch('/api/me/nil-update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'self_employment',
+        taxYear: document.getElementById('tax-year')?.value || '2024-25',
+        periodStartDate: '2024-04-06',
+        periodEndDate: '2024-07-05',
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Nil update failed');
+    handleImportSuccess({
+      payloads: data.payloads,
+      summary: {
+        taxYear: data.payloads.meta.taxYear,
+        periodStart: data.payloads.meta.periodStartDate,
+        periodEnd: data.payloads.meta.periodEndDate,
+        totals: { totalIncome: 0, totalExpenses: 0, net: 0 },
+        sourceCount: 1,
+        sources: [],
+      },
+      validation: { ready: true, errors: [], warnings: [] },
+      draftId: data.draftId,
+      filename: 'nil-update',
+      sources: { selfEmployment: true, ukProperty: false, foreignProperty: [] },
+      fieldLinks: [],
+      metadata: {},
+    });
+  } catch (e) {
+    if (errEl) {
+      errEl.textContent = e.message || String(e);
+      errEl.hidden = false;
+    }
+  }
+});
+
+// After successful submit, snapshot cumulative YTD for next period comparison
+const _origSubmitHandlerNote = true;
+document.getElementById('submit-btn')?.addEventListener(
+  'click',
+  async () => {
+    /* snapshot hooked after success inside existing handler via patch below */
+  },
+  true
+);
+
 setWizardStep(1);
 showPanels({ upload: true, review: false, submit: false });
 loadStatus();
 loadSavedIdentifiers();
+
+// Prefer business IDs from saved income sources (no manual typing)
+(async function prefillFromIncomeSources() {
+  try {
+    const res = await apiFetch('/api/me/income-sources');
+    if (!res.ok) return;
+    const data = await res.json();
+    for (const s of data.sources || []) {
+      if (s.type === 'self_employment' && s.businessId) {
+        const el = document.getElementById('bid-se');
+        if (el && !el.value) el.value = s.businessId;
+      }
+      if (s.type === 'uk_property' && s.businessId) {
+        const el = document.getElementById('bid-uk');
+        if (el && !el.value) el.value = s.businessId;
+      }
+      if (s.type === 'foreign_property' && s.businessId) {
+        const el = document.getElementById('bid-fp');
+        if (el && !el.value) el.value = s.businessId;
+      }
+    }
+  } catch {
+    /* signed out */
+  }
+})();
 
 (function applyAudienceMode() {
   const mode = new URLSearchParams(location.search).get('mode') || '';

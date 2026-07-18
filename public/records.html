@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Records — Spreadsheet Tax</title>
+  <link rel="stylesheet" href="/css/site.css" />
+  <meta name="theme-color" content="#f4f6f9" />
+</head>
+<body class="theme-light app-body app-simple">
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a class="logo" href="/home"><span class="logo-mark">ST</span> Spreadsheet Tax</a>
+      <nav>
+        <a href="/home">Home</a>
+        <a href="/records" class="active">Records</a>
+        <a href="/app?flow=quarterly">Quarterly</a>
+        <a href="/year-end">Tax return</a>
+        <a href="/history">Messages</a>
+      </nav>
+    </div>
+  </header>
+  <main class="wrap app-main">
+    <h1>Records</h1>
+    <p class="lead">Businesses and properties you report. Nicknames stay with you; HMRC business IDs come from your connection when possible.</p>
+    <section class="panel">
+      <h2 style="margin-top:0">Income sources</h2>
+      <ul id="list" class="result-list"></ul>
+      <a class="btn btn-primary" href="/onboarding">Edit sources</a>
+      <a class="btn btn-ghost" href="/download/template">Template</a>
+    </section>
+  </main>
+  <script type="module">
+    const res = await fetch('/api/me/income-sources');
+    const data = await res.json();
+    const list = document.getElementById('list');
+    if (!res.ok) {
+      list.innerHTML = `<li class="error">${data.error || 'Sign in required'}</li>`;
+    } else if (!data.sources?.length) {
+      list.innerHTML = '<li class="muted">No sources yet. <a href="/onboarding">Set up</a></li>';
+    } else {
+      for (const s of data.sources) {
+        const li = document.createElement('li');
+        li.innerHTML = `<strong>${s.nickname || s.label}</strong> · ${s.type.replace(/_/g,' ')}${s.businessId ? ` · <code>${s.businessId}</code>` : ''}${s.countryCode ? ` · ${s.countryCode}` : ''}`;
+        list.appendChild(li);
+      }
+    }
+  </script>
+</body>
+</html>

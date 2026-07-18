@@ -274,6 +274,50 @@ function migrate(database) {
     );
   }
 
+  // Unified taxpayer journey: profiles, income sources, properties, cumulative snapshots
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS taxpayer_profiles (
+      user_id TEXT PRIMARY KEY,
+      manage_mode TEXT NOT NULL DEFAULT 'self',
+      tax_year TEXT,
+      period_type TEXT DEFAULT 'standard',
+      onboarding_complete INTEGER NOT NULL DEFAULT 0,
+      nino_enc TEXT,
+      meta_json TEXT,
+      updated_at TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS income_sources (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      type TEXT NOT NULL,
+      business_id TEXT,
+      label TEXT NOT NULL,
+      nickname TEXT,
+      country_code TEXT,
+      joint INTEGER NOT NULL DEFAULT 0,
+      ownership_share REAL,
+      spreadsheet_hint TEXT,
+      status TEXT NOT NULL DEFAULT 'active',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS period_snapshots (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      source_id TEXT,
+      tax_year TEXT NOT NULL,
+      period_end TEXT NOT NULL,
+      this_quarter_json TEXT,
+      cumulative_json TEXT,
+      previous_cumulative_json TEXT,
+      draft_id TEXT,
+      attempt_id TEXT,
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_income_sources_user ON income_sources(user_id);
+    CREATE INDEX IF NOT EXISTS idx_period_snap_user ON period_snapshots(user_id, tax_year);
+  `);
+
   // Scale indexes for large firm books (hundreds of thousands of clients)
   database.exec(`
     CREATE INDEX IF NOT EXISTS idx_clients_firm ON clients(firm_id);

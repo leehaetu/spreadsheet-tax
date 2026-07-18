@@ -11,18 +11,20 @@
 <body class="theme-light app-body app-simple">
   <header class="site-header">
     <div class="wrap header-inner">
-      <a class="logo" href="/">
+      <a class="logo" href="/home">
         <span class="logo-mark">ST</span>
         Spreadsheet Tax
       </a>
       <nav>
-        <a href="/">Home</a>
-        <a href="/download/template">Free template</a>
-        <a href="/history">My submissions</a>
-        <a href="/year-end">Year end</a>
+        <a href="/home">Home</a>
+        <a href="/records">Records</a>
+        <a href="/app?flow=quarterly">Quarterly</a>
+        <a href="/year-end">Tax return</a>
+        <a href="/history">Messages</a>
+        <a href="/download/template">Template</a>
         <a href="/connect-hmrc">Connect HMRC</a>
         <a href="/signin">Sign in</a>
-        <a href="/workspace">I’m an accountant</a>
+        <a href="/workspace">Practice</a>
         <span id="connection-status" class="badge">Checking…</span>
       </nav>
     </div>
@@ -30,16 +32,20 @@
 
   <main class="wrap app-main">
     <div class="app-hero">
-      <h1>Send this quarter’s tax update</h1>
+      <h1>Quarterly update</h1>
       <p class="lead">
-        If you keep your money in a spreadsheet, you’re in the right place.
-        Upload the file, check the numbers, connect HMRC, and send.
+        One journey for self-employment, UK property and foreign property.
+        Upload your spreadsheet, check <strong>this period</strong> and
+        <strong>year-to-date</strong> totals, then approve what HMRC will receive.
+        Business IDs should come from HMRC when you are connected — not from memory.
       </p>
       <div class="audience-pills" role="navigation" aria-label="I am">
         <a href="/app?mode=self-employed" data-mode="self-employed">I’m self-employed</a>
         <a href="/app?mode=landlord" data-mode="landlord">I’m a landlord</a>
-        <a href="/app?mode=both" data-mode="both">Both trade and property</a>
+        <a href="/app?mode=both" data-mode="both">Trade and property</a>
+        <a href="/app?flow=nil">No activity this period</a>
       </div>
+      <p class="muted"><a href="/onboarding">Setup / income sources</a> · <a href="/home">What is due next?</a></p>
     </div>
 
     <div class="wizard-steps" id="wizard-steps" aria-label="Progress">
@@ -105,15 +111,21 @@
       <div class="panel-header">
         <div>
           <h2>2. Check these figures carefully</h2>
-          <p class="muted">These numbers will go to HMRC. If something looks wrong, fix your spreadsheet and upload again.</p>
+          <p class="muted">
+            Approve the <strong>year-to-date</strong> column (what HMRC will hold).
+            The “this period” column shows what your new file contributed.
+            Tax adjustments belong at year end — not in quarterly updates.
+          </p>
         </div>
       </div>
       <div id="validation-panel"></div>
       <div id="summary-cards" class="stat-cards"></div>
+      <div id="cumulative-review" class="panel" style="margin:0.75rem 0;padding:0.75rem" hidden></div>
       <div id="mapping-table-wrap" class="table-wrap"></div>
       <div class="action-bar">
         <button type="button" class="btn btn-primary btn-lg" id="goto-submit">Looks right — continue</button>
         <button type="button" class="btn btn-ghost" id="back-to-upload">Upload a different file</button>
+        <button type="button" class="btn btn-ghost" id="nil-update-btn">Confirm nil (no activity)</button>
       </div>
     </section>
 

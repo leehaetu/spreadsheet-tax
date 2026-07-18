@@ -143,6 +143,7 @@ import {
   resolveSeAnnualBody,
   periodBodyFromDraft,
   taxYearFromPeriodId,
+  listBusinesses as listBusinessesHmrc,
 } from './lib/hmrc-api.js';
 import {
   loadDraftForUser,
@@ -155,13 +156,27 @@ import {
 } from './lib/workflow-receipts.js';
 import { performWorkflowReadback } from './lib/workflow-readback.js';
 import { isKnownWorkflow, KNOWN_WORKFLOWS } from './lib/workflows.js';
+import {
+  getTaxpayerProfile,
+  saveTaxpayerProfile,
+  listIncomeSources,
+  setIncomeSources,
+  mapHmrcBusinessesToSources,
+  buildDashboard,
+  buildCumulativeReview,
+  latestCumulative,
+  savePeriodSnapshot,
+  buildNilPayload,
+  PRACTICE_CLIENT_STATES,
+  defaultTaxYear,
+} from './lib/taxpayer-journey.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, '..');
 const publicDir = path.join(root, 'public');
 const templatesDir = path.join(root, 'templates');
 const testSpreadsheetsDir = path.join(root, 'test-spreadsheets');
-const APP_VERSION = '1.17.0';
+const APP_VERSION = '1.18.0';
 
 /**
  * Serve HTML with site-chrome (HMRC recognition banner/footer) injected once.
@@ -359,6 +374,15 @@ app.get('/', (_req, res) => {
 
 app.get('/app', (_req, res) => {
   sendPublicHtml(res, 'app.html');
+});
+app.get('/home', (_req, res) => {
+  sendPublicHtml(res, 'home.html');
+});
+app.get('/onboarding', (_req, res) => {
+  sendPublicHtml(res, 'onboarding.html');
+});
+app.get('/records', (_req, res) => {
+  sendPublicHtml(res, 'records.html');
 });
 app.get('/year-end', (_req, res) => {
   sendPublicHtml(res, 'year-end.html');
@@ -1906,6 +1930,235 @@ app.get('/api/me/audit', (req, res) => {
     return res.json({ ok: true, events: listAuditForFirm(firmId, 80) });
   }
   res.json({ ok: true, events: listAuditForUser(user.id, 40) });
+});
+
+// ——— Unified taxpayer journey (SE + UK + foreign) ———
+
+app.get('/api/me/taxpayer-profile', (req, res) => {
+  const user = requireUser(req, res);
+  if (!user) return;
+  res.json({ ok: true, profile: getTaxpayerProfile(user.id) });
+});
+
+app.put('/api/me/taxpayer-profile', (req, res) => {
+  const user = requireUser(req, res);
+  if (!user) return;
+  const result = saveTaxpayerProfile(user.id, {
+    manageMode: req.body?.manageMode,
+    taxYear: req.body?.taxYear,
+    periodType: req.body?.periodType,
+    onboardingComplete: req.body?.onboardingComplete,
+    meta: req.body?.meta,
+  });
+  if (result.error) {
+    return res.status(result.status || 400).json({ error: result.error });
+  }
+  writeAudit({
+    userId: user.id,
+    action: 'taxpayer_profile_saved',
+    entityType: 'user',
+    entityId: user.id,
+  });
+  res.json(result);
+});
+
+app.get('/api/me/income-sources', (req, res) => {
+  const user = requireUser(req, res);
+  if (!user) return;
+  res.json({ ok: true, sources: listIncomeSources(user.id) });
+});
+
+app.put('/api/me/income-sources', (req, res) => {
+  const user = requireUser(req, res);
+  if (!user) return;
+  const sources = setIncomeSources(user.id, req.body?.sources || []);
+  writeAudit({
+    userId: user.id,
+    action: 'income_sources_saved',
+    entityType: 'user',
+    entityId: user.id,
+    meta: { count: sources.length },
+  });
+  res.json({ ok: true, sources });
+});
+
+/** Pull businesses from HMRC into proposed income sources (user still confirms). */
+app.post('/api/me/income-sources/from-hmrc', async (req, res) => {
+  const user = requireUser(req, res);
+  if (!user) return;
+  const profile = getTaxpayerProfile(user.id);
+  const nino =
+    String(req.body?.nino || profile.meta?.nino || '')
+      .replace(/\s+/g, '')
+      .toUpperCase() || null;
+  if (!nino) {
+    // Prefer stored preferences identifiers
+    const prefs = getUserPreferences(user.id);
+    const n2 = prefs?.identifiers?.nino;
+    if (!n2) {
+      return res.status(400).json({
+        error:
+          'NINO needed once to load HMRC businesses (save in account preferences or body). After connect, prefer OAuth path.',
+      });
+    }
+  }
+  const ninoFinal =
+    nino ||
+    String(getUserPreferences(user.id)?.identifiers?.nino || '')
+      .replace(/\s+/g, '')
+      .toUpperCase();
+  try {
+    const conn = getActiveConnection(user.id);
+    if (!conn?.accessToken || conn.mock) {
+      return res.status(400).json({
+        error: 'Connect real HMRC OAuth first so we can list your businesses.',
+      });
+    }
+    const result = await listBusinessesHmrc({
+      accessToken: conn.accessToken,
+      nino: ninoFinal,
+      req,
+      userId: user.id,
+    });
+    if (!result.ok) {
+      return res.status(502).json({
+        ok: false,
+        error: result.body?.message || 'HMRC businesses failed',
+        hmrcStatus: result.status,
+      });
+    }
+    const list =
+      result.body?.listOfBusinesses || result.body?.businesses || [];
+    const proposed = mapHmrcBusinessesToSources(list);
+    const sources = setIncomeSources(user.id, proposed);
+    // store nino in profile meta (not log full)
+    saveTaxpayerProfile(user.id, {
+      meta: { ...(getTaxpayerProfile(user.id).meta || {}), nino: ninoFinal },
+    });
+    res.json({ ok: true, sources, hmrcCount: list.length });
+  } catch (e) {
+    res.status(500).json({
+      error: e instanceof Error ? e.message : 'from-hmrc failed',
+    });
+  }
+});
+
+app.get('/api/me/dashboard', async (req, res) => {
+  const user = requireUser(req, res);
+  if (!user) return;
+  let obligations = null;
+  try {
+    const profile = getTaxpayerProfile(user.id);
+    const nino =
+      profile.meta?.nino ||
+      getUserPreferences(user.id)?.identifiers?.nino ||
+      null;
+    const conn = getActiveConnection(user.id);
+    if (nino && conn?.accessToken && !conn.mock) {
+      const obl = await listIncomeExpenditureObligations({
+        accessToken: conn.accessToken,
+        nino: String(nino).replace(/\s+/g, '').toUpperCase(),
+        req,
+        userId: user.id,
+      });
+      if (obl.ok) obligations = obl.body;
+    }
+  } catch {
+    /* dashboard still works offline */
+  }
+  const dash = buildDashboard(user.id, { obligations });
+  res.json({ ok: true, ...dash });
+});
+
+/**
+ * Cumulative quarterly review for a draft (this quarter vs YTD).
+ */
+app.get('/api/me/drafts/:draftId/cumulative-review', (req, res) => {
+  const user = requireUser(req, res);
+  if (!user) return;
+  const loaded = loadDraftForUser(req.params.draftId, user);
+  if (loaded.error || !loaded.draft) {
+    return res
+      .status(loaded.status || 404)
+      .json({ error: loaded.error || 'Draft not found' });
+  }
+  const prev = latestCumulative(
+    user.id,
+    loaded.draft.payloads?.meta?.taxYear || defaultTaxYear()
+  );
+  const review = buildCumulativeReview(
+    loaded.draft.payloads,
+    prev?.cumulative || null
+  );
+  res.json({
+    ok: true,
+    draftId: loaded.draft.id,
+    review,
+    previousPeriodEnd: prev?.periodEnd || null,
+  });
+});
+
+/** Snapshot cumulative after successful submit (preview or live). */
+app.post('/api/me/drafts/:draftId/snapshot', (req, res) => {
+  const user = requireUser(req, res);
+  if (!user) return;
+  const loaded = loadDraftForUser(req.params.draftId, user);
+  if (loaded.error || !loaded.draft) {
+    return res
+      .status(loaded.status || 404)
+      .json({ error: loaded.error || 'Draft not found' });
+  }
+  const prev = latestCumulative(
+    user.id,
+    loaded.draft.payloads?.meta?.taxYear || defaultTaxYear()
+  );
+  const snap = savePeriodSnapshot(user.id, loaded.draft.payloads, {
+    draftId: loaded.draft.id,
+    attemptId: req.body?.attemptId || null,
+    previousCumulative: prev?.cumulative || null,
+  });
+  res.json({ ok: true, snapshotId: snap.id, cumulative: snap.cumulative });
+});
+
+/** Nil update payload for a source (zero activity). */
+app.post('/api/me/nil-update', (req, res) => {
+  const user = requireUser(req, res);
+  if (!user) return;
+  const type = String(req.body?.type || 'self_employment');
+  const payloads = buildNilPayload(type, {
+    taxYear: req.body?.taxYear || defaultTaxYear(),
+    periodStartDate: req.body?.periodStartDate || '2024-04-06',
+    periodEndDate: req.body?.periodEndDate || '2024-07-05',
+    countryCode: req.body?.countryCode,
+  });
+  const draft = createDraft({
+    userId: user.id,
+    filename: `nil-${type}.json`,
+    payloads,
+    summary: {
+      taxYear: payloads.meta.taxYear,
+      periodStart: payloads.meta.periodStartDate,
+      periodEnd: payloads.meta.periodEndDate,
+      totals: { totalIncome: 0, totalExpenses: 0, net: 0 },
+      sourceCount: 1,
+    },
+    validation: { ready: true, errors: [], warnings: [] },
+  });
+  const review = buildCumulativeReview(
+    payloads,
+    latestCumulative(user.id, payloads.meta.taxYear)?.cumulative
+  );
+  res.status(201).json({
+    ok: true,
+    draftId: draft.id,
+    payloads,
+    review,
+    note: 'Nil update ready for review — confirm business and dates before send.',
+  });
+});
+
+app.get('/api/practice/workflow-states', (_req, res) => {
+  res.json({ ok: true, states: PRACTICE_CLIENT_STATES });
 });
 
 /** Attach import to client (practice) */

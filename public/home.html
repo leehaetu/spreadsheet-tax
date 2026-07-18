@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Your tax updates — Spreadsheet Tax</title>
+  <meta name="description" content="See what HMRC needs next for self-employment, UK property and foreign property." />
+  <meta name="theme-color" content="#f4f6f9" />
+  <link rel="stylesheet" href="/css/site.css" />
+</head>
+<body class="theme-light app-body app-simple">
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a class="logo" href="/home"><span class="logo-mark">ST</span> Spreadsheet Tax</a>
+      <nav id="tax-nav">
+        <a href="/home" class="active">Home</a>
+        <a href="/records">Records</a>
+        <a href="/app?flow=quarterly">Quarterly</a>
+        <a href="/year-end">Tax return</a>
+        <a href="/history">Messages</a>
+        <a href="/account">Settings</a>
+        <a href="/workspace">Practice</a>
+        <span id="connection-status" class="badge">…</span>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap app-main">
+    <p id="gate" class="error" hidden></p>
+
+    <div class="app-hero">
+      <h1 id="tax-year-label">Your tax year</h1>
+      <p class="lead" id="deadline-lead">What must I do next? When is it due? Is anything blocking me?</p>
+    </div>
+
+    <section class="panel" id="next-task-panel">
+      <h2 style="margin-top:0">Your next task</h2>
+      <p id="next-task-title" style="font-size:1.15rem;font-weight:600;margin:0.25rem 0"></p>
+      <p class="muted" id="next-task-detail"></p>
+      <div class="action-bar" style="border:0;padding-top:0.5rem">
+        <a class="btn btn-primary btn-lg" id="next-task-cta" href="/app?flow=quarterly">Continue quarterly update</a>
+        <a class="btn btn-ghost" href="/onboarding">Setup / income sources</a>
+        <a class="btn btn-ghost" href="/connect-hmrc">Connect HMRC</a>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2 style="margin-top:0">Income sources</h2>
+      <p class="muted">Self-employment, UK property and foreign property in one place. You only see sources that apply to you.</p>
+      <ul id="source-list" class="result-list"></ul>
+      <p id="source-empty" class="muted" hidden>No income sources yet. Finish setup to confirm what HMRC returned or add them yourself.</p>
+    </section>
+
+    <section class="panel">
+      <h2 style="margin-top:0">How this works</h2>
+      <ol class="flow" style="max-width:40rem">
+        <li>HMRC tells us what is due (after you connect).</li>
+        <li>You upload your spreadsheet — trade and/or property.</li>
+        <li>You check figures (this quarter and year-to-date) before anything is sent.</li>
+        <li>Each income source gets its own receipt when submitted.</li>
+      </ol>
+    </section>
+  </main>
+  <script src="/js/taxpayer-home.js"></script>
+  <script src="/js/cookie-banner.js"></script>
+</body>
+</html>
