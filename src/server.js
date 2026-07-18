@@ -250,7 +250,10 @@ const root = path.join(__dirname, '..');
 const publicDir = path.join(root, 'public');
 const templatesDir = path.join(root, 'templates');
 const testSpreadsheetsDir = path.join(root, 'test-spreadsheets');
-const APP_VERSION = '1.26.0';
+// Keep in sync with package.json (single release number for /health + headers)
+const APP_VERSION = JSON.parse(
+  fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8')
+).version;
 
 /**
  * Serve HTML with site-chrome (HMRC recognition banner/footer) injected once.
