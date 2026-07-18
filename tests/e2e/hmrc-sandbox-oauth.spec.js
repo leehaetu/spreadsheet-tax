@@ -97,12 +97,22 @@ test.describe('REAL HMRC sandbox evidence (no mock)', () => {
     expect(String(user.password)).not.toMatch(/^mock-/);
   });
 
-  test('production app sandbox-check is real HMRC and mock=false', async ({
+  test('production app sandbox-check is operator-protected', async ({
     request,
   }) => {
-    const res = await request.get(`${BASE}/api/hmrc/sandbox-check`);
-    expect(res.ok(), await res.text()).toBeTruthy();
+    const headers = process.env.JOBS_SECRET
+      ? { 'x-jobs-secret': process.env.JOBS_SECRET }
+      : {};
+    const res = await request.get(`${BASE}/api/hmrc/sandbox-check`, { headers });
     const j = await res.json();
+
+    if (!process.env.JOBS_SECRET) {
+      expect(res.status()).toBe(403);
+      expect(j.error).toMatch(/jobs secret required/i);
+      return;
+    }
+
+    expect(res.ok(), JSON.stringify(j)).toBeTruthy();
     expect(j.ok).toBe(true);
     expect(j.mock).toBe(false);
     expect(j.environment).toBe('sandbox');
@@ -112,17 +122,17 @@ test.describe('REAL HMRC sandbox evidence (no mock)', () => {
     expect(j.application?.body).toMatch(/Hello Application/);
   });
 
-  test('production health: oauthMock false, version present', async ({
+  test('production public health is redacted and versioned', async ({
     request,
   }) => {
     const res = await request.get(`${BASE}/health`);
     expect(res.ok()).toBeTruthy();
     const j = await res.json();
-    expect(j.oauthMock).toBe(false);
     expect(j.ok).toBe(true);
-    // liveSubmit may be 0 (preview-only) or 1 (sandbox HTTP allowed) — both valid pilot configs
-    expect(typeof j.liveSubmitEnabled).toBe('boolean');
     expect(j.version).toMatch(/^\d+\.\d+\.\d+$/);
+    expect(j.oauthMock).toBeUndefined();
+    expect(j.liveSubmitEnabled).toBeUndefined();
+    expect(res.headers()['x-app-version']).toBe(j.version);
   });
 });
 
@@ -241,4 +251,3 @@ test.describe('Playwright OAuth journey against production + HMRC sandbox', () =
     expect(obligations.body).toBeTruthy();
   });
 });
-
