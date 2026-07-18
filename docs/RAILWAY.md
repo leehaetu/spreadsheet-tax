@@ -9,8 +9,8 @@
 |----------|--------|
 | **spreadsheet-tax** (web app) | One Node service — sales + API + product UI · **live appVersion 1.28.0** |
 | **Volume** `spreadsheet-tax-volume` → `/app/data` | Files / object quarantine (`OBJECT_STORAGE_DIR=/app/data/objects`) |
-| **Postgres-9ioQ** (current SoR) | **New** managed Postgres · `DATABASE_URL` → `${{Postgres-9ioQ.DATABASE_URL}}` · schema + **RLS policies applied** |
-| **Postgres** (legacy) | Older DB still in project — not the active app URL after rewire |
+| **Postgres-9ioQ** (sole SoR) | Managed Postgres · web+worker `DATABASE_URL` · schema + RLS · capacity seed 200/5k |
+| **Legacy Postgres** | **Removed** 2026-07-18 — was unused after cutover |
 | **Redis** | Online · `REDIS_URL` → `${{Redis.REDIS_URL}}` · rate-limit path reports `redis: true` |
 | **Separate frontend** | **None** — static from same app |
 | **Separate worker** | **Optional** — `npm run worker` not a second Railway service yet |
