@@ -1,0 +1,38 @@
+{
+  "version": "1.33.0",
+  "trust": {
+    "color": "rgb(255, 255, 255)",
+    "opacity": "1",
+    "fontWeight": "550"
+  },
+  "secondary": {
+    "color": "rgb(255, 255, 255)",
+    "border": "rgb(255, 255, 255)",
+    "bg": "rgba(255, 255, 255, 0.1)",
+    "text": "Download free template"
+  },
+  "headerCtaHeight": 44,
+  "mobilePrimaryCtaHeight": 54.46875,
+  "registerHeader": [
+    "Self-employed",
+    "Landlords",
+    "Accountants",
+    "How it works",
+    "Pricing",
+    "Help",
+    "Sign in",
+    "Self-employed",
+    "Landlords",
+    "Accountants",
+    "How it works",
+    "Pricing",
+    "Help",
+    "Sign in"
+  ],
+  "signinShowsMfa": false,
+  "p0": {
+    "trustWhite": true,
+    "secondaryVisible": "rgb(255, 255, 255)",
+    "noMfa": true
+  }
+}

@@ -131,7 +131,7 @@ describe('sales chrome system', () => {
   it('pricing shows five packages with experimental labels and free path', async () => {
     const res = await request('/pricing');
     assert.equal(res.status, 200);
-    assert.match(res.body, /pricing-grid-5|data-plan="free"/);
+    assert.match(res.body, /pricing-free-band|data-plan="free"/);
     assert.match(res.body, /data-plan="personal"/);
     assert.match(res.body, /data-plan="professional"/);
     assert.match(res.body, /data-plan="practice"/);
@@ -139,9 +139,16 @@ describe('sales chrome system', () => {
     assert.match(res.body, /Experimental/);
     assert.match(res.body, /Paid plans not available yet/i);
     assert.match(res.body, /Get started free/);
+    assert.match(res.body, /pricing-experimental|Future packages/i);
     // Count plan cards
     const plans = (res.body.match(/data-plan="/g) || []).length;
     assert.ok(plans >= 5, `expected ≥5 plans, got ${plans}`);
+  });
+
+  it('sales-chrome register header prefers Sign in only', () => {
+    const js = fs.readFileSync(path.join(root, 'public/js/sales-chrome.js'), 'utf8');
+    assert.match(js, /\/register/);
+    assert.match(js, /authHeaderActions|Sign in only|p === '\/register'/);
   });
 
   it('home hub includes product preview and four audience paths', async () => {

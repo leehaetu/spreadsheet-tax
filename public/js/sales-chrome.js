@@ -58,6 +58,70 @@
     }).join('');
   }
 
+  function authHeaderActions() {
+    const p = pathOnly();
+    // On register: Sign in only (avoid duplicate Get started free)
+    if (p === '/register') {
+      return {
+        desktop:
+          '<a class="btn btn-primary btn-sm" href="/signin?next=/home" data-cta="sign-in">Sign in</a>',
+        mobile:
+          '<a class="btn btn-primary btn-block" href="/signin?next=/home" data-cta="sign-in">Sign in</a>',
+      };
+    }
+    // On sign-in / forgot: emphasise free start
+    if (p === '/signin' || p === '/forgot-password' || p === '/reset-password') {
+      return {
+        desktop:
+          '<a class="btn btn-ghost btn-sm" href="/signin?next=/home" data-cta="sign-in">Sign in</a>' +
+          '<a class="btn btn-primary btn-sm" href="/register" data-cta="get-started-free">Get started free</a>',
+        mobile:
+          '<a href="/signin?next=/home" data-cta="sign-in">Sign in</a>' +
+          '<a class="btn btn-primary btn-block" href="/register" data-cta="get-started-free">Get started free</a>',
+      };
+    }
+    return {
+      desktop:
+        '<a class="btn btn-ghost btn-sm" href="/signin?next=/home" data-cta="sign-in">Sign in</a>' +
+        '<a class="btn btn-primary btn-sm" href="/register" data-cta="get-started-free">Get started free</a>',
+      mobile:
+        '<a href="/signin?next=/home" data-cta="sign-in">Sign in</a>' +
+        '<a class="btn btn-primary btn-block" href="/register" data-cta="get-started-free">Get started free</a>',
+    };
+  }
+
+  function ensureSkipLink() {
+    if (document.querySelector('.skip-link')) return;
+    const a = document.createElement('a');
+    a.className = 'skip-link';
+    a.href = '#main';
+    a.textContent = 'Skip to content';
+    document.body.insertBefore(a, document.body.firstChild);
+    if (!document.getElementById('main')) {
+      const main = document.querySelector('main');
+      if (main && !main.id) main.id = 'main';
+    }
+  }
+
+  function ensureDeadlineStrip() {
+    const p = pathOnly();
+    if (!['/', '/sales', '/pricing', '/self-employed', '/landlords'].includes(p)) return;
+    if (document.querySelector('.deadline-strip')) return;
+    const strip = document.createElement('div');
+    strip.className = 'deadline-strip';
+    strip.setAttribute('role', 'note');
+    strip.innerHTML =
+      '<div class="wrap">Making Tax Digital quarterly deadlines apply — ' +
+      '<strong>start free before your next period</strong>. ' +
+      '<a href="/help" data-cta="deadline-help">What you need →</a></div>';
+    const header = document.querySelector('.site-header');
+    if (header && header.nextSibling) {
+      header.parentNode.insertBefore(strip, header.nextSibling);
+    } else if (header) {
+      header.after(strip);
+    }
+  }
+
   function ensureHeader() {
     let header = document.querySelector('.site-header');
     if (!header) {
@@ -65,6 +129,7 @@
       header.className = 'site-header';
       document.body.insertBefore(header, document.body.firstChild);
     }
+    const actions = authHeaderActions();
     header.setAttribute('data-sales-nav', 'v1');
     header.innerHTML = `
       <div class="wrap header-inner sales-header-inner">
@@ -74,15 +139,13 @@
         </button>
         <nav class="sales-nav-desktop" aria-label="Main">
           ${navLinksHtml()}
-          <a class="btn btn-ghost btn-sm" href="/signin?next=/home" data-cta="sign-in">Sign in</a>
-          <a class="btn btn-primary btn-sm" href="/register" data-cta="get-started-free">Get started free</a>
+          ${actions.desktop}
         </nav>
       </div>
       <div id="sales-nav-drawer" class="sales-nav-drawer" hidden>
         <nav aria-label="Mobile">
           ${navLinksHtml()}
-          <a href="/signin?next=/home" data-cta="sign-in">Sign in</a>
-          <a class="btn btn-primary btn-block" href="/register" data-cta="get-started-free">Get started free</a>
+          ${actions.mobile}
         </nav>
       </div>`;
 
@@ -191,7 +254,9 @@
   function boot() {
     if (!isSalesChromePage()) return;
     forceLightTheme();
+    ensureSkipLink();
     ensureHeader();
+    ensureDeadlineStrip();
     ensureFooter();
     unifyCtaLabels();
     tagPrimaryCtas();

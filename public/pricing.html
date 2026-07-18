@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="/css/site.css" />
 </head>
 <body class="theme-light">
+  <a class="skip-link" href="#main">Skip to content</a>
   <header class="site-header">
     <div class="wrap header-inner">
       <a class="logo" href="/"><span class="logo-mark">ST</span> Spreadsheet Tax</a>
@@ -19,80 +20,105 @@
       </nav>
     </div>
   </header>
-  <main class="wrap app-main">
+  <div class="deadline-strip" role="note">
+    <div class="wrap">
+      MTD quarterly deadlines apply — <strong>start free before your next period</strong>.
+      <a href="/help" data-cta="deadline-help">Help →</a>
+    </div>
+  </div>
+  <main id="main" class="wrap app-main">
     <p class="eyebrow">Pricing</p>
     <h1>Simple to start</h1>
     <p class="lead">
-      Free to begin. Paid packages below are <strong>experimental price points</strong> for planning only —
+      Free to begin today. Paid packages further down are <strong>experimental price points</strong> for planning only —
       they are <strong>not</strong> available to buy online yet.
     </p>
 
-    <div class="pricing-grid pricing-grid-5">
-      <article class="price-card featured" data-plan="free">
-        <div class="price-badge">Available now</div>
-        <h3>Free</h3>
-        <div class="price">£0</div>
-        <p class="price-desc">Personal path for sole traders and landlords. Upload, review, approve, connect HMRC when ready.</p>
-        <ul>
-          <li>Spreadsheet upload &amp; review</li>
-          <li>Self-employment &amp; property</li>
-          <li>No card required</li>
-        </ul>
-        <a class="btn btn-primary btn-block" href="/register" data-cta="get-started-free">Get started free</a>
-      </article>
+    <section class="pricing-free-band" data-plan="free" aria-labelledby="free-plan-title">
+      <div class="price-badge">Available now</div>
+      <div class="pricing-free-layout">
+        <div>
+          <h2 id="free-plan-title" style="margin:0 0 0.25rem;font-size:1.65rem">Free</h2>
+          <div class="price">£0</div>
+          <p class="price-desc" style="margin:0;color:#475569;max-width:42ch">
+            Personal path for sole traders and landlords. Upload, review, approve, connect HMRC when ready.
+            No card required.
+          </p>
+          <ul>
+            <li>Spreadsheet upload &amp; review</li>
+            <li>Self-employment &amp; property</li>
+            <li>Clear approve-before-send review</li>
+            <li>No card required</li>
+          </ul>
+        </div>
+        <div>
+          <a class="btn btn-primary btn-lg btn-block" href="/register" data-cta="get-started-free">Get started free</a>
+          <p class="muted" style="margin:0.75rem 0 0;font-size:0.9rem;text-align:center">
+            Or <a href="/download/template" data-cta="download-template">download the free template</a> first
+          </p>
+        </div>
+      </div>
+    </section>
 
-      <article class="price-card" data-plan="personal">
-        <div class="price-badge muted">Experimental</div>
-        <h3>Personal</h3>
-        <div class="price">£9 <small>/ month</small></div>
-        <p class="price-desc">Hypothesis price for a paid personal tier with higher usage limits later.</p>
-        <ul>
-          <li>Everything in Free</li>
-          <li>Higher draft limits (planned)</li>
-          <li><strong>Not for sale online</strong></li>
-        </ul>
-        <a class="btn btn-ghost btn-block" href="/register" data-cta="get-started-free">Start free instead</a>
-      </article>
+    <details class="pricing-experimental panel" style="margin-top:2rem;padding:1rem 1.25rem">
+      <summary>Future packages (experimental — not for sale online)</summary>
+      <p class="muted" style="margin:0.5rem 0 0">
+        Hypothesis prices for planning only. Nothing below can be bought on this site today.
+      </p>
+      <div class="pricing-grid pricing-grid-4" style="margin-top:1rem">
+        <article class="price-card" data-plan="personal">
+          <div class="price-badge muted">Experimental</div>
+          <h3>Personal</h3>
+          <div class="price">£9 <small>/ month</small></div>
+          <p class="price-desc">Hypothesis price for a paid personal tier with higher usage limits later.</p>
+          <ul>
+            <li>Everything in Free</li>
+            <li>Higher draft limits (planned)</li>
+            <li><strong>Not for sale online</strong></li>
+          </ul>
+          <a class="btn btn-ghost btn-block" href="/register" data-cta="get-started-free">Start free instead</a>
+        </article>
 
-      <article class="price-card" data-plan="professional">
-        <div class="price-badge muted">Experimental</div>
-        <h3>Professional</h3>
-        <div class="price">£19 <small>/ month</small></div>
-        <p class="price-desc">Hypothesis price for bookkeepers handling a small client list.</p>
-        <ul>
-          <li>Practice workspace (sign-in)</li>
-          <li>Client hand-off (planned product)</li>
-          <li><strong>Not for sale online</strong></li>
-        </ul>
-        <a class="btn btn-ghost btn-block" href="/professionals">For accountants</a>
-      </article>
+        <article class="price-card" data-plan="professional">
+          <div class="price-badge muted">Experimental</div>
+          <h3>Professional</h3>
+          <div class="price">£19 <small>/ month</small></div>
+          <p class="price-desc">Hypothesis price for bookkeepers handling a small client list.</p>
+          <ul>
+            <li>Practice workspace (sign-in)</li>
+            <li>Client hand-off (planned product)</li>
+            <li><strong>Not for sale online</strong></li>
+          </ul>
+          <a class="btn btn-ghost btn-block" href="/professionals">For accountants</a>
+        </article>
 
-      <article class="price-card" data-plan="practice">
-        <div class="price-badge muted">Experimental</div>
-        <h3>Practice</h3>
-        <div class="price">£49 <small>/ month</small></div>
-        <p class="price-desc">Hypothesis price for multi-user practice seats when billing is live.</p>
-        <ul>
-          <li>Team seats (planned)</li>
-          <li>Firm queue &amp; deadlines</li>
-          <li><strong>Not for sale online</strong></li>
-        </ul>
-        <a class="btn btn-ghost btn-block" href="/firms">For larger firms</a>
-      </article>
+        <article class="price-card" data-plan="practice">
+          <div class="price-badge muted">Experimental</div>
+          <h3>Practice</h3>
+          <div class="price">£49 <small>/ month</small></div>
+          <p class="price-desc">Hypothesis price for multi-user practice seats when billing is live.</p>
+          <ul>
+            <li>Team seats (planned)</li>
+            <li>Firm queue &amp; deadlines</li>
+            <li><strong>Not for sale online</strong></li>
+          </ul>
+          <a class="btn btn-ghost btn-block" href="/firms">For larger firms</a>
+        </article>
 
-      <article class="price-card" data-plan="firm">
-        <div class="price-badge muted">Experimental</div>
-        <h3>Firm licence</h3>
-        <div class="price">Custom</div>
-        <p class="price-desc">Hypothesis packaging for larger firms under a written licence — not self-serve checkout.</p>
-        <ul>
-          <li>Licensing discussion</li>
-          <li>No card checkout today</li>
-          <li>See licensing page</li>
-        </ul>
-        <a class="btn btn-ghost btn-block" href="/license">Read licensing</a>
-      </article>
-    </div>
+        <article class="price-card" data-plan="firm">
+          <div class="price-badge muted">Experimental</div>
+          <h3>Firm licence</h3>
+          <div class="price">Custom</div>
+          <p class="price-desc">Hypothesis packaging for larger firms under a written licence — not self-serve checkout.</p>
+          <ul>
+            <li>Licensing discussion</li>
+            <li>No card checkout today</li>
+            <li>See licensing page</li>
+          </ul>
+          <a class="btn btn-ghost btn-block" href="/license">Read licensing</a>
+        </article>
+      </div>
+    </details>
 
     <section class="panel" style="margin-top:2rem">
       <h2>Paid plans not available yet</h2>
