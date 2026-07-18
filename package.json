@@ -1,6 +1,6 @@
 {
   "name": "spreadsheet-tax",
-  "version": "1.29.1",
+  "version": "1.30.0",
   "description": "HMRC MTD ITSA bridging-only app — local spreadsheet file to quarterly updates for self-employment and property landlords",
   "type": "module",
   "main": "src/server.js",
@@ -19,7 +19,10 @@
     "migrate:sqlite-to-pg": "node scripts/migrate-sqlite-to-postgres.js",
     "capture:sales": "node scripts/capture-sales-site.mjs",
     "capacity:evidence": "bash scripts/capacity-evidence-run.sh",
-    "capacity:migrate": "node -e \"import('./src/lib/pg-pool.js').then(m=>m.migratePostgres().then(()=>{console.log('ok');process.exit(0)}))\""
+    "capacity:migrate": "node -e \"import('./src/lib/pg-pool.js').then(m=>m.migratePostgres().then(()=>{console.log('ok');process.exit(0)}))\"",
+    "version:patch": "node scripts/bump-version.js patch",
+    "version:minor": "node scripts/bump-version.js minor",
+    "version:major": "node scripts/bump-version.js major"
   },
   "author": "Lee Hine",
   "engines": {

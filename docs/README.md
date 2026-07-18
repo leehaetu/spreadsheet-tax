@@ -25,6 +25,7 @@ Safety and launch readiness cannot honestly be 10/10 until controls are **implem
 | [SECURITY-LAUNCH-GATE.md](./SECURITY-LAUNCH-GATE.md) | Requirement → evidence → go/no-go | All mandatory proven |
 | [COMPLIANCE-REGISTER.md](./COMPLIANCE-REGISTER.md) | Privacy, legal, retention | Launch pack complete |
 | [DECISIONS/](./DECISIONS/) | ADRs | Early ADRs decided |
+| [VERSIONING.md](./VERSIONING.md) | Commit version bumps (patch vs minor) | Every material commit versioned |
 | [RUNBOOKS/](./RUNBOOKS/) | Incident, restore, HMRC expiry, support | Tested once |
 
 ## Scoring honesty (aligned with Codex)
