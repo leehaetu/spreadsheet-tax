@@ -80,9 +80,11 @@ after(async () => {
 describe('taxpayer overhaul HTML surfaces', () => {
   it('onboarding retrieves HMRC businesses without local source creation', () => {
     const html = fs.readFileSync(path.join(root, 'public/onboarding.html'), 'utf8');
-    assert.match(html, /Retrieve businesses from HMRC/);
+    assert.match(html, /Load businesses from HMRC|Retrieve businesses from HMRC/);
     assert.doesNotMatch(html, /Who will manage this account/);
     assert.doesNotMatch(html, /data-add-type=/);
+    assert.doesNotMatch(html, /Add self-employment business|Add UK property/i);
+    assert.match(html, /cannot create an HMRC business|does not create businesses/i);
     assert.match(html, /Save setup and go home/);
     assert.match(html, /onboarding\.js/);
   });

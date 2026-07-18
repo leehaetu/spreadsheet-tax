@@ -64,6 +64,8 @@ All names in `src/lib/workflows.js` `KNOWN_WORKFLOWS` driven via `POST /api/work
 | bsas_trigger / bsas_list | /year-end | trigger 200 | yes | `SANDBOX_HTTP` (trigger) |
 | bsas_adjust | /year-end | **not in journey** | yes | `CUSTOMER_WORKFLOW` + `UNIT_TESTED` |
 | final_calc | /year-end | **not in journey** | yes | same |
+| sa_assist_report | /year-end · /app · `POST /api/hmrc/mtd/assist/report` | **200** (messages) + **204** (empty) | — | `SANDBOX_HTTP` · `docs/hmrc/sa-assist-sandbox-run.json` 2026-07-18 |
+| sa_assist_acknowledge | `POST /api/hmrc/mtd/assist/acknowledge` | **204** | — | `SANDBOX_HTTP` · same file · reportId `238f2173-…` |
 
 ## Error / token-expiry behaviour (product)
 

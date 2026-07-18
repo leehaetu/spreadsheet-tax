@@ -16,6 +16,9 @@ const LIVE_TOKEN = 'https://api.service.hmrc.gov.uk/oauth/token';
 const DEFAULT_SCOPES = [
   'write:self-assessment',
   'read:self-assessment',
+  // Self Assessment Assist (MTD) 1.0 — generate + acknowledge HMRC Assist reports
+  'read:self-assessment-assist',
+  'write:self-assessment-assist',
 ].join(' ');
 
 /**

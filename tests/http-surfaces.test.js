@@ -234,11 +234,11 @@ describe('bridging app customer focus', () => {
     const html = res.body.toString('utf8');
     assert.ok(html.length > 400, 'app HTML must be non-empty');
     // Customer task flow (plain language for non-technical users)
-    assert.match(html, /Upload your spreadsheet|Upload the file|Drop your spreadsheet/i);
-    assert.match(html, /Check my figures|Check these figures|Looks right/i);
+    assert.match(html, /Upload your spreadsheet|Drag and drop your file|Choose file/i);
+    assert.match(html, /Check your figures|Continue to figures|Continue to declaration/i);
     assert.match(html, /Send quarterly update|Send to HMRC|Send this quarter/i);
     // Polished multi-step product surface
-    assert.match(html, /Drop your spreadsheet|free template|Self-employed plumber/i);
+    assert.match(html, /Download CSV template|Download template|Choose an income source|Map your columns/i);
     // Must not surface implementer/dev defaults as primary copy
     assert.doesNotMatch(html, /test double/i);
     assert.doesNotMatch(html, /sandbox client/i);
@@ -256,7 +256,7 @@ describe('bridging app customer focus', () => {
     const jsPath = path.join(root, 'public', 'js', 'app.js');
     const js = fs.readFileSync(jsPath, 'utf8');
     // connectionLabel must map modes to customer wording
-    assert.match(js, /connectionLabel|Ready to submit|Connected to HMRC/i);
+    assert.match(js, /connectionLabel|Connected|Not connected/i);
     assert.doesNotMatch(js, /textContent\s*=\s*`HMRC:\s*\$\{/);
     assert.doesNotMatch(js, /test double/i);
   });

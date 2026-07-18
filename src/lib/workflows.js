@@ -29,6 +29,9 @@ export const KNOWN_WORKFLOWS = [
   'periods_of_account',
   'periods_of_account_put',
   'final_calc',
+  // Self Assessment Assist (MTD)
+  'sa_assist_report',
+  'sa_assist_acknowledge',
 ];
 
 /**

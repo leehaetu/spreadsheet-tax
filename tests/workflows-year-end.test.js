@@ -93,8 +93,8 @@ describe('year-end workflows', () => {
   it('serves guided year-end product case with EOY workflow buttons', async () => {
     const res = await request('GET', '/year-end');
     assert.equal(res.status, 200);
-    assert.match(res.body, /Tax return|year end|guided/i);
-    assert.match(res.body, /eoy-progress|Mark step done|Your tax return progress/i);
+    assert.match(res.body, /Year end|year-end|guided|adjustments/i);
+    assert.match(res.body, /eoy-progress|Save and continue|Mark step done|Current step/i);
     // Advanced section keeps full HMRC action surface for product + tests
     for (const name of [
       'final_obligations',

@@ -178,6 +178,8 @@ import {
   createBroughtForwardLoss,
   triggerCalculation,
   listCalculations,
+  generateSaAssistReport,
+  acknowledgeSaAssistReport,
   triggerBsas,
   listBsas,
   submitBsasSeAdjustments,
@@ -760,6 +762,10 @@ app.get('/records', (req, res) => {
 });
 app.get('/year-end', (req, res) => {
   sendAppHtml(req, res, 'year-end.html', '/year-end');
+});
+/** In-app product help (not the public marketing /help centre). */
+app.get('/guide', (req, res) => {
+  sendAppHtml(req, res, 'guide.html', '/guide');
 });
 
 app.get('/self-employed', (req, res) => {
@@ -1727,6 +1733,14 @@ app.get('/api/hmrc/connect', (req, res) => {
       req.query.authorityType || req.query.authority || 'individual'
     );
     const result = buildAuthorizeUrl({ userId: user.id, authorityType });
+    // Browser navigation (location.href) expects a redirect to HMRC authorize.
+    // JSON clients (fetch) still receive the payload when they ask for JSON.
+    const wantsJson =
+      String(req.headers.accept || '').includes('application/json') ||
+      req.query.format === 'json';
+    if (!wantsJson && result.url) {
+      return res.redirect(302, result.url);
+    }
     res.json({
       ok: true,
       ...result,
@@ -2691,7 +2705,7 @@ app.post('/api/me/income-sources/from-hmrc', async (req, res) => {
     if (!n2) {
       return res.status(400).json({
         error:
-          'NINO needed once to load HMRC businesses (save in account preferences or body). After connect, prefer OAuth path.',
+          'Enter your National Insurance number during account setup before loading HMRC businesses.',
       });
     }
   }
@@ -3633,6 +3647,40 @@ app.post('/api/workflows/run', async (req, res) => {
           body: {},
         });
         break;
+      case 'sa_assist_report': {
+        const calculationId =
+          req.body?.calculationId ||
+          req.body?.bsasCalculationId ||
+          process.env.HMRC_ASSIST_TEST_CALCULATION_ID;
+        if (!calculationId) {
+          return res.status(400).json({
+            error:
+              'calculationId required (from Individual Calculations trigger/list) to generate SA Assist report',
+          });
+        }
+        hmrcResult = await generateSaAssistReport({
+          ...o,
+          calculationId,
+        });
+        break;
+      }
+      case 'sa_assist_acknowledge': {
+        const reportId = req.body?.reportId;
+        const correlationId =
+          req.body?.correlationId || req.body?.correlationID;
+        if (!reportId || !correlationId) {
+          return res.status(400).json({
+            error:
+              'reportId and correlationId required to acknowledge SA Assist report',
+          });
+        }
+        hmrcResult = await acknowledgeSaAssistReport({
+          ...o,
+          reportId,
+          correlationId,
+        });
+        break;
+      }
       case 'se_amend':
         if (!req.body?.businessIdSe || !req.body?.periodId) {
           return res
@@ -3845,6 +3893,12 @@ app.post('/api/workflows/run', async (req, res) => {
       hmrcCode: summary.hmrcCode,
       path: summary.path,
       body: hmrcResult?.body,
+      correlationId:
+        hmrcResult?.correlationId ||
+        hmrcResult?.body?.correlationId ||
+        null,
+      responseHeaders: hmrcResult?.responseHeaders || null,
+      noContent: summary.hmrcStatus === 204,
       readback,
     });
   } catch (e) {

@@ -11,14 +11,7 @@
   <button class="cc-menu-toggle" id="cc-menu-toggle" type="button" aria-controls="cc-sidebar" aria-expanded="false">Menu</button>
   <aside class="cc-sidebar" id="cc-sidebar">
     <a class="cc-brand" href="/home"><span class="logo-mark">ST</span><span><strong>Spreadsheet Tax</strong><small>Making Tax Digital</small></span></a>
-    <nav class="cc-nav" aria-label="Tax account">
-      <a href="/home"><span class="cc-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-9.5Z"/></svg></span>Home</a>
-      <a href="/app?flow=quarterly"><span class="cc-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/></svg></span>Quarterly updates</a>
-      <a href="/year-end"><span class="cc-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg></span>Year end</a>
-      <a href="/records"><span class="cc-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 4h9a2 2 0 0 1 2 2v14l-3-2-3 2-3-2-3 2V6a2 2 0 0 1 2-2Z"/><path d="M10 9h6M10 13h6"/></svg></span>Sources</a>
-      <a href="/history"><span class="cc-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"/><path d="M12 8v5l3 2"/></svg></span>History</a>
-      <a href="/account"><span class="cc-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="9" r="3.5"/><path d="M5 19.5c1.5-3 4-4.5 7-4.5s5.5 1.5 7 4.5"/></svg></span>Settings</a>
-    </nav>
+    <nav class="cc-nav" aria-label="Tax account"></nav>
     <div class="cc-sidebar-bottom">
       <a class="cc-connection" href="/connect-hmrc"><span class="cc-status-dot" aria-hidden="true"></span><span><small>HMRC connection</small><strong id="setup-mode">Checking…</strong><em>MTD for Income Tax</em></span></a>
       <a class="cc-person" href="/account"><span class="cc-avatar">ST</span><span><strong id="account-name">Your account</strong><small>Taxpayer</small></span></a>
@@ -27,19 +20,44 @@
 
   <main class="cc-main setup-shell">
     <header class="setup-header">
-      <div><a class="setup-back" id="setup-back" href="/home">Back to home</a><h1 id="setup-title">Set up your account</h1><p id="setup-subtitle">Connect HMRC and load the income sources you report.</p></div>
+      <div>
+        <a class="setup-back" id="setup-back" href="/home">Back to home</a>
+        <h1 id="setup-title">Welcome to Spreadsheet Tax</h1>
+        <p id="setup-subtitle">Making Tax Digital for Income Tax — connect HMRC and confirm the businesses you report.</p>
+      </div>
       <div class="cc-tax-year"><strong>Tax year 2026–27</strong><span>6 April 2026 to 5 April 2027</span></div>
     </header>
 
     <ol class="setup-progress" aria-label="Setup progress">
-      <li class="active" data-progress="1"><span>1</span>Account</li><li data-progress="2"><span>2</span>Sources</li><li data-progress="3"><span>3</span>Details</li><li data-progress="4"><span>4</span>Review</li>
+      <li class="active" data-progress="1"><span>1</span>Welcome</li>
+      <li data-progress="2"><span>2</span>Sources</li>
+      <li data-progress="3"><span>3</span>Details</li>
+      <li data-progress="4"><span>4</span>Review</li>
     </ol>
     <p id="err" class="error" role="alert" hidden></p>
 
     <section class="setup-step" data-step="1">
       <div class="setup-callout">
-        <h2>Prepare your HMRC connection</h2>
-        <p>Spreadsheet Tax uses the businesses already registered with HMRC. Enter your National Insurance number, then connect HMRC so we can load your income sources.</p>
+        <h2>Welcome to Spreadsheet Tax</h2>
+        <p>This software bridges your spreadsheet to HMRC Making Tax Digital updates. It mirrors the income sources HMRC already holds for you — it does not create businesses or replace your books.</p>
+        <div class="mode-compare board-mirror-compare">
+          <div>
+            <strong>What Spreadsheet Tax does</strong>
+            <ul>
+              <li>Loads businesses from your HMRC connection</li>
+              <li>Uploads your spreadsheet for a quarterly period</li>
+              <li>Lets you check figures before you send</li>
+            </ul>
+          </div>
+          <div>
+            <strong>What only HMRC does</strong>
+            <ul>
+              <li>Register a new trade or property business</li>
+              <li>Change or cease an income source</li>
+              <li>Hold the legal record of your businesses</li>
+            </ul>
+          </div>
+        </div>
         <div class="detail-grid" style="margin-top:1.25rem">
           <label>National Insurance number
             <input type="text" id="setup-nino" autocomplete="off" placeholder="QQ123456C" maxlength="13" />
@@ -50,35 +68,40 @@
         </div>
         <div class="setup-inline" style="margin-top:1.25rem">
           <a class="btn btn-primary" href="/connect-hmrc">Connect HMRC</a>
-          <span class="muted" id="setup-connect-note">Connection status appears in the left sidebar.</span>
+          <a class="btn btn-ghost" href="/guide#hmrc-businesses">How income sources work</a>
+          <span class="muted" id="setup-connect-note">Status appears in the left sidebar after you connect.</span>
         </div>
       </div>
     </section>
 
+    <!-- Board 1 frame 3 adapted: confirm HMRC list, not tick-to-create -->
     <section class="setup-step" data-step="2" hidden>
-      <h2>Your HMRC income sources</h2>
-      <p class="muted">These are the self-employment and property businesses returned by HMRC. Spreadsheet Tax only mirrors that list — it cannot create, replace or remove an HMRC business.</p>
+      <h2>Confirm your income sources</h2>
+      <p class="muted">These are the businesses returned by HMRC for this tax year. Confirm the list is complete before continuing.</p>
       <div class="setup-inline hmrc-source-sync">
-        <button class="btn btn-primary" type="button" id="load-hmrc-sources">Retrieve businesses from HMRC</button>
-        <span id="hmrc-note" class="muted">Uses your saved National Insurance number and HMRC connection.</span>
+        <button class="btn btn-primary" type="button" id="load-hmrc-sources">Load businesses from HMRC</button>
+        <span id="hmrc-note" class="muted">Uses your National Insurance number and HMRC connection.</span>
       </div>
-      <div id="chosen-sources" class="chosen-sources" aria-live="polite"></div>
+      <div id="chosen-sources" class="chosen-sources source-confirm-list" aria-live="polite"></div>
       <div class="setup-callout setup-rule">
-        <strong>Is a business missing?</strong>
-        <p>Add or update it in your HMRC online account, then return here and load the list again.</p>
-        <a href="https://www.gov.uk/guidance/use-making-tax-digital-for-income-tax/add-or-cease-income-sources" target="_blank" rel="noopener">HMRC guidance on income sources</a>
+        <strong>Business missing from this list?</strong>
+        <p>Add or update it in your HMRC online account, then load the list again here. Spreadsheet Tax cannot create an HMRC business.</p>
+        <a href="/guide#hmrc-businesses">Open in-app help</a>
+        ·
+        <a href="https://www.gov.uk/guidance/use-making-tax-digital-for-income-tax/add-or-cease-income-sources" target="_blank" rel="noopener">HMRC guidance</a>
       </div>
     </section>
 
+    <!-- Board 1 frames 4–6 adapted: labels only, never “add business” -->
     <section class="setup-step" data-step="3" hidden>
       <h2>Name each income source</h2>
-      <p class="muted">A display name helps you recognise the source in quarterly updates. HMRC still treats all UK property as one business and all foreign property as one business.</p>
+      <p class="muted">Optional display names help you recognise each HMRC business in quarterly updates. They do not change anything at HMRC.</p>
       <div id="source-details"></div>
     </section>
 
     <section class="setup-step" data-step="4" hidden>
       <h2>Review your setup</h2>
-      <p class="muted">Nothing is submitted to HMRC by completing setup.</p>
+      <p class="muted">Nothing is submitted to HMRC by completing setup. You can refresh sources from HMRC any time.</p>
       <div id="setup-review" class="review-list"></div>
       <fieldset class="setup-fieldset"><legend>Reporting period</legend><div class="choice-grid compact">
         <label><input type="radio" name="periodType" value="standard" checked><span><strong>Standard tax-year quarters</strong><small>6 April to 5 April</small></span></label>
@@ -86,7 +109,12 @@
       </div></fieldset>
     </section>
 
-    <footer class="setup-actions"><button type="button" class="btn btn-ghost" id="prev-step" hidden>Back</button><span></span><button type="button" class="btn btn-primary btn-lg" id="next-step">Continue</button><button type="button" class="btn btn-primary btn-lg" id="save-setup" hidden>Save setup and go home</button></footer>
+    <footer class="setup-actions">
+      <button type="button" class="btn btn-ghost" id="prev-step" hidden>Back</button>
+      <span></span>
+      <button type="button" class="btn btn-primary btn-lg" id="next-step">Continue</button>
+      <button type="button" class="btn btn-primary btn-lg" id="save-setup" hidden>Save setup and go home</button>
+    </footer>
   </main>
   <script src="/js/product-shell.js"></script>
   <script src="/js/onboarding.js"></script>

@@ -19,12 +19,14 @@
 ## Design rules (locked)
 
 1. **One product** — not separate SE / landlord apps.  
-2. **Obligation-led** — HMRC businesses/obligations when connected; no manual business IDs as the primary path.  
-3. **Cumulative YTD** — every quarterly review shows this period + previously recorded + year-to-date.  
-4. **Per-source status and receipts** — multi-source packages still one upload; submit results listed per source.  
-5. **Nil path** — confirm zero activity without inventing figures.  
-6. **Year-end** — adjustments after quarterly digital records; guided case not API buttons first.  
-7. **Practice** — approval states before submit; never bulk-bypass client approval.  
+2. **HMRC mirror only** — load businesses from HMRC; never create/replace HMRC income sources in-app. Missing business → HMRC then refresh. In-app help: `/guide`.  
+3. **Visual boards** — `output/product-design/01–03*.png` + `docs/PRODUCT-BOARD-SPEC.md` are the UI map (with HMRC-mirror overrides).  
+4. **Obligation-led** — HMRC businesses/obligations when connected; no manual business IDs as the primary path.  
+5. **Quarterly path** — one income source at a time: choose source → upload period spreadsheet → map → check figures → send.  
+6. **Per-source status and receipts** — submit results listed per source.  
+7. **Nil path** — confirm zero activity without inventing figures.  
+8. **Year-end** — adjustments after quarterly digital records; source checklist + guided stages, not API buttons first.  
+9. **Practice / accountant** — separate shells; never bulk-bypass client approval.  
 
 ## APIs
 

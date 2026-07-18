@@ -52,7 +52,7 @@ function renderRecovery(connection, service, failedReceipts) {
   } else if (connection.connection?.mock) {
     authorityCopy.textContent = 'A local mock connection is active. It is not an HMRC authorisation.';
   } else {
-    authorityCopy.textContent = 'No real HMRC authorisation is stored. Preview remains available.';
+    authorityCopy.textContent = 'HMRC is not connected for this account yet. Connect HMRC before sending updates.';
   }
 
   const serviceCard = document.getElementById('recovery-service');
@@ -94,7 +94,7 @@ async function load() {
   const service = await serviceResponse.json();
   document.getElementById('history-mode').textContent = status.hmrcMode === 'live'
     ? 'Production HMRC configured'
-    : status.oauthMock === false ? 'HMRC sandbox configured' : 'Preview mode';
+    : status.oauthMock === false ? 'Connected' : 'Not connected';
 
   const failedReceipts = await Promise.all(submissions.filter((item) => !item.ok).slice(0, 8).map(async (item) => {
     const response = await fetch(`/api/receipts/${encodeURIComponent(item.id)}`);
@@ -104,7 +104,7 @@ async function load() {
 
   historyItems = [
     ...drafts.map((draft) => ({ kind: 'draft', id: draft.id, createdAt: draft.createdAt, title: draft.filename || 'Spreadsheet draft', detail: 'Saved draft · not submitted', status: 'draft', statusLabel: 'Draft' })),
-    ...submissions.map((submission) => ({ kind: 'submission', id: submission.id, createdAt: submission.createdAt, title: submission.ok ? 'Submission attempt completed' : 'Submission attempt failed', detail: `${submission.mode || 'unknown'} mode · receipt ${submission.id.slice(0, 8)}`, status: submission.ok ? 'ok' : 'failed', statusLabel: submission.ok ? (submission.mode === 'double' ? 'Preview completed' : 'Submitted') : 'Failed' })),
+    ...submissions.map((submission) => ({ kind: 'submission', id: submission.id, createdAt: submission.createdAt, title: submission.ok ? 'Submission attempt completed' : 'Submission attempt failed', detail: `Receipt ${submission.id.slice(0, 8)}`, status: submission.ok ? 'ok' : 'failed', statusLabel: submission.ok ? (submission.mode === 'double' ? 'Prepared' : 'Submitted') : 'Failed' })),
   ].sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
   document.getElementById('history-total').textContent = historyItems.length;
   document.getElementById('history-success').textContent = submissions.filter((item) => item.ok).length;

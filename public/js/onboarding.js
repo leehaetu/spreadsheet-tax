@@ -68,12 +68,21 @@ function setStep(next) {
   document.getElementById('save-setup').hidden = step !== 4;
   const titles = [
     '',
-    'Set up your account',
-    'Your HMRC income sources',
-    'Add your source details',
+    'Welcome to Spreadsheet Tax',
+    'Confirm your income sources',
+    'Name each income source',
     'Review your setup',
   ];
+  const subtitles = [
+    '',
+    'Making Tax Digital for Income Tax — connect HMRC and confirm the businesses you report.',
+    'Businesses returned by HMRC. Spreadsheet Tax only mirrors this list.',
+    'Display names for your quarterly workflow. Nothing is created at HMRC.',
+    'Confirm your setup. You can refresh from HMRC later.',
+  ];
   document.getElementById('setup-title').textContent = titles[step];
+  const sub = document.getElementById('setup-subtitle');
+  if (sub) sub.textContent = subtitles[step];
   if (step === 2) renderChosen();
   if (step === 3) renderDetails();
   if (step === 4) renderReview();
@@ -85,15 +94,31 @@ function renderChosen() {
   const root = document.getElementById('chosen-sources');
   root.innerHTML = sources.length
     ? sources
-        .map(
-          (s, i) => `<div class="chosen-source"><span class="source-avatar">${
-            s.type === 'self_employment' ? 'SE' : s.type === 'uk_property' ? 'UK' : 'FP'
-          }</span><span><strong>${esc(s.nickname)}</strong><small>${labels[s.type]}${
-            s.businessId ? ` · ${esc(s.businessId)}` : ''
-          }</small></span><button type="button" data-edit-source="${i}">Check details</button></div>`
-        )
+        .map((s, i) => {
+          const icon =
+            s.type === 'self_employment' ? 'SE' : s.type === 'uk_property' ? 'UK' : 'FP';
+          const desc =
+            s.type === 'self_employment'
+              ? 'Sole trader business'
+              : s.type === 'uk_property'
+                ? 'UK property business (HMRC)'
+                : 'Foreign property business (HMRC)';
+          return `<div class="chosen-source source-confirm-row">
+            <span class="source-avatar">${icon}</span>
+            <span>
+              <strong>${esc(s.nickname || labels[s.type])}</strong>
+              <small>${esc(desc)}${s.businessId ? ` · ID on file` : ''}</small>
+            </span>
+            <span class="source-from-hmrc" title="Loaded from HMRC">From HMRC</span>
+            <button type="button" data-edit-source="${i}">Check details</button>
+          </div>`;
+        })
         .join('')
-    : '<div class="empty-setup"><strong>No HMRC businesses loaded</strong><span>Connect HMRC and load your registered businesses to continue. If one is missing, add it in your HMRC online account and load the list again.</span></div>';
+    : `<div class="empty-setup">
+        <strong>No HMRC businesses loaded</strong>
+        <span>Connect HMRC, then load your registered businesses. If one is missing, create it with HMRC first — not in Spreadsheet Tax.</span>
+        <a class="btn btn-ghost btn-sm" href="/guide#hmrc-businesses">How to add a business with HMRC</a>
+      </div>`;
   document.querySelectorAll('[data-edit-source]').forEach((btn) => {
     btn.onclick = () => {
       detailIndex = Number(btn.dataset.editSource);

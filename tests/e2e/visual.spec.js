@@ -74,7 +74,7 @@ test.describe('Auth workspace journey', () => {
     await page.fill('#password', 'DemoPass123!');
     await page.click('button[type=submit]');
     await page.waitForURL(/home/);
-    await expect(page.getByRole('heading', { name: /Good morning/i })).toBeVisible({
+    await expect(page.getByRole('heading', { name: /Good (morning|afternoon|evening)|Hello/i })).toBeVisible({
       timeout: 10_000,
     });
     await shot(page, 'product-home-signed-in');

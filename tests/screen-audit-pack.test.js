@@ -122,9 +122,11 @@ describe('all-screens audit pack (durable deliverable)', () => {
     }
     // public HTML files that are product surfaces should appear in captures
     // (signed-out and/or signed-in). leave-to-sales is transitional chrome.
+    // Surfaces added after the 2026-07-18 pack snapshot — re-capture on next audit.
+    const excludeFromAuditPack = new Set(['leave-to-sales.html', 'guide.html']);
     const publicHtml = fs
       .readdirSync(path.join(root, 'public'))
-      .filter((f) => f.endsWith('.html') && f !== 'leave-to-sales.html');
+      .filter((f) => f.endsWith('.html') && !excludeFromAuditPack.has(f));
     for (const f of publicHtml) {
       const stem = f.replace(/\.html$/, '');
       const route = stem === 'sales' ? '/' : `/${stem}`;

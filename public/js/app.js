@@ -86,30 +86,43 @@ function panel(id) {
   return document.getElementById(id);
 }
 
-function showPanels({ sources = false, upload = false, review = false, submit = false }) {
+function showPanels({
+  sources = false,
+  upload = false,
+  map = false,
+  review = false,
+  submit = false,
+}) {
   const q = panel('quarterly-source-panel');
   const u = panel('upload-panel');
+  const m = panel('map-panel');
   const r = panel('review-panel');
   const s = panel('submit-panel');
   if (q) q.hidden = !sources;
   if (u) u.hidden = !upload;
+  if (m) m.hidden = !map;
   if (r) r.hidden = !review;
   if (s) s.hidden = !submit;
 }
 
 window.stQuarterlyShowStep = function stQuarterlyShowStep(step) {
+  // Wizard: 1 select source · 2 upload · 3 check figures · 4 review & send
   if (step === 'sources') {
     showPanels({ sources: true });
     setWizardStep(1);
   } else if (step === 'upload') {
     showPanels({ upload: true });
-    setWizardStep(1);
+    setWizardStep(2);
+  } else if (step === 'map') {
+    // Column mapping is part of "check figures"
+    showPanels({ map: true });
+    setWizardStep(3);
   } else if (step === 'review') {
     showPanels({ review: true });
-    setWizardStep(2);
+    setWizardStep(3);
   } else if (step === 'submit') {
     showPanels({ submit: true });
-    setWizardStep(3);
+    setWizardStep(4);
   }
   window.scrollTo({ top: 0, behavior: 'smooth' });
 };
@@ -120,7 +133,7 @@ function showQuarterlyReviewState(state) {
   document.querySelectorAll('[data-quarterly-state]').forEach((element) => {
     element.hidden = element.dataset.quarterlyState !== 'figures';
   });
-  setWizardStep(2);
+  setWizardStep(3);
 }
 
 async function loadStatus() {
@@ -217,11 +230,8 @@ function setImportBusy(busy, label) {
   const btn = document.getElementById('import-btn');
   if (!btn) return;
   btn.disabled = busy;
-  btn.textContent = label || (busy ? 'Reading your file…' : 'Check my figures');
+  btn.textContent = label || (busy ? 'Reading your file…' : 'Continue');
   btn.setAttribute('aria-busy', busy ? 'true' : 'false');
-  document.querySelectorAll('.sample-btn').forEach((b) => {
-    b.disabled = busy;
-  });
   const drop = document.getElementById('dropzone');
   if (drop) drop.classList.toggle('loading', Boolean(busy));
 }
@@ -256,11 +266,11 @@ function handleImportSuccess(data) {
   lastSpreadsheetCheck = data.spreadsheetCheck || null;
   showReview(data);
   renderSpreadsheetCheck(lastSpreadsheetCheck);
-  showQuarterlyReviewState('figures');
-  showPanels({ review: true });
-  setWizardStep(2);
-  const advanced = document.getElementById('quarterly-advanced');
-  if (advanced) advanced.open = !lastValidation.ready;
+  // After upload → check figures (map columns, then totals)
+  showPanels({ map: true });
+  setWizardStep(3);
+  const ssPanel = document.getElementById('spreadsheet-check-panel');
+  if (ssPanel) ssPanel.hidden = false;
 
   if (data.payloads?.meta?.taxYear) {
     const ty = document.getElementById('tax-year');
@@ -277,7 +287,6 @@ function handleImportSuccess(data) {
   bindTaxpayerIds().catch(() => {});
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
-  // YTD cumulative breakdown stays off the main quarterly path
 }
 
 /** Prefill NINO and business IDs from profile + income sources */
@@ -764,29 +773,6 @@ document.getElementById('upload-form')?.addEventListener('submit', async (e) => 
   }
 });
 
-document.querySelectorAll('.sample-btn').forEach((btn) => {
-  btn.addEventListener('click', async () => {
-    const errEl = document.getElementById('upload-error');
-    if (errEl) errEl.hidden = true;
-    const sampleId = btn.getAttribute('data-sample') || 'combined';
-    setImportBusy(true, 'Loading sample…');
-    showChosenFile(
-      `Sample: ${btn.querySelector('strong')?.textContent || sampleId}`
-    );
-    try {
-      const data = await importSample(sampleId);
-      handleImportSuccess(data);
-    } catch (err) {
-      if (errEl) {
-        errEl.textContent = err.message || String(err);
-        errEl.hidden = false;
-      }
-    } finally {
-      setImportBusy(false);
-    }
-  });
-});
-
 function friendlySource(source) {
   if (source === 'self_employment') return 'Self-employment';
   if (source === 'uk_property') return 'UK property';
@@ -844,9 +830,31 @@ function esc(s) {
  * Build review UI into review-panel elements in app.html.
  * @param {object} data
  */
-function showReview(data) {
-  showPanels({ review: true });
+function renderValidationInto(rootId, validation) {
+  const validationRoot = document.getElementById(rootId);
+  if (!validationRoot) return;
+  const issues = [...(validation.errors || []), ...(validation.warnings || [])];
+  let cls = 'ok';
+  let title = 'Spreadsheet checks passed';
+  if (validation.errors?.length) {
+    cls = 'blocked';
+    title = 'Fix these items before continuing';
+  } else if (validation.warnings?.length) {
+    title = 'Check these items before continuing';
+  }
+  const items =
+    issues.length > 0
+      ? issues.map((item) => `<li>${esc(item.message)}</li>`).join('')
+      : '<li>Dates, sources and mapped figures are ready for review.</li>';
+  validationRoot.innerHTML = `
+      <div class="validation-box ${cls}" data-ready="${validation.ready ? '1' : '0'}">
+        <strong>${esc(title)}</strong>
+        <ul>${items}</ul>
+      </div>
+    `;
+}
 
+function showReview(data) {
   const success = document.getElementById('submit-success');
   if (success) success.hidden = true;
   const submitErr = document.getElementById('submit-error');
@@ -856,38 +864,23 @@ function showReview(data) {
   lastSummary = summary;
   lastValidation = data.validation || { ready: true, errors: [], warnings: [] };
 
-  // Validation into #validation-panel
-  const validationRoot = document.getElementById('validation-panel');
-  if (validationRoot) {
-    const issues = [
-      ...(lastValidation.errors || []),
-      ...(lastValidation.warnings || []),
-    ];
-    let cls = 'ok';
-    let title = 'Spreadsheet checks passed';
-    if (lastValidation.errors?.length) {
-      cls = 'blocked';
-      title = 'Fix these items before continuing';
-    } else if (lastValidation.warnings?.length) {
-      title = 'Check these items before continuing';
-    }
-    const items =
-      issues.length > 0
-        ? issues.map((item) => `<li>${esc(item.message)}</li>`).join('')
-        : '<li>Dates, sources and mapped figures are ready for review.</li>';
-    validationRoot.innerHTML = `
-      <div id="validation-summary" class="validation-box ${cls}" data-ready="${lastValidation.ready ? '1' : '0'}">
-        <strong id="validation-title">${esc(title)}</strong>
-        <ul id="validation-list">${items}</ul>
-      </div>
-    `;
-  }
+  renderValidationInto('map-validation-panel', lastValidation);
+  renderValidationInto('validation-panel', lastValidation);
 
+  const mapContinue = document.getElementById('goto-figures');
+  if (mapContinue) {
+    mapContinue.disabled = !lastValidation.ready;
+    mapContinue.title = lastValidation.ready
+      ? ''
+      : 'Resolve the blocking spreadsheet checks first';
+  }
   const continueBtn = document.getElementById('goto-submit');
-  [continueBtn].filter(Boolean).forEach((button) => {
-    button.disabled = !lastValidation.ready;
-    button.title = lastValidation.ready ? '' : 'Resolve the blocking spreadsheet checks first';
-  });
+  if (continueBtn) {
+    continueBtn.disabled = !lastValidation.ready;
+    continueBtn.title = lastValidation.ready
+      ? ''
+      : 'Resolve the blocking spreadsheet checks first';
+  }
 
   // Summary cards
   const cards = document.getElementById('summary-cards');
@@ -1068,11 +1061,19 @@ document.getElementById('another-file')?.addEventListener('click', resetToUpload
 document.getElementById('reset-upload')?.addEventListener('click', resetToUpload);
 document.getElementById('reset-upload-2')?.addEventListener('click', resetToUpload);
 
+document.getElementById('goto-figures')?.addEventListener('click', () => {
+  if (lastValidation && !lastValidation.ready) return;
+  showQuarterlyReviewState('figures');
+  showPanels({ review: true });
+  setWizardStep(3);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+
 document.getElementById('goto-submit')?.addEventListener('click', () => {
   if (lastValidation && !lastValidation.ready) return;
   renderDeclarationSummary();
   showPanels({ submit: true });
-  setWizardStep(3);
+  setWizardStep(4);
   const approve = document.getElementById('approve-cells');
   const submitBtn = document.getElementById('submit-btn');
   if (approve && submitBtn) {
@@ -1095,7 +1096,17 @@ document.getElementById('back-to-review-link')?.addEventListener('click', (e) =>
   e.preventDefault();
   document.getElementById('back-to-review')?.click();
 });
+document.getElementById('back-to-map-link')?.addEventListener('click', (e) => {
+  e.preventDefault();
+  showPanels({ map: true });
+  setWizardStep(3);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+});
 document.getElementById('back-to-upload-link')?.addEventListener('click', (e) => {
+  e.preventDefault();
+  document.getElementById('back-to-upload')?.click();
+});
+document.getElementById('back-to-upload-from-map')?.addEventListener('click', (e) => {
   e.preventDefault();
   document.getElementById('back-to-upload')?.click();
 });
@@ -1490,6 +1501,90 @@ showPanels({ sources: true });
 loadStatus();
 loadSavedIdentifiers();
 
+/** Self Assessment Assist (MTD) — HMRC fields only via HmrcAssist renderer. */
+document.getElementById('assist-report-btn')?.addEventListener('click', async () => {
+  const err = document.getElementById('assist-error');
+  const view = document.getElementById('assist-view');
+  if (err) err.hidden = true;
+  const calculationId =
+    document.getElementById('assist-calculation-id')?.value?.trim() ||
+    sessionStorage.getItem('st_last_calculation_id') ||
+    '';
+  const taxYear =
+    document.getElementById('assist-tax-year')?.value?.trim() ||
+    document.getElementById('tax-year')?.value?.trim() ||
+    '';
+  const nino = document.getElementById('nino')?.value?.trim() || '';
+  if (!calculationId) {
+    if (err) {
+      err.textContent =
+        'An HMRC calculation reference is required first. Complete a tax calculation (usually at year-end), or enter the reference under Advanced.';
+      err.hidden = false;
+    }
+    return;
+  }
+  try {
+    const res = await apiFetch('/api/hmrc/mtd/assist/report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ calculationId, taxYear, nino }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!view) return;
+    const payload = {
+      ...data,
+      status: data.status ?? res.status,
+      hmrcStatus: data.status ?? data.hmrcStatus ?? res.status,
+      noContent: res.status === 204 || data.status === 204,
+      correlationId: data.correlationId || data.body?.correlationId || null,
+    };
+    if (res.status === 401) {
+      view.hidden = false;
+      view.innerHTML = '<p><a href="/signin?next=/app">Sign in</a></p>';
+      return;
+    }
+    if (!window.HmrcAssist) {
+      view.hidden = false;
+      view.textContent = '';
+      return;
+    }
+    if (res.status === 204 || payload.noContent) {
+      window.HmrcAssist.renderAssist(view, { ...payload, noContent: true });
+      if (err) {
+        err.hidden = false;
+        err.textContent = '';
+        err.hidden = true;
+      }
+      // Product note only: HMRC returned no content — show empty state without invented advice
+      view.hidden = false;
+      view.dataset.assistStatus = '204';
+      view.innerHTML = '';
+      return;
+    }
+    window.HmrcAssist.renderAssist(view, payload, {
+      onAcknowledge: async ({ reportId, correlationId }) => {
+        const ack = await apiFetch('/api/hmrc/mtd/assist/acknowledge', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ reportId, correlationId, nino, taxYear }),
+        });
+        const aj = await ack.json().catch(() => ({}));
+        if (ack.ok || aj.ok || aj.status === 204 || ack.status === 204) {
+          window.HmrcAssist.renderAcknowledged(view);
+        } else if (err) {
+          err.textContent = aj.error || `HMRC ${aj.status || ack.status}`;
+          err.hidden = false;
+        }
+      },
+    });
+  } catch (e) {
+    if (err) {
+      err.textContent = e.message || String(e);
+      err.hidden = false;
+    }
+  }
+});
+
 // Prefer business IDs from saved income sources (no manual typing)
 (async function prefillFromIncomeSources() {
   try {
@@ -1512,31 +1607,6 @@ loadSavedIdentifiers();
     }
   } catch {
     /* signed out */
-  }
-})();
-
-(function applyAudienceMode() {
-  const mode = new URLSearchParams(location.search).get('mode') || '';
-  const lead = document.querySelector('.app-hero .lead');
-  const h1 = document.querySelector('.app-hero h1');
-  if (mode === 'self-employed' || mode === 'self_employment') {
-    if (h1) h1.textContent = 'Submit your self-employment quarterly update';
-    if (lead) {
-      lead.innerHTML =
-        'Built for sole traders and trades. Upload your period spreadsheet, review turnover and expenses, then submit — <strong>no retyping totals</strong>.';
-    }
-    const se = document.querySelector(
-      '.sample-btn[data-sample="self_employment"]'
-    );
-    if (se) se.classList.add('tag', 'green');
-  } else if (mode === 'property' || mode === 'landlord' || mode === 'landlords') {
-    if (h1) h1.textContent = 'Submit your property quarterly update';
-    if (lead) {
-      lead.innerHTML =
-        'Built for UK and foreign property landlords. Map rental income and costs from your spreadsheet, then review before sending.';
-    }
-    const uk = document.querySelector('.sample-btn[data-sample="uk_property"]');
-    if (uk) uk.classList.add('tag', 'green');
   }
 })();
 

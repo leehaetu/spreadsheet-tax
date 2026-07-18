@@ -49,3 +49,24 @@ those details to be public.
 ```bash
 RUN_HMRC_SANDBOX_E2E=1 npx playwright test tests/e2e/hmrc-mtd-full-journey.spec.js --config=playwright.prod.config.js --workers=1
 ```
+
+## Self Assessment Assist (MTD) 1.0 — 2026-07-18
+
+**Evidence:** `docs/hmrc/sa-assist-sandbox-run.json`  
+**App:** https://spreadsheet-tax-production.up.railway.app  
+**Tag:** `SANDBOX_HTTP`
+
+| Step | HMRC HTTP | Notes |
+|------|-----------|--------|
+| OAuth (individual, re-auth for Assist scopes) | 200 product | non-mock token |
+| Generate report (calc id with messages) | **200** | reportId + messages from HMRC only |
+| Generate report (calc id empty) | **204** | no messages — correct empty state |
+| Acknowledge report | **204** | customer acknowledgement |
+
+Re-run:
+
+```bash
+RUN_HMRC_SANDBOX_E2E=1 node scripts/hmrc-sa-assist-sandbox-run.mjs
+```
+
+Product UI renders only HMRC message fields: `title`, `body`, `action`, `links[]`, `path` (`public/js/hmrc-assist.js`).

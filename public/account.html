@@ -3,27 +3,28 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Account — Spreadsheet Tax</title>
+  <title>Settings — Spreadsheet Tax</title>
   <link rel="stylesheet" href="/css/site.css" />
 </head>
-<body class="app-body">
-  <header class="site-header">
-    <div class="wrap header-inner">
-      <a class="logo" href="/"><span class="logo-mark">ST</span> Spreadsheet Tax</a>
-      <nav>
-        <a href="/home">Home</a>
-        <a href="/app?flow=quarterly">Quarterly</a>
-        <a href="/history">Receipts</a>
-        <a href="/workspace">Practice</a>
-        <a href="/connect-hmrc">Connect HMRC</a>
-        <a href="/account" class="active">Settings</a>
-        <button type="button" class="btn btn-ghost btn-sm" id="out">Sign out</button>
-      </nav>
+<body class="theme-light app-body cc-page">
+  <button class="cc-menu-toggle" id="cc-menu-toggle" type="button" aria-controls="cc-sidebar" aria-expanded="false">Menu</button>
+  <aside class="cc-sidebar" id="cc-sidebar">
+    <a class="cc-brand" href="/home"><span class="logo-mark">ST</span><span><strong>Spreadsheet Tax</strong><small>Making Tax Digital</small></span></a>
+    <nav class="cc-nav" aria-label="Tax account"></nav>
+    <div class="cc-sidebar-bottom">
+      <a class="cc-connection" href="/connect-hmrc"><span class="cc-status-dot" aria-hidden="true"></span><span><small>HMRC connection</small><strong id="connection-status">Checking…</strong><em>MTD for Income Tax</em></span></a>
+      <a class="cc-person" href="/account"><span class="cc-avatar">ST</span><span><strong id="account-name">Your account</strong><small>Taxpayer</small></span></a>
     </div>
-  </header>
-  <main class="wrap app-main">
-    <h1>Settings</h1>
-    <p class="muted">Profile, security, HMRC identifiers, notifications. Billing is separate and not live.</p>
+  </aside>
+
+  <main class="cc-main account-shell">
+    <header class="setup-header" style="border:0;padding-top:8px">
+      <div>
+        <h1>Settings</h1>
+        <p class="muted" style="margin:0">Profile, security and notification preferences.</p>
+      </div>
+      <button type="button" class="btn btn-ghost btn-sm" id="out">Sign out</button>
+    </header>
     <p id="gate" class="error" hidden></p>
     <div class="stat-cards" id="stats" hidden>
       <div class="stat-card"><div class="n" id="st-plan">—</div><div class="l">Packaging</div></div>
@@ -34,19 +35,19 @@
     <section class="panel" id="profile-panel" hidden>
       <h2>Profile</h2>
       <ul class="profile-list" id="profile"></ul>
-      <p class="muted"><a href="/billing">Billing packaging</a> (no card charges unless payments are live)</p>
+      <p class="muted"><a href="/billing">Billing packaging</a></p>
     </section>
     <section class="panel" id="prefs-panel" hidden>
       <h2>Notifications</h2>
-      <p class="muted">Preferences are stored. Email is only delivered when a provider is configured on the server.</p>
+      <p class="muted">Preferences are stored on your account. Email is only delivered when a provider is configured.</p>
       <label class="muted" style="display:flex;gap:0.5rem;align-items:center;margin:0.5rem 0">
         <input type="checkbox" id="pref-reminders" /> Deadline and client reminders
       </label>
       <label class="muted" style="display:flex;gap:0.5rem;align-items:center;margin:0.5rem 0">
         <input type="checkbox" id="pref-product" /> Product updates (optional)
       </label>
-      <h3 style="margin-top:1.25rem">Saved HMRC identifiers</h3>
-      <p class="muted">Prefill the bridging app submit form. Stored on your account only — not submitted until you review and send.</p>
+      <h3 style="margin-top:1.25rem">Your tax details</h3>
+      <p class="muted">Used when you connect HMRC and prepare updates. Nothing is sent until you review and submit.</p>
       <div class="form-row">
         <label>National Insurance number
           <input type="text" id="pref-nino" autocomplete="off" placeholder="QQ123456C" />
@@ -55,17 +56,21 @@
           <input type="text" id="pref-tax-year" autocomplete="off" placeholder="2025-26" />
         </label>
       </div>
-      <div class="form-row">
-        <label>Self-employment business ID
-          <input type="text" id="pref-bid-se" autocomplete="off" />
-        </label>
-        <label>UK property business ID
-          <input type="text" id="pref-bid-uk" autocomplete="off" />
-        </label>
-        <label>Foreign property business ID
-          <input type="text" id="pref-bid-fp" autocomplete="off" />
-        </label>
-      </div>
+      <details class="settings-advanced">
+        <summary>Advanced — HMRC business identifiers</summary>
+        <p class="muted">Usually filled automatically when you load businesses from HMRC. Only edit if support asks you to.</p>
+        <div class="form-row">
+          <label>Self-employment business ID
+            <input type="text" id="pref-bid-se" autocomplete="off" />
+          </label>
+          <label>UK property business ID
+            <input type="text" id="pref-bid-uk" autocomplete="off" />
+          </label>
+          <label>Foreign property business ID
+            <input type="text" id="pref-bid-fp" autocomplete="off" />
+          </label>
+        </div>
+      </details>
       <button type="button" class="btn btn-primary btn-sm" id="pref-save">Save preferences</button>
       <p id="pref-msg" class="success-box" hidden></p>
     </section>
@@ -79,9 +84,9 @@
       </div>
     </section>
     <section class="panel" id="mfa-panel" hidden>
-      <h2>Two-factor authentication (authenticator app)</h2>
+      <h2>Two-factor authentication</h2>
       <p class="muted" id="mfa-status">Checking…</p>
-      <p class="muted">Practice administrators should enable MFA before handling client books. MFA is reported to HMRC fraud headers only when a real challenge succeeds.</p>
+      <p class="muted">Use an authenticator app for extra protection on your account.</p>
       <div id="mfa-enroll" hidden>
         <p class="muted">Secret (add to authenticator): <code id="mfa-secret"></code></p>
         <p class="muted" style="word-break:break-all">URI: <code id="mfa-otpauth"></code></p>
@@ -117,16 +122,18 @@
       <h2>Recent submissions</h2>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>When</th><th>Mode</th><th>OK</th><th></th></tr></thead>
+          <thead><tr><th>When</th><th>Status</th><th>OK</th><th></th></tr></thead>
           <tbody id="subs-body"></tbody>
         </table>
       </div>
     </section>
-    <div class="hero-actions">
-      <a class="btn btn-primary" href="/app">Open bridging app</a>
-      <a class="btn btn-ghost" href="/history">Full history</a>
+    <div class="hero-actions" style="margin-top:1rem">
+      <a class="btn btn-primary" href="/app?flow=quarterly">Open quarterly updates</a>
+      <a class="btn btn-ghost" href="/history">Submission history</a>
+      <a class="btn btn-ghost" href="/connect-hmrc">HMRC connection</a>
     </div>
   </main>
+  <script src="/js/product-shell.js"></script>
   <script>
     function esc(s) {
       return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
@@ -134,9 +141,7 @@
     async function load() {
       const me = await fetch('/api/auth/me').then((r) => r.json());
       if (!me.user) {
-        document.getElementById('gate').hidden = false;
-        document.getElementById('gate').innerHTML =
-          '<a href="/signin?next=/account">Sign in</a> to view your account.';
+        window.location.replace('/signin?next=/account');
         return;
       }
       document.getElementById('stats').hidden = false;
@@ -154,9 +159,7 @@
           document.getElementById('mfa-disable').hidden = false;
           document.getElementById('mfa-begin').hidden = true;
         } else {
-          st.textContent = mfa.practiceAdminRequiresMfa
-            ? 'MFA not enabled — practice admin MFA is required by policy when MFA_REQUIRE_PRACTICE_ADMIN=1.'
-            : 'MFA is optional for this account. Recommended for practice admins.';
+          st.textContent = 'MFA is optional for this account.';
         }
       } catch {
         /* ignore */
@@ -183,13 +186,7 @@
       document.getElementById('st-plan').textContent = me.plan?.label || me.plan?.planId || '—';
       document.getElementById('st-hmrc').textContent =
         me.hmrc?.label ||
-        (me.hmrc?.mock
-          ? 'Mock (not HMRC)'
-          : me.hmrc?.connected
-            ? 'Connected'
-            : me.hmrc?.expired
-              ? 'Expired'
-              : 'Not connected');
+        (me.hmrc?.connected ? 'Connected' : me.hmrc?.expired ? 'Expired' : 'Not connected');
       document.getElementById('profile').innerHTML = [
         ['Name', me.user.name],
         ['Email', me.user.email],
@@ -205,7 +202,7 @@
       tbody.innerHTML = '';
       for (const s of (subs.submissions || []).slice(0, 10)) {
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${esc(s.createdAt)}</td><td>${esc(s.mode)}</td><td>${s.ok ? 'Yes' : 'No'}</td>
+        tr.innerHTML = `<td>${esc(s.createdAt)}</td><td>${esc(s.mode || '—')}</td><td>${s.ok ? 'Yes' : 'No'}</td>
           <td>
             <a class="btn btn-ghost btn-sm" href="/api/receipts/${esc(s.id)}">Receipt</a>
             <a class="btn btn-ghost btn-sm" href="/api/receipts/${esc(s.id)}?download=1">Download</a>

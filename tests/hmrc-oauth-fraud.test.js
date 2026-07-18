@@ -135,7 +135,7 @@ describe('HMRC OAuth mock connect', () => {
         password: 'DemoPass123!',
       })
     );
-    const start = await request('GET', '/api/hmrc/connect');
+    const start = await request('GET', '/api/hmrc/connect?format=json');
     assert.equal(start.status, 200);
     const sj = JSON.parse(start.body);
     assert.ok(sj.url.includes('state='));

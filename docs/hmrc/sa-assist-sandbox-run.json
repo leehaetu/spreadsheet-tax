@@ -1,0 +1,102 @@
+{
+  "at": "2026-07-18T16:44:26.367Z",
+  "base": "https://spreadsheet-tax-production.up.railway.app",
+  "api": "Self Assessment Assist (MTD) 1.0",
+  "nino": "TB****",
+  "taxYear": "2025-26",
+  "calculationIdMessages": "f2fb30e5-4ab6-4a29-b3c1-c7264259ff1c",
+  "calculationIdEmpty": "620490b4-06e3-4fef-a555-6fd0877dc7ca",
+  "steps": [
+    {
+      "name": "product_login",
+      "ok": true,
+      "hmrcStatus": 200,
+      "path": "/api/auth/login",
+      "reportId": null,
+      "correlationId": null,
+      "messageCount": null,
+      "messages": null,
+      "hmrcCode": null,
+      "snippet": "{\"status\":200,\"path\":\"/api/auth/login\"}"
+    },
+    {
+      "name": "oauth_status",
+      "ok": true,
+      "hmrcStatus": 200,
+      "path": "/api/hmrc/status",
+      "reportId": null,
+      "correlationId": null,
+      "messageCount": null,
+      "messages": null,
+      "hmrcCode": null,
+      "snippet": "{\"connected\":true,\"mock\":false,\"mode\":\"sandbox\"}"
+    },
+    {
+      "name": "sa_assist_generate_report",
+      "ok": true,
+      "hmrcStatus": 200,
+      "path": "/individuals/self-assessment/assist/reports/TB116925D/2025-26/f2fb30e5-4ab6-4a29-b3c1-c7264259ff1c",
+      "reportId": "238f2173-70de-4b27-9e8b-e41ae67647b7",
+      "correlationId": "b07e7d40-02e7-481e-b8d0-e7bbea561170",
+      "messageCount": 1,
+      "messages": [
+        {
+          "title": "HMRC feedback: the title tells the user to review or check something in the return (placeholder title)",
+          "body": "The body section is usually one to three sentences. This section lets the user know why they are getting the message or which tax rule is relevant. For example, if you use something for both business and personal reasons you can only claim allowable expenses for the business costs. (placeholder body)",
+          "action": "The action section is usually three to four sentences. It explains what the user can do to resolve the potential error. In some messages this section may also warn users about consequences if they submit incorrect information. For example, the user may be advised to make changes if needed to avoid interest and potential penalties. (placeholder action)",
+          "path": "/individuals/business/self-employment/[nino]/[businessId]/cumulative/[taxYear] (placeholder path)",
+          "links": [
+            {
+              "title": "Go to GOV.UK to learn more about income tax. (placeholder link example 1)",
+              "url": "https://www.gov.uk/income-tax"
+            },
+            {
+              "title": "You can also go to GOVUK to find out about expenses when you’re self-employed. (placeholder link example 2)",
+              "url": "https://www.gov.uk/expenses-if-youre-self-employed"
+            },
+            {
+              "title": "Usually no more than three links per message and the whole sentence should be used as the link text. (placeholder link guidance)",
+              "url": "https://www.gov.uk/tax-help"
+            }
+          ]
+        }
+      ],
+      "hmrcCode": null,
+      "snippet": "{\"reportId\":\"238f2173-70de-4b27-9e8b-e41ae67647b7\",\"messages\":[{\"title\":\"HMRC feedback: the title tells the user to review or check something in the return (placeholder title)\",\"body\":\"The body section is usually one to three sentences. This section lets the user know why they are getting the message or which tax rule is relevant. For example, if you use something for both business and personal reasons you can only claim allowable expenses for the business costs. (placeholder body)\",\"action\":\"The action section is usually three to four sentences. It explains what the user can do to resolve the potential error. In some messages this section may also warn users about consequences if they submit incorrect information. For example, the user may be advised to make changes if needed to avoid int"
+    },
+    {
+      "name": "sa_assist_generate_report_204",
+      "ok": true,
+      "hmrcStatus": 204,
+      "path": "/individuals/self-assessment/assist/reports/TB116925D/2025-26/620490b4-06e3-4fef-a555-6fd0877dc7ca",
+      "reportId": null,
+      "correlationId": "9d412956-3737-4b3f-b2b8-1ebc9e94db44",
+      "messageCount": null,
+      "messages": null,
+      "hmrcCode": null,
+      "snippet": "{\"httpStatus\":200,\"ok\":true,\"status\":204,\"path\":\"/individuals/self-assessment/assist/reports/TB116925D/2025-26/620490b4-06e3-4fef-a555-6fd0877dc7ca\",\"method\":\"POST\",\"label\":\"sa_assist_generate_report\",\"url\":\"https://test-api.service.hmrc.gov.uk/individuals/self-assessment/assist/reports/TB116925D/2025-26/620490b4-06e3-4fef-a555-6fd0877dc7ca\",\"body\":null,\"requestBody\":null,\"fraudHeaderNames\":[\"Gov-Client-Connection-Method\",\"Gov-Client-Browser-JS-User-Agent\",\"Gov-Client-Public-IP\",\"Gov-Client-Public-IP-Timestamp\",\"Gov-Client-User-IDs\",\"Gov-Vendor-Public-IP\",\"Gov-Vendor-Forwarded\",\"Gov-Vendor-Version\",\"Gov-Vendor-Product-Name\",\"Gov-Vendor-License-IDs\"],\"externalCallMade\":true,\"mode\":\"sandbox\",\"responseHeaders\":{\"cache-control\":\"no-cache\",\"connection\":\"keep-alive\",\"content-security-policy\":\"de"
+    },
+    {
+      "name": "sa_assist_acknowledge",
+      "ok": true,
+      "hmrcStatus": 204,
+      "path": "/individuals/self-assessment/assist/reports/acknowledge/TB116925D/238f2173-70de-4b27-9e8b-e41ae67647b7/GZGRDGPBTCHXHAN7…",
+      "reportId": "238f2173-70de-4b27-9e8b-e41ae67647b7",
+      "correlationId": "GZGRDGPBTCHXHAN7IJ6YHH4NZJWT5KQYPD9LAR9A57BDRPKLBNG8FLORSMTMR6E7",
+      "messageCount": null,
+      "messages": null,
+      "hmrcCode": null,
+      "snippet": "{\"httpStatus\":200,\"ok\":true,\"status\":204,\"path\":\"/individuals/self-assessment/assist/reports/acknowledge/TB116925D/238f2173-70de-4b27-9e8b-e41ae67647b7/GZGRDGPBTCHXHAN7…\",\"method\":\"POST\",\"label\":\"sa_assist_acknowledge_report\",\"url\":\"https://test-api.service.hmrc.gov.uk/individuals/self-assessment/assist/reports/acknowledge/TB116925D/238f2173-70de-4b27-9e8b-e41ae67647b7/GZGRDGPBTCHXHAN7IJ6YHH4NZJWT5KQYPD9LAR9A57BDRPKLBNG8FLORSMTMR6E7\",\"body\":null,\"requestBody\":null,\"fraudHeaderNames\":[\"Gov-Client-Connection-Method\",\"Gov-Client-Browser-JS-User-Agent\",\"Gov-Client-Public-IP\",\"Gov-Client-Public-IP-Timestamp\",\"Gov-Client-User-IDs\",\"Gov-Vendor-Public-IP\",\"Gov-Vendor-Forwarded\",\"Gov-Vendor-Version\",\"Gov-Vendor-Product-Name\",\"Gov-Vendor-License-IDs\"],\"externalCallMade\":true,\"mode\":\"sandbox\",\"respon"
+    }
+  ],
+  "summary": {
+    "true2xx": 5,
+    "failed": 0,
+    "total": 5,
+    "generateOk": true,
+    "messageCount": 1,
+    "reportId": "238f2173-70de-4b27-9e8b-e41ae67647b7",
+    "correlationId": "b07e7d40-02e7-481e-b8d0-e7bbea561170",
+    "tag": "SANDBOX_HTTP"
+  }
+}

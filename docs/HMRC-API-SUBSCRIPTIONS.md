@@ -17,6 +17,7 @@
 | **Business Income Source Summary (MTD)** | 3.0 | BISS readback |
 | **Self Assessment Individual Details (MTD)** | 2.0 | ITSA status |
 | **Self Assessment Accounts (MTD)** | 4.0 | Balance and transactions |
+| **Self Assessment Assist (MTD)** | 1.0 | HMRC Assist report (messages) after calculation |
 | **Test Fraud Prevention Headers** | 1.0 | FPH validation |
 | **Self Assessment Test Support (MTD)** | 1.0 | Create test businesses (sandbox) |
 | **Create Test User** | 1.0 | Sandbox individuals |
@@ -38,6 +39,7 @@ Still **not** Agent Authorisation / EOPS (out of product scope).
 | BISS | `.../biss` |
 | Individual Details | `.../itsa-status` |
 | Accounts | `.../accounts/balance?onlyOpenItems=true` |
+| Self Assessment Assist | `POST /api/hmrc/mtd/assist/report`, `POST /api/hmrc/mtd/assist/acknowledge` · workflows `sa_assist_report` / `sa_assist_acknowledge` |
 | Test Support | `POST /api/hmrc/mtd/test-business` |
 | FPH Test | `POST /api/hmrc/validate-fraud-headers` |
 | Create Test User | `POST /api/hmrc/create-test-user` |
@@ -51,6 +53,8 @@ When Production credentials are granted: subscribe the **same set** on the Produ
 ```
 write:self-assessment
 read:self-assessment
+read:self-assessment-assist
+write:self-assessment-assist
 ```
 
 ## Redirect / legal URLs

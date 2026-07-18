@@ -18,13 +18,13 @@ const STAGE_ACTIONS = {
     { href: '/records', label: 'Open digital records' },
   ],
   se_adjustments: [
-    { wf: 'se_annual', label: 'Submit SE annual adjustments', primary: true },
+    { wf: 'se_annual', label: 'Send self-employment annual adjustments', primary: true },
   ],
   uk_adjustments: [
-    { wf: 'uk_annual', label: 'Submit UK property annual', primary: true },
+    { wf: 'uk_annual', label: 'Send UK property annual adjustments', primary: true },
   ],
   foreign_adjustments: [
-    { wf: 'fp_annual', label: 'Submit foreign property annual', primary: true },
+    { wf: 'fp_annual', label: 'Send foreign property annual adjustments', primary: true },
   ],
   other_income_losses: [
     { wf: 'losses', label: 'Brought-forward loss', primary: true },
@@ -33,6 +33,7 @@ const STAGE_ACTIONS = {
   calculation: [
     { wf: 'calc', label: 'Trigger tax calculation', primary: true },
     { wf: 'calc_list', label: 'List calculations' },
+    { wf: 'sa_assist_report', label: 'Get HMRC Assist report' },
   ],
   bsas: [
     { wf: 'bsas_trigger', label: 'Trigger BSAS', primary: true },
@@ -42,6 +43,7 @@ const STAGE_ACTIONS = {
     { wf: 'bsas_adjust_fp', label: 'Adjust BSAS (foreign)' },
   ],
   final_declaration: [
+    { wf: 'sa_assist_report', label: 'Get HMRC Assist report' },
     { wf: 'final_calc', label: 'Intent to finalise', primary: true },
   ],
   complete: [
@@ -139,7 +141,80 @@ function showResult(data) {
     link.textContent = 'Download receipt JSON';
   }
   renderCalculationResult(data);
+  renderAssistResult(data);
+  // Remember calculation / assist identifiers for the next step
+  try {
+    const body = data.body || data.hmrcBody || data.readback?.body || {};
+    const calcId =
+      body.calculationId ||
+      body.id ||
+      data.calculationId ||
+      (Array.isArray(body.calculations) && body.calculations[0]?.calculationId);
+    if (calcId) {
+      const el = document.getElementById('bsas-calc-id');
+      if (el && !el.value) el.value = String(calcId);
+      sessionStorage.setItem('st_last_calculation_id', String(calcId));
+    }
+    if (body.reportId) sessionStorage.setItem('st_assist_report_id', String(body.reportId));
+    const corr =
+      data.correlationId ||
+      data.hmrcCorrelationId ||
+      body.correlationId ||
+      data.responseHeaders?.['x-correlationid'];
+    if (corr) sessionStorage.setItem('st_assist_correlation_id', String(corr));
+  } catch {
+    /* ignore */
+  }
   showOut(data);
+}
+
+/**
+ * Self Assessment Assist (MTD) — only HMRC message fields (title/body/action/links/path).
+ */
+function renderAssistResult(data) {
+  let root = document.getElementById('assist-view');
+  if (!root) {
+    const host = document.getElementById('year-end-result');
+    if (!host) return;
+    root = document.createElement('div');
+    root.id = 'assist-view';
+    root.className = 'assist-view';
+    host.appendChild(root);
+  }
+  const isAssist =
+    data.workflow === 'sa_assist_report' || data.workflow === 'sa_assist_acknowledge';
+  if (!isAssist) return;
+
+  if (data.workflow === 'sa_assist_acknowledge') {
+    if (window.HmrcAssist) window.HmrcAssist.renderAcknowledged(root);
+    else {
+      root.hidden = false;
+      root.innerHTML = '<p class="assist-ack-done">Confirmed</p>';
+    }
+    return;
+  }
+
+  if (!window.HmrcAssist) {
+    root.hidden = false;
+    root.textContent = '';
+    return;
+  }
+
+  // Prefer correlationId from HMRC response body (OAS required field)
+  const body = data.body || {};
+  if (body.correlationId && !data.correlationId) {
+    data = { ...data, correlationId: body.correlationId };
+  }
+
+  window.HmrcAssist.renderAssist(root, data, {
+    onAcknowledge: async ({ reportId, correlationId }) => {
+      if (!reportId || !correlationId) {
+        showError('Missing reportId or correlationId from HMRC.');
+        return;
+      }
+      await runWorkflow('sa_assist_acknowledge', { reportId, correlationId });
+    },
+  });
 }
 
 function renderCalculationResult(data) {
@@ -183,8 +258,8 @@ function showError(msg) {
   }
 }
 
-async function runWorkflow(name) {
-  const body = { workflow: name, ...ids(), ...workflowPayload(name) };
+async function runWorkflow(name, extra = {}) {
+  const body = { workflow: name, ...ids(), ...workflowPayload(name), ...extra };
   try {
     const res = await api('/api/workflows/run', {
       method: 'POST',
@@ -221,6 +296,19 @@ function workflowPayload(name) {
   if (name === 'losses') {
     return { body: { businessId: ids().businessIdSe, typeOfLoss: 'self-employment', lossAmount: money('eoy-loss'), taxYearBroughtForwardFrom: ids().taxYear } };
   }
+  if (name === 'sa_assist_report') {
+    const calculationId =
+      document.getElementById('bsas-calc-id')?.value ||
+      sessionStorage.getItem('st_last_calculation_id') ||
+      '';
+    return { calculationId };
+  }
+  if (name === 'sa_assist_acknowledge') {
+    return {
+      reportId: sessionStorage.getItem('st_assist_report_id') || '',
+      correlationId: sessionStorage.getItem('st_assist_correlation_id') || '',
+    };
+  }
   return {};
 }
 
@@ -244,7 +332,7 @@ function renderEditor(stageId) {
   } else if (stageId === 'calculation') {
     root.innerHTML = '<div class="eoy-form"><h4>HMRC calculation</h4><p class="help-tip">The product requests a calculation from HMRC. It does not invent or locally calculate your final tax bill.</p></div>';
   } else if (stageId === 'final_declaration') {
-    root.innerHTML = '<div class="eoy-form declaration-box"><h4>Review before finalising</h4><label><input type="checkbox" id="eoy-declaration"> I confirm I have reviewed the figures and understand that finalising may create a submission to HMRC when live mode is explicitly enabled.</label><p class="muted">The current connection mode remains visible at the top of this page.</p></div>';
+    root.innerHTML = '<div class="eoy-form declaration-box"><h4>Review before finalising</h4><label><input type="checkbox" id="eoy-declaration"> I confirm I have reviewed the figures and that this declaration is accurate to the best of my knowledge.</label><p class="muted">Only send when you are ready to finalise this tax year with HMRC.</p></div>';
   } else {
     root.innerHTML = '';
   }
@@ -333,42 +421,222 @@ function renderStageActions(stageId) {
   }
 }
 
+function renderSourceBoard() {
+  const board = document.getElementById('year-end-source-board');
+  if (!board) return;
+  const completed = new Set(eoyCase?.completedStages || []);
+  const stages = applicableStages().filter((s) => s.id !== 'complete');
+  if (!stages.length) {
+    board.innerHTML =
+      '<li style="cursor:default"><span class="source-avatar">—</span><span><strong>No steps for your answers</strong><small>Change answers or load businesses from HMRC in setup.</small></span><span class="status-pill">Action needed</span></li>';
+    return;
+  }
+  const iconFor = (id) => {
+    if (id === 'se_adjustments') return 'SE';
+    if (id === 'uk_adjustments') return 'UK';
+    if (id === 'foreign_adjustments') return 'FP';
+    if (id === 'calculation') return '£';
+    if (id === 'final_declaration') return '✓';
+    if (id === 'bsas') return 'BS';
+    if (id === 'other_income_losses') return 'L';
+    if (id === 'quarterly_complete') return 'Q';
+    if (id === 'review_totals') return 'R';
+    return '·';
+  };
+  board.innerHTML = stages
+    .map((s) => {
+      const done = completed.has(s.id);
+      return `<li data-jump-stage="${esc(s.id)}" role="button" tabindex="0">
+        <span class="source-avatar">${iconFor(s.id)}</span>
+        <span><strong>${esc(s.title)}</strong><small>${esc(s.detail || '')}</small></span>
+        <span class="status-pill${done ? ' done' : ''}">${done ? 'Complete' : 'To do'}</span>
+        <span class="chev" aria-hidden="true">→</span>
+      </li>`;
+    })
+    .join('');
+  board.querySelectorAll('[data-jump-stage]').forEach((row) => {
+    const go = () => {
+      showYeCard('work');
+      jumpToStage(row.getAttribute('data-jump-stage'));
+    };
+    row.addEventListener('click', go);
+    row.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        go();
+      }
+    });
+  });
+}
+
+/** @type {{ se: boolean, uk: boolean, fp: boolean, losses: boolean }} */
+let yeGuide = { se: true, uk: true, fp: true, losses: false };
+/** @type {'q1'|'q2'|'q3'|'q4'|'checklist'|'work'|'done'} */
+let yeCard = 'q1';
+let yeHmrcConnected = false;
+
+const YE_WIZARD_MAP = {
+  q1: 'guide',
+  q2: 'guide',
+  q3: 'guide',
+  q4: 'guide',
+  checklist: 'checklist',
+  work: 'work',
+  done: 'done',
+};
+
+function loadYeGuide() {
+  try {
+    const saved = JSON.parse(sessionStorage.getItem('st_ye_guide') || 'null');
+    if (saved && typeof saved === 'object') {
+      yeGuide = {
+        se: Boolean(saved.se),
+        uk: Boolean(saved.uk),
+        fp: Boolean(saved.fp),
+        losses: Boolean(saved.losses),
+      };
+      return true;
+    }
+  } catch {
+    /* first visit */
+  }
+  return false;
+}
+
+function saveYeGuide() {
+  try {
+    sessionStorage.setItem('st_ye_guide', JSON.stringify(yeGuide));
+  } catch {
+    /* ignore */
+  }
+}
+
+function clearYeGuide() {
+  try {
+    sessionStorage.removeItem('st_ye_guide');
+  } catch {
+    /* ignore */
+  }
+}
+
+function stageApplies(stageId) {
+  if (stageId === 'se_adjustments') return yeGuide.se;
+  if (stageId === 'uk_adjustments') return yeGuide.uk;
+  if (stageId === 'foreign_adjustments') return yeGuide.fp;
+  if (stageId === 'other_income_losses') return yeGuide.losses;
+  return true;
+}
+
+function applicableStages() {
+  return eoyStages.filter((s) => stageApplies(s.id));
+}
+
+function showYeCard(card) {
+  yeCard = card;
+  document.querySelectorAll('[data-ye-card]').forEach((el) => {
+    el.hidden = el.getAttribute('data-ye-card') !== card;
+  });
+  const wizard = document.getElementById('ye-wizard');
+  if (wizard) {
+    wizard.hidden = false;
+    const phase = YE_WIZARD_MAP[card] || 'guide';
+    const order = ['guide', 'checklist', 'work', 'done'];
+    const idx = order.indexOf(phase);
+    wizard.querySelectorAll('[data-ye-step]').forEach((step) => {
+      const key = step.getAttribute('data-ye-step');
+      const i = order.indexOf(key);
+      step.classList.remove('active', 'done');
+      if (i < idx) step.classList.add('done');
+      if (i === idx) step.classList.add('active');
+    });
+  }
+  // Result panel only while working a stage
+  const result = document.getElementById('year-end-result');
+  if (result && card !== 'work') result.hidden = true;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function applyGuideToProgress() {
+  document.querySelectorAll('#eoy-progress .eoy-chip').forEach((chip) => {
+    const id = chip.dataset.stageId || '';
+    chip.hidden = !stageApplies(id);
+  });
+}
+
+function firstIncompleteStageId() {
+  const completed = new Set(eoyCase?.completedStages || []);
+  const stages = applicableStages();
+  for (const s of stages) {
+    if (s.id === 'complete') continue;
+    if (!completed.has(s.id)) return s.id;
+  }
+  return stages[stages.length - 1]?.id || eoyCase?.stageId;
+}
+
+function allApplicableDone() {
+  const completed = new Set(eoyCase?.completedStages || []);
+  return applicableStages()
+    .filter((s) => s.id !== 'complete')
+    .every((s) => completed.has(s.id));
+}
+
 function renderCase() {
   if (!eoyCase) return;
   const meta = document.getElementById('case-meta');
   const stage = eoyStages.find((s) => s.id === eoyCase.stageId) || eoyStages[0];
+  const apps = applicableStages();
   if (meta) {
-    const done = (eoyCase.completedStages || []).length;
-    meta.textContent = `Tax year ${eoyCase.taxYear} · step ${
-      (eoyCase.stageIndex ?? 0) + 1
-    } of ${eoyStages.length} · ${done} step(s) marked done`;
+    const done = (eoyCase.completedStages || []).filter((id) =>
+      apps.some((s) => s.id === id)
+    ).length;
+    const workSteps = apps.filter((s) => s.id !== 'complete').length;
+    meta.textContent = `Tax year ${eoyCase.taxYear} · ${done} of ${workSteps} steps done · built from your answers and HMRC sources`;
   }
+  const hy = document.getElementById('eoy-heading-year');
+  if (hy && eoyCase.taxYear) hy.textContent = String(eoyCase.taxYear).replace('-', '–');
   const title = document.getElementById('stage-title');
   const detail = document.getElementById('stage-detail');
   if (title) title.textContent = stage?.title || eoyCase.stageId;
   if (detail) detail.textContent = stage?.detail || '';
+  const stepLabel = document.getElementById('ye-step-label');
+  if (stepLabel && stage) {
+    const work = apps.filter((s) => s.id !== 'complete');
+    const idx = work.findIndex((s) => s.id === stage.id);
+    stepLabel.textContent =
+      idx >= 0 ? `Step ${idx + 1} of ${work.length}` : 'Year-end step';
+  }
   const noteEl = document.getElementById('stage-note');
   if (noteEl) {
     noteEl.value = (eoyCase.notes && eoyCase.notes[eoyCase.stageId]) || '';
   }
   renderProgress();
+  applyGuideToProgress();
   renderStageActions(eoyCase.stageId);
   renderEditor(eoyCase.stageId);
+  renderSourceBoard();
 
   const sources = eoyCase.sources || [];
   const list = document.getElementById('source-list');
   if (list) {
     if (!sources.length) {
       list.innerHTML =
-        '<li class="muted">No income sources saved yet — add them on Home / Onboarding or fill IDs from HMRC.</li>';
+        '<li class="muted">No income sources loaded yet. Connect HMRC and load businesses from account setup.</li>';
     } else {
       list.innerHTML = sources
         .map(
           (s) =>
-            `<li><span class="source-avatar">${s.type === 'self_employment' ? 'SE' : s.type === 'uk_property' ? 'UK' : 'FP'}</span><span><strong>${esc(s.nickname || s.label || s.type)}</strong><small>${esc(s.label || s.type || '')}${s.businessId ? ` · ${esc(s.businessId)}` : ''}</small></span><b>${s.type === 'foreign_property' ? 'Countries come from spreadsheet' : 'Review adjustments'}</b></li>`
+            `<li><span class="source-avatar">${s.type === 'self_employment' ? 'SE' : s.type === 'uk_property' ? 'UK' : 'FP'}</span><span><strong>${esc(s.nickname || s.label || s.type)}</strong><small>${esc(s.label || s.type || '')}</small></span><b>From HMRC</b></li>`
         )
         .join('');
     }
+  }
+
+  // Keep prev button state honest
+  const prevBtn = document.getElementById('ye-prev-step');
+  if (prevBtn) {
+    const work = apps.filter((s) => s.id !== 'complete');
+    const idx = work.findIndex((s) => s.id === eoyCase.stageId);
+    prevBtn.disabled = idx <= 0;
   }
 }
 
@@ -389,7 +657,7 @@ async function loadCase() {
       if (gate) {
         gate.hidden = false;
         gate.innerHTML =
-          'Sign in required for a saved tax return case. <a href="/signin?next=/year-end">Sign in</a>';
+          'Sign in required for your year-end case. <a href="/signin?next=/year-end">Sign in</a>';
       }
       return;
     }
@@ -429,12 +697,14 @@ async function patchCase(body) {
 }
 
 async function jumpToStage(stageId) {
+  if (!stageId) return;
   if (eoyDirty) {
     pendingYearEndStage = stageId;
     document.getElementById('unsaved-year-end-dialog')?.showModal();
     return;
   }
   await patchCase({ stageId });
+  showYeCard('work');
 }
 
 async function completeCurrent() {
@@ -446,6 +716,21 @@ async function completeCurrent() {
     data: stageId ? { [stageId]: collectEditorData() } : undefined,
   });
   eoyDirty = false;
+  if (allApplicableDone()) {
+    showYeCard('done');
+  } else {
+    showYeCard('work');
+  }
+}
+
+async function goPrevStage() {
+  const work = applicableStages().filter((s) => s.id !== 'complete');
+  const idx = work.findIndex((s) => s.id === eoyCase?.stageId);
+  if (idx <= 0) {
+    showYeCard('checklist');
+    return;
+  }
+  await jumpToStage(work[idx - 1].id);
 }
 
 async function saveNoteOnly() {
@@ -573,24 +858,81 @@ document.getElementById('load-biz')?.addEventListener('click', async () => {
 
 (async function boot() {
   try {
-    const res = await api('/api/status');
-    const data = await res.json();
-    const el = document.getElementById('connection-status');
-    if (el) {
-      el.textContent = data.previewOnly
-        ? 'Preview mode'
-        : data.liveSubmitEnabled
-          ? 'Submit flag on'
-          : 'Preview mode';
+    if (typeof window.stRefreshConnection === 'function') {
+      await window.stRefreshConnection();
     }
   } catch {
     /* ignore */
   }
-  // Prefill from income sources silently
+
+  // Hard gate: year-end requires HMRC connection (mirror path)
   try {
-    const r = await api('/api/me/income-sources');
-    if (r.ok) {
-      const d = await r.json();
+    const connRes = await api('/api/hmrc/status');
+    if (connRes.ok) {
+      const conn = await connRes.json();
+      yeHmrcConnected = Boolean(
+        conn?.connection?.connected && !conn?.connection?.mock
+      );
+    }
+  } catch {
+    yeHmrcConnected = false;
+  }
+  if (!yeHmrcConnected) {
+    const gate = document.getElementById('gate');
+    if (gate) {
+      gate.hidden = false;
+      gate.innerHTML =
+        'Connect HMRC before starting year-end. ' +
+        '<a href="/connect-hmrc">Connect HMRC</a> · ' +
+        '<a href="/onboarding">Set up your account</a>';
+    }
+    document.querySelectorAll('[data-ye-card]').forEach((el) => {
+      el.hidden = true;
+    });
+    const wizard = document.getElementById('ye-wizard');
+    if (wizard) wizard.hidden = true;
+    return;
+  }
+
+  // Prefill NINO + business IDs from account preferences and HMRC sources
+  try {
+    const [prefRes, srcRes, profRes] = await Promise.all([
+      api('/api/me/preferences'),
+      api('/api/me/income-sources'),
+      api('/api/me/taxpayer-profile'),
+    ]);
+    if (prefRes.ok) {
+      const p = await prefRes.json();
+      const id = p.preferences?.identifiers || {};
+      const ninoEl = document.getElementById('nino');
+      if (ninoEl && id.nino) ninoEl.value = id.nino;
+      const tyEl = document.getElementById('tax-year');
+      if (tyEl && id.taxYear) tyEl.value = id.taxYear;
+      if (id.businessIdSe) {
+        const el = document.getElementById('bid-se');
+        if (el) el.value = id.businessIdSe;
+      }
+      if (id.businessIdUk) {
+        const el = document.getElementById('bid-uk');
+        if (el) el.value = id.businessIdUk;
+      }
+      if (id.businessIdForeign) {
+        const el = document.getElementById('bid-fp');
+        if (el) el.value = id.businessIdForeign;
+      }
+    }
+    if (profRes.ok) {
+      const pr = await profRes.json();
+      const nino = pr.profile?.meta?.nino || pr.profile?.nino;
+      const ninoEl = document.getElementById('nino');
+      if (ninoEl && nino && !ninoEl.value) ninoEl.value = nino;
+      if (pr.profile?.taxYear) {
+        const tyEl = document.getElementById('tax-year');
+        if (tyEl && !tyEl.dataset.userEdited) tyEl.value = pr.profile.taxYear;
+      }
+    }
+    if (srcRes.ok) {
+      const d = await srcRes.json();
       for (const s of d.sources || []) {
         if (s.type === 'self_employment' && s.businessId) {
           const el = document.getElementById('bid-se');
@@ -609,5 +951,72 @@ document.getElementById('load-biz')?.addEventListener('click', async () => {
   } catch {
     /* ignore */
   }
+
+  // Exclusive multi-question guide: q1 → q2 → q3 → q4 → checklist → work → done
+  document.querySelectorAll('[data-ye-answer]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const key = btn.getAttribute('data-ye-answer');
+      const value = btn.getAttribute('data-value') === 'yes';
+      if (key === 'se') yeGuide.se = value;
+      if (key === 'uk') yeGuide.uk = value;
+      if (key === 'fp') yeGuide.fp = value;
+      if (key === 'losses') yeGuide.losses = value;
+
+      const card = btn.closest('[data-ye-card]')?.getAttribute('data-ye-card');
+      if (card === 'q1') showYeCard('q2');
+      else if (card === 'q2') showYeCard('q3');
+      else if (card === 'q3') showYeCard('q4');
+      else if (card === 'q4') {
+        saveYeGuide();
+        applyGuideToProgress();
+        renderSourceBoard();
+        showYeCard('checklist');
+      }
+    });
+  });
+
+  document.querySelectorAll('[data-ye-back]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const target = btn.getAttribute('data-ye-back');
+      if (target) showYeCard(/** @type {typeof yeCard} */ (target));
+    });
+  });
+
+  document.getElementById('ye-start-steps')?.addEventListener('click', async () => {
+    saveYeGuide();
+    applyGuideToProgress();
+    const next = firstIncompleteStageId();
+    if (next) await jumpToStage(next);
+    else showYeCard('done');
+  });
+
+  document.getElementById('ye-restart-guide')?.addEventListener('click', () => {
+    clearYeGuide();
+    yeGuide = { se: true, uk: true, fp: true, losses: false };
+    showYeCard('q1');
+  });
+
+  document.getElementById('eoy-back-overview')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    showYeCard('checklist');
+  });
+
+  document.getElementById('ye-back-checklist')?.addEventListener('click', () => {
+    showYeCard('checklist');
+  });
+
+  document.getElementById('ye-prev-step')?.addEventListener('click', () => {
+    goPrevStage();
+  });
+
+  const hadGuide = loadYeGuide();
   await loadCase();
+  applyGuideToProgress();
+
+  if (hadGuide) {
+    if (allApplicableDone()) showYeCard('done');
+    else showYeCard('checklist');
+  } else {
+    showYeCard('q1');
+  }
 })();

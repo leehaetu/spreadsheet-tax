@@ -112,6 +112,16 @@ export async function performWorkflowReadback(ctx, deps = {}) {
           attempted: false,
           note: 'calc_list response is already the list readback',
         };
+      case 'sa_assist_report':
+        return {
+          attempted: false,
+          note: 'SA Assist report response is already the customer message payload (or 204 empty)',
+        };
+      case 'sa_assist_acknowledge':
+        return {
+          attempted: false,
+          note: 'SA Assist acknowledge is a 204 acknowledgement with no further readback',
+        };
       case 'bsas_trigger':
       case 'bsas_adjust': {
         if (calculationId) {

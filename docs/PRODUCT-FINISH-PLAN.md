@@ -1,0 +1,128 @@
+# Product finish plan — HMRC MTD ITSA bridging app
+
+**Owner bar:** Make Spreadsheet Tax look and behave like a finished HMRC MTD ITSA **bridging** app — not a prototype, sandbox demo, or developer tool.  
+**Sources:** Owner goal (2026-07-18), scorecard of last 10 instruction chats, `docs/PRODUCT-BOARD-SPEC.md`, `docs/AGENT-TRUTH-PROTOCOL.md`.
+
+---
+
+## Goal statement
+
+Clean up the **authenticated product** so the customer path is:
+
+**Sign in → consistent shell → HMRC connect → load income sources from HMRC → quarterly (one source) → upload → check → review/send → year-end guided path → history / settings**
+
+No customer-facing sandbox/practice/preview/demo/sample/fictional wording.  
+No create/replace HMRC businesses in-app.  
+No jump-scroll workflows.  
+Same shell on every authenticated page.
+
+**Not claimed by this plan alone:** capacity 200×800k, HMRC Recognised listing, production HMRC credentials, full pen-test.
+
+---
+
+## Scope (customer-facing product)
+
+| In scope | Out of scope (separate shells) |
+|----------|--------------------------------|
+| `/signin`, `/home`, `/onboarding`, `/connect-hmrc`, `/app`, `/year-end`, `/records`, `/history`, `/account`, `/guide` | `/workspace` practice, `/mtd` operator harness, `/admin`, sales marketing “practice firm” copy |
+
+---
+
+## Work packages
+
+### P0 — App shell & sign-in
+- [x] Shared `product-shell.js` nav + connection + account  
+- [x] No authenticated chrome on `/signin`  
+- [x] Same nav labels/icons/shell on product pages  
+- [x] Suppress mode-pill “HMRC sandbox / preview” on product pages (`site-chrome.js`)
+
+### P1 — Copy hygiene (product only)
+- [x] Strip customer theatre strings from product pages (guarded by `tests/product-finish.test.js`)  
+- [x] Operator tools only behind operator gate on connect-hmrc  
+- [x] Nav labels: Home · Quarterly updates · Year end · Sources · History · Settings · Help  
+
+### P2 — HMRC setup & gating
+- [x] Onboarding: NINO + Connect + Load businesses from HMRC (mirror only)  
+- [x] Hard gate: quarterly cannot start without HMRC connected  
+- [x] No create/add/remove HMRC sources in customer UI  
+- [x] Missing business → `/guide` + HMRC guidance  
+
+### P3 — Quarterly guided flow
+- [x] Source → upload → map/check → review/send as exclusive panels  
+- [x] Upload copy: “Click to choose a spreadsheet or drag it here”  
+- [x] Download free template labelled  
+- [x] Spreadsheet inspect in modal  
+- [x] Technical IDs / Fill business IDs / Show due periods removed from primary path  
+- [x] Quarter-focused copy before upload; YTD off main path  
+
+### P4 — Year end
+- [x] Label “Year end” not Tax return  
+- [x] Exclusive multi-step questionnaire (q1–q4) → checklist → stage work → done  
+- [x] Hard HMRC connection gate on year-end  
+- [x] No “connection mode remains visible…” filler  
+- [x] Checklist board + sequential stage work with prev/continue  
+
+### P5 — Records / History / Settings
+- [x] History = Submission history  
+- [x] Records = Sources shell  
+- [x] Settings in product shell  
+- [x] Clearer IA (sources + drafts with role)  
+- [x] Technical business IDs under Settings advanced disclosure  
+
+### P6 — Assist (already evidenced)
+- [x] SA Assist generate + acknowledge `SANDBOX_HTTP`  
+- [x] HMRC wording only in Assist renderer  
+- [x] Quarterly Assist: primary CTA + advanced calc reference only  
+
+### P7 — Proof
+- [x] Unit tests: `tests/product-finish.test.js`  
+- [ ] Manual checklist in Test Plan (owner browser pass)  
+
+---
+
+## Test plan (owner)
+
+1. Sales → Sign in: no dashboard chrome behind form.  
+2. Log in; open Home, Quarterly, Year end, Sources, History, Settings, Help — same shell.  
+3. Grep product UI for sandbox/practice/preview/demo/testing/fictional/sample.  
+4. HMRC disconnected: quarterly **and** year-end blocked.  
+5. No sources: instructions to add in HMRC + refresh; no create.  
+6. Quarterly: source → upload → check → review as separate screens; no jump-scroll; no technical ID primary form.  
+7. Year-end: exclusive Yes/No questions → checklist of applicable steps → work one step at a time.  
+8. Upload clickable; template says download; no grey marketing footer in app.
+
+---
+
+## Assumptions
+
+1. Bridging app first (spreadsheet → HMRC), not full books.  
+2. Mirror HMRC sources only.  
+3. HMRC connection before quarterly and year-end.  
+4. Production-facing UI never sells itself as sandbox/demo.  
+5. Main quarterly path = current period figures.  
+6. Boards = visual direction; HMRC-mirror overrides create-business frames.
+
+---
+
+## Scorecard lessons (last 10 chats) → rules for this plan
+
+| Lesson | Rule here |
+|--------|-----------|
+| Partial UX sold as done | Work packages must close with tests + checklist |
+| Wrong job (artifacts) | Product code only |
+| Assist finished with real sandbox | Keep Assist HMRC-only; don’t invent messages |
+| Board 100% not met | Explicit open items; still ship hard gates + shell |
+
+---
+
+## Implementation status (this pass)
+
+1. Plan doc (this file) — done  
+2. Shell + sign-in + suppress product mode-pill — done  
+3. Hard HMRC gate on quarterly **and** year-end — done  
+4. Product copy strip + upload wording — done  
+5. Year-end exclusive multi-card guided flow + checklist + work/done — done  
+6. Settings advanced IDs + Assist primary CTA polish — done  
+7. Automated tests — `tests/product-finish.test.js`  
+
+**Honest residual (not claimed complete):** full board pixel-atlas match; capacity 200×800k; pilot/production-ready; HMRC Recognised listing; owner manual browser checklist.

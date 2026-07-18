@@ -63,6 +63,11 @@ export async function hmrcFetch(opts) {
   } catch {
     body = { raw: text.slice(0, 2500) };
   }
+  /** @type {Record<string, string>} */
+  const responseHeaders = {};
+  res.headers.forEach((value, key) => {
+    responseHeaders[key.toLowerCase()] = value;
+  });
   return {
     ok: res.ok,
     status: res.status,
@@ -75,6 +80,11 @@ export async function hmrcFetch(opts) {
     fraudHeaderNames: Object.keys(fph),
     externalCallMade: true,
     mode: oauthConfig().mode,
+    responseHeaders,
+    correlationId:
+      responseHeaders['x-correlationid'] ||
+      responseHeaders['x-correlation-id'] ||
+      null,
   };
 }
 
@@ -738,6 +748,52 @@ export function defaultSeAnnualBody() {
   };
 }
 
+/**
+ * Self Assessment Assist (MTD) 1.0 — generate HMRC Assist report for a calculation.
+ * POST /individuals/self-assessment/assist/reports/{nino}/{taxYear}/{calculationId}
+ * OAuth scope: read:self-assessment-assist
+ * @param {{ nino: string, taxYear: string, calculationId: string, accessToken: string, req?: unknown, userId?: string|null }} opts
+ */
+export async function generateSaAssistReport(opts) {
+  const nino = ninoClean(opts.nino);
+  const taxYear = String(opts.taxYear || '').trim();
+  const calculationId = String(opts.calculationId || '').trim();
+  if (!nino || !taxYear || !calculationId) {
+    throw new Error('nino, taxYear and calculationId required for SA Assist report');
+  }
+  return hmrcFetch({
+    ...opts,
+    method: 'POST',
+    path: `/individuals/self-assessment/assist/reports/${encodeURIComponent(nino)}/${encodeURIComponent(taxYear)}/${encodeURIComponent(calculationId)}`,
+    accept: 'application/vnd.hmrc.1.0+json',
+    body: null,
+    label: 'sa_assist_generate_report',
+  });
+}
+
+/**
+ * Acknowledge that the Assist report was shown to the customer.
+ * POST /individuals/self-assessment/assist/reports/acknowledge/{nino}/{reportId}/{correlationId}
+ * OAuth scope: write:self-assessment-assist
+ * @param {{ nino: string, reportId: string, correlationId: string, accessToken: string, req?: unknown, userId?: string|null }} opts
+ */
+export async function acknowledgeSaAssistReport(opts) {
+  const nino = ninoClean(opts.nino);
+  const reportId = String(opts.reportId || '').trim();
+  const correlationId = String(opts.correlationId || '').trim();
+  if (!nino || !reportId || !correlationId) {
+    throw new Error('nino, reportId and correlationId required to acknowledge SA Assist report');
+  }
+  return hmrcFetch({
+    ...opts,
+    method: 'POST',
+    path: `/individuals/self-assessment/assist/reports/acknowledge/${encodeURIComponent(nino)}/${encodeURIComponent(reportId)}/${encodeURIComponent(correlationId)}`,
+    accept: 'application/vnd.hmrc.1.0+json',
+    body: null,
+    label: 'sa_assist_acknowledge_report',
+  });
+}
+
 /** Capability matrix for integrity / status */
 export function mtdCapabilityMatrix() {
   return {
@@ -764,11 +820,13 @@ export function mtdCapabilityMatrix() {
       broughtForwardLosses: true,
       taxLiabilityAdjustments: true,
       periodsOfAccount: true,
+      saAssistReport: true,
     },
     extras: {
       itsaStatus: true,
       biss: true,
       accountsBalanceAndTransactions: true,
+      saAssist: true,
       hubSubscribedAsOf: '2026-07-18',
       hubApis: [
         'Business Details (MTD) 2.0',
@@ -780,6 +838,7 @@ export function mtdCapabilityMatrix() {
         'Business Income Source Summary (MTD) 3.0',
         'Self Assessment Individual Details (MTD) 2.0',
         'Self Assessment Accounts (MTD) 4.0',
+        'Self Assessment Assist (MTD) 1.0',
         'Test Fraud Prevention Headers 1.0',
         'Self Assessment Test Support (MTD) 1.0',
         'Create Test User 1.0',

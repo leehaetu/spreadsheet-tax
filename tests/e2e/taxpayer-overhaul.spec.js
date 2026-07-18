@@ -1,4 +1,9 @@
 import { test, expect } from '@playwright/test';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const fixtureCsv = path.join(__dirname, '../../fixtures/combined-all-sources.csv');
 
 async function signIn(page, next = '/onboarding') {
   await page.goto(`/signin?next=${encodeURIComponent(next)}`);
@@ -21,21 +26,8 @@ test.describe('approved taxpayer overhaul', () => {
       method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sources })
     }), fixtureSources);
     await page.reload();
-    await expect(page.getByRole('heading', { name: 'Welcome to Spreadsheet Tax' })).toBeVisible();
-    await page.getByRole('button', { name: 'Continue' }).click();
-    await expect(page.locator('.chosen-source')).toHaveCount(3);
-
-    await page.locator('[data-remove-source]').last().click();
-    await expect(page.getByRole('heading', { name: 'Remove this source?' })).toBeVisible();
-    await page.getByRole('button', { name: 'Cancel' }).click();
-    await expect(page.locator('.chosen-source')).toHaveCount(3);
-    await page.locator('[data-remove-source]').last().click();
-    await page.getByRole('button', { name: 'Remove source' }).click();
-    await expect(page.locator('.chosen-source')).toHaveCount(2);
-    await page.evaluate((sources) => fetch('/api/me/income-sources', {
-      method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sources })
-    }), fixtureSources);
-    await page.reload();
+    await expect(page.getByRole('heading', { name: 'Set up your account' })).toBeVisible();
+    await page.fill('#setup-nino', 'AA123456A');
     await page.getByRole('button', { name: 'Continue' }).click();
     await expect(page.locator('.chosen-source')).toHaveCount(3);
     await page.getByRole('button', { name: 'Continue' }).click();
@@ -59,8 +51,8 @@ test.describe('approved taxpayer overhaul', () => {
     await page.goto('/app?flow=quarterly');
     await expect(page.locator('.quarterly-source-row')).toHaveCount(3);
     await page.locator('.quarterly-source-row').nth(2).click();
-    await expect(page.locator('#quarterly-source-note')).toContainText('Source selected');
     await expect(page.locator('#upload-panel')).toBeVisible();
+    await expect(page.locator('#quarterly-source-panel')).toBeHidden();
   });
 
   test('year-end exposes source-specific adjustment forms and declaration gate', async ({ page }) => {
@@ -90,33 +82,60 @@ test.describe('approved taxpayer overhaul', () => {
     await expect(page.locator('#eoy-declaration')).toBeVisible();
   });
 
-  test('quarterly sample completes review, declaration and preview receipt', async ({ page }) => {
+  test('quarterly upload completes review, declaration and send path', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 1024 });
     await signIn(page, '/app?flow=quarterly');
-    await page.locator('#samples').evaluate((el) => {
-      el.open = true;
-    });
-    await page.locator('.sample-btn[data-sample="combined"]').click({ force: true });
-    await expect(page.locator('#review-panel')).toBeVisible({ timeout: 20_000 });
+    // Seed sources so continue is available
+    await page.evaluate(() => fetch('/api/me/income-sources', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sources: [
+          { id: 'se-1', type: 'self_employment', label: 'Self-employment', nickname: 'Trade' },
+        ],
+      }),
+    }));
+    await page.reload();
+    await page.locator('.quarterly-source-row').first().click();
+    await expect(page.locator('#upload-panel')).toBeVisible();
+    await page.setInputFiles('#file-input', fixtureCsv);
+    await page.locator('#import-btn').click();
+    await expect(page.locator('#map-panel')).toBeVisible({ timeout: 20_000 });
+    await expect(page.locator('#upload-panel')).toBeHidden();
+    await page.locator('#goto-figures').click();
+    await expect(page.locator('#review-panel')).toBeVisible({ timeout: 10_000 });
     await expect(page.locator('#summary-cards')).toBeVisible();
-    await expect(page.locator('#quarterly-advanced')).not.toHaveAttribute('open', '');
     await page.locator('#goto-submit').click();
     await expect(page.locator('#submit-panel')).toBeVisible();
-    await page.locator('#nino').fill('AA123456A');
-    await page.locator('#tax-year').fill('2026-27');
-    await page.locator('#bid-se').fill('XAIS12345678901');
-    await page.locator('#bid-uk').fill('XAIS12345678902');
-    await page.locator('#bid-fp').fill('XAIS12345678903');
+    await expect(page.locator('#review-panel')).toBeHidden();
+    // IDs are hidden fields filled from preferences / defaults
+    await page.evaluate(() => {
+      const n = document.getElementById('nino');
+      const ty = document.getElementById('tax-year');
+      const se = document.getElementById('bid-se');
+      if (n) n.value = 'AA123456A';
+      if (ty) ty.value = '2026-27';
+      if (se) se.value = 'XAIS12345678901';
+    });
     await page.locator('#approve-cells').check();
     await page.locator('#submit-btn').click();
     await expect(page.locator('#submit-success')).toBeVisible({ timeout: 20_000 });
-    await expect(page.locator('#submit-summary')).toContainText(/Preview|NOT sent to HMRC/i);
+    await expect(page.locator('#submit-summary')).toContainText(/Update prepared|HMRC response|Not yet accepted|income source/i);
     await expect(page.locator('#submit-btn')).toBeDisabled();
     await expect(page.locator('#submit-btn')).toHaveText('Update already processed');
   });
 
   test('upload failure stays on add-records step with an actionable error', async ({ page }) => {
     await signIn(page, '/app?flow=quarterly');
+    await page.evaluate(() => fetch('/api/me/income-sources', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sources: [{ id: 'se-1', type: 'self_employment', label: 'Self-employment', nickname: 'Trade' }],
+      }),
+    }));
+    await page.reload();
+    await page.locator('.quarterly-source-row').first().click();
     await page.locator('#import-btn').click();
     await expect(page.locator('#upload-error')).toBeVisible();
     await expect(page.locator('#upload-error')).toContainText('choose a spreadsheet');

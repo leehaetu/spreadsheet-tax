@@ -46,6 +46,8 @@ railway up --detach -m "manual redeploy"
 | `HMRC_REDIRECT_URI` | `https://<domain>/api/hmrc/callback` |
 | `HMRC_OAUTH_ENV` | `sandbox` until Production credentials |
 | `HMRC_ALLOW_LIVE_SUBMIT` | `1` only when intentional; still needs real OAuth token |
+| `HMRC_SANDBOX_APPLICATION_ID` | Developer Hub sandbox app id (Assist subscribed on this app) |
+| OAuth scopes (app code) | `read/write:self-assessment` + `read/write:self-assessment-assist` — re-connect HMRC after deploy so tokens include Assist scopes |
 
 ## Architecture (current)
 

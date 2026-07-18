@@ -41,6 +41,8 @@ import {
   periodBodyFromDraft,
   taxYearFromPeriodStart,
   mtdCapabilityMatrix,
+  generateSaAssistReport,
+  acknowledgeSaAssistReport,
 } from '../lib/hmrc-api.js';
 import { ensurePropertyBusinesses } from '../lib/ensure-property-businesses.js';
 import { writeAudit } from '../lib/drafts.js';
@@ -541,5 +543,27 @@ export function registerHmrcMtdRoutes(app, deps) {
   );
   app.get('/api/hmrc/mtd/accounts/balance', (req, res) =>
     run(req, res, 'accounts_balance', (o) => retrieveBalanceAndTransactions(o))
+  );
+
+  // ——— Self Assessment Assist (MTD) 1.0 ———
+  // Generate Assist report after a calculation (quarterly / annual / final declaration journeys).
+  app.post('/api/hmrc/mtd/assist/report', (req, res) =>
+    run(req, res, 'sa_assist_report', (o) =>
+      generateSaAssistReport({
+        ...o,
+        taxYear: req.body?.taxYear || req.query?.taxYear,
+        calculationId: req.body?.calculationId || req.query?.calculationId,
+      })
+    )
+  );
+  // Acknowledge that the report was shown in full to the customer.
+  app.post('/api/hmrc/mtd/assist/acknowledge', (req, res) =>
+    run(req, res, 'sa_assist_acknowledge', (o) =>
+      acknowledgeSaAssistReport({
+        ...o,
+        reportId: req.body?.reportId || req.query?.reportId,
+        correlationId: req.body?.correlationId || req.query?.correlationId,
+      })
+    )
   );
 }
