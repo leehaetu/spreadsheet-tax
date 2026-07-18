@@ -1,30 +1,32 @@
 # Platform implementation status (capacity + Excel)
 
-**Updated:** 2026-07-18 · App **1.17.0**  
-**Capacity gate:** still **NOT MET** for 200 practices / 800k until HA Postgres + Redis + full seed + load evidence with `CAPACITY_CLAIM_FULL=1`.
+**Updated:** 2026-07-18 · App **1.28.0**  
+**Capacity gate:** still **NOT MET** for 200 practices / 800k until HA Postgres + Redis + full seed + load evidence with `CAPACITY_CLAIM_FULL=1`.  
+**Track doc:** [CAPACITY-PLATFORM-TRACK.md](./CAPACITY-PLATFORM-TRACK.md)
 
 ## What was missing (last chats) and what shipped in code
 
-| Requirement | Status in 1.17.0 |
+| Requirement | Status in 1.28.0 |
 |-------------|------------------|
 | Postgres-capable schema + pool | **Shipped** `src/lib/pg-pool.js` when `DATABASE_URL` set |
-| Redis sessions/rate limits/locks | **Shipped** `src/lib/redis-client.js` when `REDIS_URL` set; rate limit uses Redis first |
-| Durable job queue + worker process | **Shipped** `src/lib/job-queue.js` + `src/workers/job-runner.js` (`npm run worker`) |
+| **Postgres RLS** | **Shipped** `applyRowLevelSecurity()` on clients/drafts/memberships/audit/object_blobs |
+| Redis sessions/rate limits/locks | **Shipped** `src/lib/redis-client.js` when `REDIS_URL` set |
+| **RBAC / ABAC** | **Shipped** `rbac.js` + `abac.js` + `authorize()` |
+| **Tenant firm_id guard** | **Shipped** `tenant-context.js` + practice API checks |
+| **Rate limit tiers + global API middleware** | **Shipped** `rate-limit.js` |
+| Durable job queue + worker process | **Shipped** `job-queue.js` + `npm run worker` |
 | HMRC jobs never auto-file | **Enforced** — `hmrc_submit` requires `userApproved: true` |
-| Object storage quarantine + hash | **Shipped** `src/lib/object-store.js` (local dir; S3 later) |
-| Magic-byte file type detection | **Shipped** (xlsx zip / xls OLE / csv) |
-| First-class Excel (not production-disable) | **Shipped** — kill switch only; import uses isolated worker |
-| Isolated Excel parse worker | **Shipped** child process `excel-parse-worker.js` (LibreOffice container still TODO) |
-| Capacity seed 200 practices | **Shipped** `npm run seed:capacity` (default 5k clients for CI) |
-| Full 800k seed | **Script ready** `npm run seed:capacity:full` (long; needs disk/Postgres) |
-| Load / isolation / queue evidence | **Shipped** `npm run load:capacity` |
+| Object storage quarantine + hash | **Shipped** `object-store.js` |
+| Isolated Excel parse worker | **Shipped** child process (LibreOffice container still TODO) |
+| Capacity seed 200 practices | **Shipped** `npm run seed:capacity` (5k clients CI default) |
+| Full 800k seed | **Script ready** `npm run seed:capacity:full` |
+| Load / isolation / queue evidence | **Shipped** `npm run load:capacity` + `npm run capacity:evidence` |
 | docker-compose Postgres+Redis | **Shipped** `docker-compose.capacity.yml` |
 | CAPACITY_ENFORCE boot refuse | **Shipped** when `CAPACITY_ENFORCE=1` |
-| Managed HA Postgres on Railway | **Ops** — provision service; set `DATABASE_URL` |
-| LibreOffice disposable containers | **Not yet** — next isolation harding |
-| ClamAV malware engine | **Stub** (`MALWARE_SCAN` hook) |
-| Full app dual-write all tables on PG | **Partial** — schema+seed+queue; full cutover of auth/practice still SQLite-default |
-| 800k gate proven | **NOT MET** — requires full seed + Postgres/Redis + claim flag |
+| Security posture API | **Shipped** `GET /api/security/posture` |
+| Managed HA Postgres on Railway | **Ops** — provision; set `DATABASE_URL` |
+| LibreOffice disposable containers | **Not yet** |
+| 800k gate proven | **NOT MET** |
 
 ## How to run capacity path locally
 

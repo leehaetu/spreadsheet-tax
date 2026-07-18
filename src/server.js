@@ -9,9 +9,20 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import fs from 'node:fs';
 import { processLocalFile, processLocalFileIsolated } from './lib/pipeline.js';
-import { redisRateLimit } from './lib/redis-client.js';
 import { enqueueJob } from './lib/job-queue.js';
 import { evaluateCapacityPlatform, isPostgresMode } from './lib/platform-config.js';
+import {
+  checkRateLimit,
+  apiRateLimitMiddleware,
+  clientIp as rateLimitClientIp,
+  RATE_TIERS,
+} from './lib/rate-limit.js';
+import {
+  assertClientFirmId,
+  applyPostgresRlsContext,
+  firmIdSetForUser,
+} from './lib/tenant-context.js';
+import { PERMISSIONS, authorize } from './lib/access-control.js';
 import {
   ensureOperationalPostgres,
   mirrorDraftToPostgres,
@@ -188,10 +199,7 @@ import {
   retrievePeriodsOfAccount,
   createOrUpdatePeriodsOfAccount,
 } from './lib/hmrc-api.js';
-import {
-  loadDraftForUser,
-  assertJobOperator,
-} from './lib/access-control.js';
+import { loadDraftForUser, assertJobOperator } from './lib/access-control.js';
 import { assertProductionBoot } from './lib/production-boot.js';
 import {
   recordWorkflowReceipt,
@@ -352,6 +360,28 @@ const upload = multer({
 });
 
 app.use(express.json({ limit: '2mb' }));
+app.use(apiRateLimitMiddleware());
+// Attach tenant firm set + Postgres RLS session vars when authenticated
+app.use(async (req, _res, next) => {
+  try {
+    const sid = getSessionIdFromRequest(req);
+    const user = sid ? getSessionUser(sid) : null;
+    if (user?.id) {
+      req.tenant = {
+        userId: user.id,
+        firmIds: [...firmIdSetForUser(user.id)],
+      };
+      if (isPostgresMode()) {
+        await applyPostgresRlsContext(user.id, req.tenant.firmIds);
+      }
+    } else {
+      req.tenant = null;
+    }
+  } catch {
+    req.tenant = null;
+  }
+  next();
+});
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'SAMEORIGIN');
@@ -1020,50 +1050,13 @@ function createSubmitClient(opts = {}) {
   });
 }
 
-/**
- * Rate limit: Redis when REDIS_URL set, else SQLite/in-process.
- * @returns {boolean | Promise<boolean>}
- */
-function rateLimit(key, max, windowMs) {
-  // Fire Redis path as sync-compat: callers that need async should use rateLimitAsync
-  return rateLimitAsync(key, max, windowMs);
-}
-
 /** @returns {Promise<boolean>} */
 async function rateLimitAsync(key, max, windowMs) {
-  try {
-    const redisResult = await redisRateLimit(key, max, windowMs);
-    if (redisResult !== null && redisResult !== undefined) return redisResult;
-  } catch {
-    /* fall through to DB */
-  }
-  const database = getDb();
-  const now = Date.now();
-  const row = database
-    .prepare(`SELECT * FROM rate_limits WHERE key = ?`)
-    .get(key);
-  if (!row) {
-    database
-      .prepare(
-        `INSERT INTO rate_limits (key, count, window_start) VALUES (?, 1, ?)`
-      )
-      .run(key, new Date(now).toISOString());
-    return true;
-  }
-  const start = new Date(row.window_start).getTime();
-  if (now - start > windowMs) {
-    database
-      .prepare(
-        `UPDATE rate_limits SET count = 1, window_start = ? WHERE key = ?`
-      )
-      .run(new Date(now).toISOString(), key);
-    return true;
-  }
-  if (row.count >= max) return false;
-  database
-    .prepare(`UPDATE rate_limits SET count = count + 1 WHERE key = ?`)
-    .run(key);
-  return true;
+  return checkRateLimit(key, max, windowMs);
+}
+
+function clientIp(req) {
+  return rateLimitClientIp(req);
 }
 
 app.post('/api/submit', async (req, res) => {
@@ -1341,14 +1334,6 @@ app.post('/api/submit', async (req, res) => {
       .json({ error: e instanceof Error ? e.message : 'Submit failed' });
   }
 });
-
-function clientIp(req) {
-  return (
-    (typeof req.headers['x-forwarded-for'] === 'string'
-      ? req.headers['x-forwarded-for'].split(',')[0].trim()
-      : req.socket.remoteAddress) || 'unknown'
-  );
-}
 
 /** Auth */
 app.post('/api/auth/register', async (req, res) => {
@@ -2693,6 +2678,10 @@ app.put('/api/me/eoy-case', (req, res) => {
       typeof req.body?.stageId === 'string' ? req.body.stageId : undefined,
     completeCurrent: Boolean(req.body?.completeCurrent),
     note: typeof req.body?.note === 'string' ? req.body.note : undefined,
+    data:
+      req.body?.data && typeof req.body.data === 'object' && !Array.isArray(req.body.data)
+        ? req.body.data
+        : undefined,
   };
   if (patch.stageId && !EOY_STAGES.some((s) => s.id === patch.stageId)) {
     return res.status(400).json({
@@ -3019,9 +3008,19 @@ app.get('/api/me/clients', (req, res) => {
   if (!user) return;
   const firmId =
     typeof req.query.firmId === 'string' ? req.query.firmId : null;
-  if (!firmId || !userCanAccessFirm(user.id, firmId)) {
-    return res.status(400).json({ error: 'Valid firmId required for your membership.' });
+  const tenantOk = assertClientFirmId(user.id, firmId);
+  if (!firmId || !tenantOk.ok) {
+    return res.status(tenantOk.status || 400).json({
+      error: tenantOk.error || 'Valid firmId required for your membership.',
+      code: tenantOk.code || 'TENANT_REQUIRED',
+    });
   }
+  const denied = authorize(
+    user,
+    { type: 'firm', firmId, id: firmId },
+    { action: PERMISSIONS.CLIENT_READ }
+  );
+  if (denied) return res.status(denied.status).json(denied);
   const q = typeof req.query.q === 'string' ? req.query.q : '';
   const status = typeof req.query.status === 'string' ? req.query.status : '';
   const needsAction =
@@ -3056,11 +3055,19 @@ app.get('/api/me/practice-dashboard', (req, res) => {
   if (!user) return;
   const firmId =
     typeof req.query.firmId === 'string' ? req.query.firmId : null;
-  if (!firmId || !userCanAccessFirm(user.id, firmId)) {
-    return res
-      .status(400)
-      .json({ error: 'Valid firmId required for your membership.' });
+  const tenantOk = assertClientFirmId(user.id, firmId);
+  if (!firmId || !tenantOk.ok) {
+    return res.status(tenantOk.status || 400).json({
+      error: tenantOk.error || 'Valid firmId required for your membership.',
+      code: tenantOk.code || 'TENANT_REQUIRED',
+    });
   }
+  const denied = authorize(
+    user,
+    { type: 'firm', firmId, id: firmId },
+    { action: PERMISSIONS.FIRM_READ }
+  );
+  if (denied) return res.status(denied.status).json(denied);
   res.json({ ok: true, dashboard: getPracticeDashboard(firmId) });
 });
 
@@ -3901,6 +3908,47 @@ app.get('/api/status', (_req, res) => {
       'practices',
       'clients',
     ],
+    security: {
+      tenantIsolation: true,
+      rbac: true,
+      abac: true,
+      rlsPostgres: isPostgresMode(),
+      rateLimiting: true,
+      csrfEnforced: csrfEnforced(),
+      capacityPlatform: evaluateCapacityPlatform(),
+    },
+  });
+});
+
+/** Security control plane summary (no secrets) */
+app.get('/api/security/posture', (req, res) => {
+  const cap = evaluateCapacityPlatform();
+  res.json({
+    ok: true,
+    tenantIsolation: {
+      appLayer: true,
+      firmMembershipRequired: true,
+      clientSuppliedFirmIdRejectedOutsideMembership: true,
+      postgresRls: isPostgresMode(),
+      note: isPostgresMode()
+        ? 'RLS policies active when migratePostgres has run'
+        : 'SQLite uses app-layer isolation only; enable DATABASE_URL for RLS',
+    },
+    rbac: {
+      roles: ['practice_admin', 'accountant', 'bookkeeper', 'individual'],
+      matrixModule: 'src/lib/rbac.js',
+    },
+    abac: {
+      dualControlEnv: process.env.FIRM_DUAL_CONTROL === '1',
+      assigneeEnforceEnv: process.env.ABAC_ASSIGNEE_ENFORCE === '1',
+      module: 'src/lib/abac.js',
+    },
+    rateLimiting: {
+      redis: cap.redis,
+      tiers: Object.keys(RATE_TIERS),
+      globalApiMiddleware: true,
+    },
+    capacity: cap,
   });
 });
 

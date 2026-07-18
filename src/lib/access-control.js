@@ -1,6 +1,7 @@
 /**
  * Central authorisation for drafts, firms, clients, jobs.
  * Membership alone is not enough for admin actions — roles are enforced.
+ * RBAC matrix: `rbac.js`. ABAC attributes: `abac.js`.
  */
 
 import { getDb } from './db.js';
@@ -11,19 +12,23 @@ import {
   userCanAccessFirm,
 } from './auth.js';
 import { getDraft } from './drafts.js';
+import { rolesWithPermission, PERMISSIONS } from './rbac.js';
+import { evaluateAbac, abacToHttp } from './abac.js';
 
 /** Roles that may invite users and rename/delete firm resources. */
-export const ADMIN_ROLES = new Set([ROLE_PRACTICE_ADMIN]);
+export const ADMIN_ROLES = new Set(rolesWithPermission(PERMISSIONS.FIRM_INVITE));
 
 /** Roles that may mutate clients (status, import, delete) within a firm. */
-export const CLIENT_MUTATOR_ROLES = new Set([
-  ROLE_PRACTICE_ADMIN,
-  ROLE_ACCOUNTANT,
-  ROLE_BOOKKEEPER,
-]);
+export const CLIENT_MUTATOR_ROLES = new Set(
+  rolesWithPermission(PERMISSIONS.CLIENT_WRITE)
+);
 
 /** Roles that may trigger firm-scoped operational jobs (reminders). */
-export const JOB_OPERATOR_ROLES = new Set([ROLE_PRACTICE_ADMIN, ROLE_ACCOUNTANT]);
+export const JOB_OPERATOR_ROLES = new Set(
+  rolesWithPermission(PERMISSIONS.JOB_ENQUEUE)
+);
+
+export { PERMISSIONS };
 
 /**
  * @param {string} userId
@@ -157,4 +162,30 @@ export function assertClientMutator(userId, firmId) {
  */
 export function assertJobOperator(userId, firmId) {
   return assertFirmAccess(userId, firmId, { roles: JOB_OPERATOR_ROLES });
+}
+
+/**
+ * Unified authorize: RBAC + ABAC.
+ * @param {{ id: string }|null} user
+ * @param {import('./abac.js').Resource} resource
+ * @param {import('./abac.js').AbacContext} ctx
+ * @returns {{ error: string, status: number, code?: string } | null}
+ */
+export function authorize(user, resource, ctx) {
+  const decision = evaluateAbac(user, resource, ctx);
+  return abacToHttp(decision);
+}
+
+/**
+ * Firm action helper using permission string.
+ * @param {string} userId
+ * @param {string} firmId
+ * @param {string} permission
+ */
+export function assertFirmPermission(userId, firmId, permission) {
+  return authorize(
+    { id: userId },
+    { type: 'firm', firmId, id: firmId },
+    { action: permission }
+  );
 }

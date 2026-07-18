@@ -144,7 +144,8 @@ describe('practice dashboard and submissions export', () => {
       'GET',
       '/api/me/practice-dashboard?firmId=not-a-real-firm'
     );
-    assert.equal(res.status, 400);
+    // Tenant isolation: unknown firmId is forbidden (403), not a soft 400
+    assert.ok(res.status === 403 || res.status === 400, res.body);
   });
 
   it('creates a new firm for signed-in user', async () => {

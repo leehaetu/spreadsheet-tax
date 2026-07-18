@@ -196,4 +196,75 @@ export async function migratePostgres() {
     CREATE INDEX IF NOT EXISTS idx_job_queue_poll ON job_queue(queue, status, available_at);
     CREATE INDEX IF NOT EXISTS idx_object_sha ON object_blobs(sha256);
   `);
+  await applyRowLevelSecurity();
+}
+
+/**
+ * Enable RLS on tenant tables. Policies use session vars set by tenant-context:
+ *   app.user_id  — current user
+ *   app.firm_ids — comma-separated firm ids the user may access
+ * App still enforces RBAC/ABAC in Node; RLS is defence-in-depth for Postgres.
+ */
+export async function applyRowLevelSecurity() {
+  const p = getPool();
+  // Helper: firm id is in the session firm list
+  await p.query(`
+    CREATE OR REPLACE FUNCTION app_user_id() RETURNS text AS $$
+      SELECT NULLIF(current_setting('app.user_id', true), '')
+    $$ LANGUAGE sql STABLE;
+
+    CREATE OR REPLACE FUNCTION app_has_firm(fid text) RETURNS boolean AS $$
+      SELECT fid IS NOT NULL AND (
+        position(',' || fid || ',' IN ',' || coalesce(current_setting('app.firm_ids', true), '') || ',') > 0
+        OR current_setting('app.firm_ids', true) = fid
+      )
+    $$ LANGUAGE sql STABLE;
+  `);
+
+  const tables = [
+    {
+      table: 'clients',
+      using: `app_has_firm(firm_id)`,
+      check: `app_has_firm(firm_id)`,
+    },
+    {
+      table: 'firm_memberships',
+      using: `app_has_firm(firm_id) OR user_id = app_user_id()`,
+      check: `app_has_firm(firm_id) OR user_id = app_user_id()`,
+    },
+    {
+      table: 'drafts',
+      using: `(firm_id IS NOT NULL AND app_has_firm(firm_id)) OR (user_id IS NOT NULL AND user_id = app_user_id()) OR (firm_id IS NULL AND user_id IS NULL)`,
+      check: `(firm_id IS NULL OR app_has_firm(firm_id)) AND (user_id IS NULL OR user_id = app_user_id() OR app_has_firm(firm_id))`,
+    },
+    {
+      table: 'audit_events',
+      using: `firm_id IS NULL OR app_has_firm(firm_id) OR user_id = app_user_id()`,
+      check: `firm_id IS NULL OR app_has_firm(firm_id)`,
+    },
+    {
+      table: 'object_blobs',
+      using: `(firm_id IS NOT NULL AND app_has_firm(firm_id)) OR (user_id IS NOT NULL AND user_id = app_user_id())`,
+      check: `(firm_id IS NULL OR app_has_firm(firm_id))`,
+    },
+  ];
+
+  for (const t of tables) {
+    await p.query(`ALTER TABLE ${t.table} ENABLE ROW LEVEL SECURITY`);
+    await p.query(`ALTER TABLE ${t.table} FORCE ROW LEVEL SECURITY`);
+    // Drop and recreate policies for idempotency
+    await p.query(`DROP POLICY IF EXISTS st_tenant_select ON ${t.table}`);
+    await p.query(`DROP POLICY IF EXISTS st_tenant_write ON ${t.table}`);
+    await p.query(`
+      CREATE POLICY st_tenant_select ON ${t.table}
+      FOR SELECT
+      USING (${t.using})
+    `);
+    await p.query(`
+      CREATE POLICY st_tenant_write ON ${t.table}
+      FOR ALL
+      USING (${t.using})
+      WITH CHECK (${t.check})
+    `);
+  }
 }
