@@ -812,7 +812,13 @@ function createSubmitClient(opts = {}) {
       userId: opts.userId || null,
     });
   }
+  // Live flag may be on for connected users, but without a real OAuth token
+  // always preview (double). Never invent external HMRC calls from client_id alone.
   return createHmrcClient({
+    mode: 'double',
+    accessToken: undefined,
+    clientId: undefined,
+    clientSecret: undefined,
     req: opts.req || null,
     userId: opts.userId || null,
   });
