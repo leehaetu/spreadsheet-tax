@@ -9,16 +9,19 @@
 <body class="theme-light app-body app-simple">
   <header class="site-header">
     <div class="wrap header-inner">
-      <a class="logo" href="/home"><span class="logo-mark">ST</span> Spreadsheet Tax</a>
+      <a class="logo" href="/"><span class="logo-mark">ST</span> Spreadsheet Tax</a>
       <nav>
         <a href="/signin?next=/home">Sign in</a>
-        <a href="/leave-to-sales?next=/sales&amp;back=/register">Marketing site</a>
+        <a href="/">Marketing site</a>
       </nav>
     </div>
   </header>
   <main class="wrap app-main" style="max-width:480px">
     <h1>Create account</h1>
-    <p class="muted">Creates an app account (tax home, records, quarterly updates) — not just a website visit.</p>
+    <p class="muted">
+      Create an account for spreadsheet checks, quarterly updates, and HMRC connection when enabled.
+      Not HMRC-recognised software. You remain responsible for figures you approve.
+    </p>
     <form id="reg-form" class="panel">
       <div class="form-row">
         <label>Name <input type="text" id="name" autocomplete="name" /></label>
@@ -29,6 +32,12 @@
       <div class="form-row">
         <label>Password (min 8) <input type="password" id="password" required minlength="8" autocomplete="new-password" /></label>
       </div>
+      <label class="muted" style="display:flex;gap:0.5rem;align-items:flex-start;margin:0.75rem 0">
+        <input type="checkbox" id="accept-terms" required style="margin-top:0.25rem" />
+        <span>I agree to the <a href="/terms" target="_blank" rel="noopener">Terms</a> and
+          <a href="/privacy" target="_blank" rel="noopener">Privacy notice</a>, and I understand
+          Spreadsheet Tax is not HMRC-recognised software.</span>
+      </label>
       <button type="submit" class="btn btn-primary">Create account</button>
       <p id="err" class="error" hidden></p>
     </form>
@@ -38,6 +47,11 @@
       e.preventDefault();
       const err = document.getElementById('err');
       err.hidden = true;
+      if (!document.getElementById('accept-terms').checked) {
+        err.textContent = 'Please accept the terms and privacy notice.';
+        err.hidden = false;
+        return;
+      }
       const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

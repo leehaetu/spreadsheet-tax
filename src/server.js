@@ -242,7 +242,7 @@ const root = path.join(__dirname, '..');
 const publicDir = path.join(root, 'public');
 const templatesDir = path.join(root, 'templates');
 const testSpreadsheetsDir = path.join(root, 'test-spreadsheets');
-const APP_VERSION = '1.23.1';
+const APP_VERSION = '1.24.0';
 
 /**
  * Serve HTML with site-chrome (HMRC recognition banner/footer) injected once.
@@ -507,6 +507,36 @@ function sendMarketingHtml(req, res, filename, publicPath) {
   return sendPublicHtml(res, filename);
 }
 
+/**
+ * Product pages that must not show a usable shell when signed out.
+ * Audit P0: signed-out /home /app /workspace looked "live" behind a small warning.
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ * @param {string} filename
+ * @param {string} [returnPath]
+ */
+function sendAppHtml(req, res, filename, returnPath) {
+  const user = getSessionUser(getSessionIdFromRequest(req));
+  if (!user) {
+    const next =
+      returnPath ||
+      (req.originalUrl && !req.originalUrl.startsWith('/api')
+        ? req.originalUrl
+        : req.path) ||
+      '/home';
+    return res.redirect(302, `/signin?next=${encodeURIComponent(next)}`);
+  }
+  return sendPublicHtml(res, filename);
+}
+
+/**
+ * Operator / internal tools — not customer product.
+ * Requires sign-in; never marketed in primary nav.
+ */
+function sendOperatorHtml(req, res, filename, returnPath) {
+  return sendAppHtml(req, res, filename, returnPath);
+}
+
 /** Confirm leave app → marketing (sign out, or stay signed in in a new tab). */
 app.get('/leave-to-sales', (_req, res) => {
   sendPublicHtml(res, 'leave-to-sales.html');
@@ -533,20 +563,20 @@ app.get('/sales', (req, res) => {
   sendMarketingHtml(req, res, 'sales.html', '/sales');
 });
 
-app.get('/app', (_req, res) => {
-  sendPublicHtml(res, 'app.html');
+app.get('/app', (req, res) => {
+  sendAppHtml(req, res, 'app.html', req.originalUrl || '/app');
 });
-app.get('/home', (_req, res) => {
-  sendPublicHtml(res, 'home.html');
+app.get('/home', (req, res) => {
+  sendAppHtml(req, res, 'home.html', '/home');
 });
-app.get('/onboarding', (_req, res) => {
-  sendPublicHtml(res, 'onboarding.html');
+app.get('/onboarding', (req, res) => {
+  sendAppHtml(req, res, 'onboarding.html', '/onboarding');
 });
-app.get('/records', (_req, res) => {
-  sendPublicHtml(res, 'records.html');
+app.get('/records', (req, res) => {
+  sendAppHtml(req, res, 'records.html', '/records');
 });
-app.get('/year-end', (_req, res) => {
-  sendPublicHtml(res, 'year-end.html');
+app.get('/year-end', (req, res) => {
+  sendAppHtml(req, res, 'year-end.html', '/year-end');
 });
 
 app.get('/self-employed', (req, res) => {
@@ -565,6 +595,7 @@ app.get('/firms', (req, res) => {
   sendMarketingHtml(req, res, 'firms.html', '/firms');
 });
 
+/** Demo-only portfolios — still public but must not look like live books (copy in HTML). */
 app.get('/accountant', (_req, res) => {
   sendPublicHtml(res, 'accountant.html');
 });
@@ -623,27 +654,28 @@ app.get('/register', (_req, res) => {
   sendPublicHtml(res, 'register.html');
 });
 
-app.get('/workspace', (_req, res) => {
-  sendPublicHtml(res, 'workspace.html');
+app.get('/workspace', (req, res) => {
+  sendAppHtml(req, res, 'workspace.html', '/workspace');
 });
 
-app.get('/connect-hmrc', (_req, res) => {
-  sendPublicHtml(res, 'connect-hmrc.html');
+app.get('/connect-hmrc', (req, res) => {
+  sendAppHtml(req, res, 'connect-hmrc.html', '/connect-hmrc');
 });
-app.get('/mtd', (_req, res) => {
-  sendPublicHtml(res, 'mtd.html');
-});
-
-app.get('/billing', (_req, res) => {
-  sendPublicHtml(res, 'billing.html');
+app.get('/mtd', (req, res) => {
+  // Internal HMRC diagnostics harness — not a customer product surface
+  sendOperatorHtml(req, res, 'mtd.html', '/mtd');
 });
 
-app.get('/account', (_req, res) => {
-  sendPublicHtml(res, 'account.html');
+app.get('/billing', (req, res) => {
+  sendAppHtml(req, res, 'billing.html', '/billing');
 });
 
-app.get('/history', (_req, res) => {
-  sendPublicHtml(res, 'history.html');
+app.get('/account', (req, res) => {
+  sendAppHtml(req, res, 'account.html', '/account');
+});
+
+app.get('/history', (req, res) => {
+  sendAppHtml(req, res, 'history.html', '/history');
 });
 
 app.get('/forgot-password', (_req, res) => {
@@ -658,8 +690,8 @@ app.get('/accept-invite', (_req, res) => {
   sendPublicHtml(res, 'accept-invite.html');
 });
 
-app.get('/admin', (_req, res) => {
-  sendPublicHtml(res, 'admin.html');
+app.get('/admin', (req, res) => {
+  sendOperatorHtml(req, res, 'admin.html', '/admin');
 });
 
 app.get('/robots.txt', (_req, res) => {

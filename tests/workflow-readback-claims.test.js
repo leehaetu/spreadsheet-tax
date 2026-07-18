@@ -80,6 +80,14 @@ describe('customer-facing claims alignment', () => {
     assert.match(res.body, /BSAS/i);
     assert.match(res.body, /not.*HMRC-recognised|not HMRC-recognised/i);
 
+    await request(
+      'POST',
+      '/api/auth/login',
+      JSON.stringify({
+        email: 'demo@spreadsheet-tax.example',
+        password: 'DemoPass123!',
+      })
+    );
     const ye = await request('GET', '/year-end');
     assert.equal(ye.status, 200);
     assert.match(ye.body, /data-wf="final_obligations"/);

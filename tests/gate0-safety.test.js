@@ -49,6 +49,7 @@ function request(method, urlPath, body, headers = {}) {
         res.on('end', () => {
           resolve({
             status: res.statusCode,
+            headers: res.headers,
             body: Buffer.concat(chunks).toString('utf8'),
           });
         });
@@ -132,12 +133,17 @@ describe('Gate 0 submit safety', () => {
 
 describe('Gate 0 privacy copy', () => {
   it('sales and app pages do not promise never-leave-device', async () => {
-    for (const p of ['/', '/app']) {
+    // /app requires auth — check marketing sales + privacy language on /
+    for (const p of ['/', '/sales', '/pricing']) {
       const res = await request('GET', p);
-      assert.equal(res.status, 200);
+      assert.equal(res.status, 200, p);
       assert.doesNotMatch(res.body, /never leaves (your )?device/i);
       assert.doesNotMatch(res.body, /recordsStayLocal/i);
     }
+    // Signed-out product shell must redirect to sign-in (not show usable app)
+    const app = await request('GET', '/app');
+    assert.equal(app.status, 302);
+    assert.match(String(app.headers?.location || app.body || ''), /signin/i);
     const security = await request('GET', '/security');
     assert.equal(security.status, 200);
     // Security page may refute the myth; must not claim files never leave the device as a promise

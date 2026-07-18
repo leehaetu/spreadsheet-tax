@@ -11,15 +11,19 @@
     <div class="wrap header-inner">
       <a class="logo" href="/"><span class="logo-mark">ST</span> Spreadsheet Tax</a>
       <nav>
-        <a href="/app">App</a>
-        <a href="/account">Account</a>
+        <a href="/home">Home</a>
+        <a href="/app?flow=quarterly">Quarterly</a>
+        <a href="/history" class="active">Receipts</a>
+        <a href="/account">Settings</a>
       </nav>
     </div>
   </header>
   <main class="wrap app-main">
-    <h1>Your drafts &amp; submissions</h1>
-    <p class="muted">Signed-in history only. Free-check drafts without an account are temporary.</p>
-    <p class="muted"><strong>Your records:</strong> ongoing books stay in your spreadsheet. Export submission attempts as CSV below. Not HMRC-recognised software.</p>
+    <h1>Drafts &amp; receipts</h1>
+    <p class="muted">
+      Each submission attempt stores mode (preview / sandbox / live), outcome, and a downloadable receipt when available.
+      Ongoing books stay in your spreadsheet. Not HMRC-recognised software.
+    </p>
     <p id="gate" class="error" hidden></p>
     <section class="panel">
       <h2>Drafts</h2>

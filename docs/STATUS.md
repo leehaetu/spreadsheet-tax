@@ -1,8 +1,8 @@
 # Project status
 
 **Last updated:** 2026-07-18  
-**App version:** **1.23.1**  
-**Screen audit pack:** [docs/audits/2026-07-18-all-screens/](./audits/2026-07-18-all-screens/) — 51 screenshots + 52-page PDF with per-screen fixes  
+**App version:** **1.24.0**  
+**Screen audit pack:** [docs/audits/2026-07-18-all-screens/](./audits/2026-07-18-all-screens/) — drives UI fixes (not “image work”)  
 **Protocol:** [AGENT-TRUTH-PROTOCOL.md](./AGENT-TRUTH-PROTOCOL.md)  
 **Capacity gate:** [CAPACITY-REQUIREMENTS.md](./CAPACITY-REQUIREMENTS.md) — **NOT MET**  
 **Release gates:** [RELEASE-GATES.md](./RELEASE-GATES.md) — **OPEN**  
@@ -10,7 +10,16 @@
 
 ---
 
-## Truth status (2026-07-18) — v1.23 freeze + security foundations
+## Truth status (2026-07-18) — v1.24 product UX gates from audit
+
+### Shipped in 1.24.0 (app code — from screen audit P0s)
+- Product pages require session: `/home` `/app` `/onboarding` `/records` `/year-end` `/workspace` `/connect-hmrc` `/account` `/history` `/billing` `/admin` `/mtd` → redirect to `/signin?next=…` when signed out [UNIT_TESTED]
+- Sign-in no longer publishes demo credentials; register requires terms/privacy consent
+- Pricing / sales CTAs: free account only — no “try without signing in” / fake purchase
+- Forgot-password copy no longer says reset links go to server logs for customers
+- Nav simplified on home/app/records/history/workspace
+- Still Stage 2; capacity NOT MET; not pilot-ready
+
 
 ```text
 BLOCKERS:

@@ -219,6 +219,16 @@ describe('sales site customer focus', () => {
 
 describe('bridging app customer focus', () => {
   it('presents task language without developer-only default copy', async () => {
+    cookieJar.clear();
+    const login = await request(
+      'POST',
+      '/api/auth/login',
+      JSON.stringify({
+        email: 'demo@spreadsheet-tax.example',
+        password: 'DemoPass123!',
+      })
+    );
+    assert.ok(login.status === 200 || login.status === 201, String(login.body));
     const res = await request('GET', '/app');
     assert.equal(res.status, 200);
     const html = res.body.toString('utf8');

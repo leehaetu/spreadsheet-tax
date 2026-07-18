@@ -9,17 +9,16 @@
 <body class="theme-light app-body app-simple">
   <header class="site-header">
     <div class="wrap header-inner">
-      <a class="logo" href="/home"><span class="logo-mark">ST</span> Spreadsheet Tax</a>
+      <a class="logo" href="/"><span class="logo-mark">ST</span> Spreadsheet Tax</a>
       <nav>
         <a href="/register">Create account</a>
-        <a href="/leave-to-sales?next=/sales&amp;back=/signin">Marketing site</a>
-        <a class="btn btn-primary btn-sm" href="/app">Open the app</a>
+        <a href="/">Marketing site</a>
       </nav>
     </div>
   </header>
   <main class="wrap app-main" style="max-width:480px">
-    <h1>Sign in to the app</h1>
-    <p class="muted">Opens your tax home (not the sales pages). Demo: <code>demo@spreadsheet-tax.example</code> / <code>DemoPass123!</code></p>
+    <h1>Sign in</h1>
+    <p class="muted">Sign in to open your tax home, quarterly update, and receipts. This is not the marketing website.</p>
     <form id="login-form" class="panel">
       <div class="form-row">
         <label>Email <input type="email" id="email" required autocomplete="username" /></label>
@@ -27,31 +26,43 @@
       <div class="form-row">
         <label>Password <input type="password" id="password" required autocomplete="current-password" /></label>
       </div>
+      <div class="form-row" id="mfa-row" hidden>
+        <label>Authenticator code (if enabled)
+          <input type="text" id="mfa" inputmode="numeric" autocomplete="one-time-code" maxlength="8" />
+        </label>
+      </div>
       <button type="submit" class="btn btn-primary">Sign in</button>
       <p id="err" class="error" hidden></p>
     </form>
-    <p class="muted"><a href="/forgot-password">Forgot password?</a> · No account? <a href="/register">Register</a> · <a href="/workspace">Workspace</a></p>
+    <p class="muted"><a href="/forgot-password">Forgot password?</a> · No account? <a href="/register">Register</a></p>
   </main>
   <script>
     document.getElementById('login-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       const err = document.getElementById('err');
       err.hidden = true;
+      const body = {
+        email: document.getElementById('email').value,
+        password: document.getElementById('password').value,
+      };
+      const mfa = document.getElementById('mfa').value.trim();
+      if (mfa) body.mfaCode = mfa;
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: document.getElementById('email').value,
-          password: document.getElementById('password').value,
-        }),
+        body: JSON.stringify(body),
       });
       const data = await res.json();
       if (!res.ok) {
-        err.textContent = data.error || 'Sign-in failed';
+        if (data.code === 'MFA_REQUIRED' || data.mfaRequired) {
+          document.getElementById('mfa-row').hidden = false;
+          err.textContent = data.error || 'Enter your authenticator code.';
+        } else {
+          err.textContent = data.error || 'Sign-in failed';
+        }
         err.hidden = false;
         return;
       }
-      // Default into product shell (home), not sales site or empty workspace
       const next = new URLSearchParams(location.search).get('next') || '/home';
       location.href = next;
     });
