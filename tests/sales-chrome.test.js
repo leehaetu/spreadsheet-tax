@@ -128,6 +128,39 @@ describe('sales chrome system', () => {
     }
   });
 
+  it('pricing shows five packages with experimental labels and free path', async () => {
+    const res = await request('/pricing');
+    assert.equal(res.status, 200);
+    assert.match(res.body, /pricing-grid-5|data-plan="free"/);
+    assert.match(res.body, /data-plan="personal"/);
+    assert.match(res.body, /data-plan="professional"/);
+    assert.match(res.body, /data-plan="practice"/);
+    assert.match(res.body, /data-plan="firm"/);
+    assert.match(res.body, /Experimental/);
+    assert.match(res.body, /Paid plans not available yet/i);
+    assert.match(res.body, /Get started free/);
+    // Count plan cards
+    const plans = (res.body.match(/data-plan="/g) || []).length;
+    assert.ok(plans >= 5, `expected ≥5 plans, got ${plans}`);
+  });
+
+  it('home hub includes product preview and four audience paths', async () => {
+    const res = await request('/');
+    assert.equal(res.status, 200);
+    assert.match(res.body, /app-review-fold\.png/);
+    assert.match(res.body, /What the review looks like/);
+    assert.match(res.body, /\/self-employed/);
+    assert.match(res.body, /\/landlords/);
+    assert.match(res.body, /\/professionals/);
+    assert.match(res.body, /\/firms/);
+  });
+
+  it('self-employed audience page has FAQ block', async () => {
+    const res = await request('/self-employed');
+    assert.equal(res.status, 200);
+    assert.match(res.body, /Common questions|faq-list/);
+  });
+
   it('injects analytics module for CTA beacons on marketing', async () => {
     const res = await request('/');
     assert.equal(res.status, 200);

@@ -1,7 +1,7 @@
 # Project status
 
 **Last updated:** 2026-07-18  
-**App version:** **1.30.1**
+**App version:** **1.31.0**
 **Screen audit pack:** [docs/audits/2026-07-18-all-screens/](./audits/2026-07-18-all-screens/) — drives UI fixes (not “image work”)  
 **Sales review + plan:** [docs/audits/2026-07-18-sales-site-review/](./audits/2026-07-18-sales-site-review/) · [AFTER-REPORT.md](./audits/2026-07-18-sales-site-review/AFTER-REPORT.md)  
 **Taxpayer overhaul gaps:** [TAXPAYER-OVERHAUL-BACKEND-GAP-REPORT.md](./TAXPAYER-OVERHAUL-BACKEND-GAP-REPORT.md)  
@@ -229,6 +229,27 @@ EXTERNAL:
 
 | Area | Change | Evidence tag |
 |---
+
+## Sales site v1.31.0 (content conversion stream)
+
+### Shipped
+- **SALE-06**: five pricing packages (Free + 4 experimental) with “not for sale online” honesty [UNIT_TESTED]
+- **SALE-01**: hub four audience cards + product review preview image [UNIT_TESTED]
+- **SALE-02/03/04/05**: FAQs on self-employed, landlords, professionals, firms
+- **SALE-08**: richer templates lead magnet
+- Paid checkout still **not live**; capacity / pilot gates unchanged
+
+```text
+BLOCKERS (unchanged):
+- Capacity 200/800k NOT MET
+- Sales complete S7 human interviews still external
+- Not pilot-ready
+
+PROVEN:
+- npm test 234 pass including pricing 5-pack + home preview [UNIT_TESTED]
+```
+
+
 
 ## Ops correction (2026-07-18 evening) — real Railway work, not blog posts
 
