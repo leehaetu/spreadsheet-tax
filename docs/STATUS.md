@@ -12,13 +12,14 @@
 
 ## Truth status (2026-07-18)
 
-- **Stage: 2 of 5 — Sandbox engineering** (Gate 0 code fixes in progress toward Stage 3; pilot sign-off still external)
-- **Not claiming:** production-ready · pilot-ready · HMRC Recognised · production-verified · full HMRC 2xx ledger
-- **Customer quarterly journey (local):** sample → `#review-panel` → submit **WORKS** — evidence: `tests/e2e/app-journey.spec.js` (CUSTOMER_WORKFLOW local)
-- **Practice isolation/roles:** **improved** — draft ownership, firm-scoped reminders, admin for invites/delete — evidence: `tests/tenant-isolation.test.js`
-- **Year-end customer UI:** `/year-end` + `/api/workflows/run` with receipts — preview path UNIT_TESTED; live HMRC still needs token (SANDBOX_HTTP per ledger)
-- **Open remaining:** CSRF, MFA, launch-gate human sign-off, pilot, SDSTeam submit, full ledger 2xx for every row, Railway deploy of this build
-- **Version:** server `APP_VERSION` **1.16.0** · package.json may lag
+- **Stage: 2 of 5 — Sandbox engineering** (Gate 0 code unblocked; pilot/HMRC still external)
+- **Not claiming:** production-ready · pilot-ready · HMRC Recognised · production-verified · every ledger row live 2xx
+- **Customer quarterly journey (local):** sample → `#review-panel` → submit **WORKS** — `tests/e2e/app-journey.spec.js`
+- **Practice isolation/roles:** draft ownership, firm-scoped reminders, admin invite/delete — `tests/tenant-isolation.test.js`
+- **Year-end product workflows:** 16 known names on `/year-end` + `POST /api/workflows/run`; unknown rejected before preview; all names store receipt in preview — `tests/workflows-year-end.test.js`
+- **Sandbox journey (rescored):** true2xx=**16** failed=**4** okish=**null** — `docs/hmrc/sandbox-journey-run.json` (live Playwright re-run blocked without Hub env — EXT)
+- **Open remaining:** CSRF, MFA, launch-gate human sign-off, pilot, SDSTeam send, quiet live re-run of pending rows, Railway deploy of latest commit
+- **Version:** **1.16.0**
 - **Recognised:** **Not yet**
 - **Sandbox app ID:** `e6751be5-fd22-4447-9e77-aa51729b1b46`
 - **Production app:** not applied for
@@ -27,11 +28,11 @@
 
 | Area | Tag |
 |------|-----|
-| Unit suite | UNIT_TESTED (run locally) |
+| Unit suite 133 pass | UNIT_TESTED |
 | Gate 0 browser journey | CUSTOMER_WORKFLOW (local e2e) |
 | Tenant isolation | UNIT_TESTED |
 | Production boot refusal | UNIT_TESTED |
-| HMRC sandbox endpoints | Mixed SANDBOX_HTTP / ROUTE_ONLY — see ledger |
+| HMRC sandbox endpoints | Mixed SANDBOX_HTTP / preview — see ledger (exact statuses) |
 | Production / Recognised | External |
 
 ## Demo login
