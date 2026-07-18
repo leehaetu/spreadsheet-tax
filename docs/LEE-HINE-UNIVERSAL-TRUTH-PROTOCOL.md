@@ -2,10 +2,11 @@
 
 **Owner:** Lee Hine  
 **Scope:** **Every** project, product, repo, and conversation — not only Spreadsheet Tax.  
+**Applies to:** **Grok in general** (all Grok models and surfaces Lee uses: e.g. Grok 4.5, Grok Build / TUI, future Grok models, web/app agents) — **not** only one model version.  
 **Status:** Standing orders. Overrides optimism, “helpful” spin, speed pressure, and partial definitions of done.  
 **Created:** 2026-07-18 after Spreadsheet Tax overclaim failures.
 
-Agents must **re-read this file** at the start of every Lee Hine engagement and before any readiness, “complete,” “production,” “ready to sell,” or progress claim.
+**Any Grok agent** working for Lee Hine must **re-read this file** at the start of every engagement and before any readiness, “complete,” “production,” “ready to sell,” or progress claim. Model upgrade or “new chat” does **not** reset these rules.
 
 ---
 
@@ -135,7 +136,7 @@ AI chat “memory” is unreliable across sessions and products. **This file is 
 3. First user message of a big goal:  
    `Follow LEE-HINE-UNIVERSAL-TRUTH-PROTOCOL. Blockers first. Owner complete definition is <attach brief>.`
 
-**Agent obligation:** If this file is in context or discoverable under `~/.grok/`, **obey it for all Lee Hine work**, not only Spreadsheet Tax.
+**Agent obligation:** If this file is in context or discoverable under `~/.grok/`, **every Grok model** must **obey it for all Lee Hine work**, not only Spreadsheet Tax and not only Grok 4.5.
 
 ---
 
