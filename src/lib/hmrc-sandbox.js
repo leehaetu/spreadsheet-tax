@@ -323,12 +323,24 @@ export function sanitizeForeignPropertyPeriodBody(body, taxYear) {
   if (!body || typeof body !== 'object') return body;
   const fromDate = body.fromDate || body.periodDates?.periodStartDate;
   const toDate = body.toDate || body.periodDates?.periodEndDate;
-  const nonFhl =
-    body.foreignNonFhlProperty || body.foreignProperty || null;
+  let nonFhl = body.foreignNonFhlProperty || body.foreignProperty || null;
   const fhl = body.foreignFhlEea || null;
   const style = propertyPeriodFieldStyle(
     taxYear || taxYearFromPeriodStart(fromDate)
   );
+  // def2 expects foreignTaxCreditRelief boolean on each country income when present
+  if (style === 'def2' && Array.isArray(nonFhl)) {
+    nonFhl = nonFhl.map((entry) => {
+      const e = { ...entry };
+      if (e.income && typeof e.income === 'object') {
+        e.income = {
+          foreignTaxCreditRelief: false,
+          ...e.income,
+        };
+      }
+      return e;
+    });
+  }
   /** @type {Record<string, unknown>} */
   const out = { fromDate, toDate };
   if (style === 'def2') {

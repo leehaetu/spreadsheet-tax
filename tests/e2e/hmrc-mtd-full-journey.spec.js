@@ -323,7 +323,10 @@ test.describe('Full MTD sandbox journey (operator)', () => {
         foreignProperty: [
           {
             countryCode: 'ESP',
-            income: { rentIncome: { rentAmount: 1500 } },
+            income: {
+              rentIncome: { rentAmount: 1500 },
+              foreignTaxCreditRelief: false,
+            },
             expenses: { premisesRunningCosts: 100 },
           },
         ],
