@@ -41,10 +41,17 @@ import { isPostgresMode } from './platform-config.js';
  */
 export async function performProductSubmit(opts) {
   let draft = getDraft(opts.draftId);
-  // Prefer Postgres SoR when configured
+  // Prefer Postgres SoR when configured (never fail the request if PG is down)
   if (isPostgresMode()) {
-    const pgDraft = await getDraftFromPostgres(opts.draftId);
-    if (pgDraft) draft = pgDraft;
+    try {
+      const pgDraft = await getDraftFromPostgres(opts.draftId);
+      if (pgDraft) draft = pgDraft;
+    } catch (e) {
+      console.warn(
+        '[live-submit] PG draft read failed, using local store',
+        e instanceof Error ? e.message : e
+      );
+    }
   }
   if (!draft) {
     return { error: 'Draft not found', status: 404 };
@@ -86,10 +93,13 @@ export async function performProductSubmit(opts) {
   }
 
   let accessToken = opts.accessToken || null;
-  let tokenMode = undefined;
   let connectionMock = false;
   const allowLive =
     !opts.forceDouble && process.env.HMRC_ALLOW_LIVE_SUBMIT === '1';
+  // Live mode label always from env (production vs sandbox) — never left undefined
+  // when a pre-supplied accessToken is used (HTTP path passes token in).
+  const liveMode =
+    process.env.HMRC_OAUTH_ENV === 'production' ? 'production' : 'sandbox';
 
   if (allowLive && opts.userId && !accessToken) {
     const conn = getActiveConnection(opts.userId);
@@ -103,8 +113,6 @@ export async function performProductSubmit(opts) {
         };
       }
       accessToken = conn.accessToken;
-      tokenMode =
-        process.env.HMRC_OAUTH_ENV === 'production' ? 'production' : 'sandbox';
       connectionMock = false;
     }
   }
@@ -141,9 +149,9 @@ export async function performProductSubmit(opts) {
     });
   }
 
-  // Live external path — real token required
+  // Live external path — real token required; mode from HMRC_OAUTH_ENV only
   const client = createHmrcClient({
-    mode: tokenMode || 'sandbox',
+    mode: liveMode,
     accessToken,
     req: opts.req || null,
     userId: opts.userId || null,

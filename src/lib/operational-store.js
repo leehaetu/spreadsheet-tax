@@ -274,10 +274,26 @@ export async function mirrorAuditToPostgres(event) {
 }
 
 /**
+ * Mutable observer registry for scheduleMirror (tests can set hooks.observer).
+ * Shipped path always calls through this object.
+ */
+export const scheduleMirrorHooks = {
+  /** @type {null | ((fn: () => Promise<unknown>) => void)} */
+  observer: null,
+};
+
+/**
  * Fire-and-forget safe mirror (never throws to callers).
  * @param {() => Promise<unknown>} fn
  */
 export function scheduleMirror(fn) {
+  if (typeof scheduleMirrorHooks.observer === 'function') {
+    try {
+      scheduleMirrorHooks.observer(fn);
+    } catch {
+      /* ignore observer errors */
+    }
+  }
   if (!isPostgresMode()) return;
   Promise.resolve()
     .then(() => fn())
