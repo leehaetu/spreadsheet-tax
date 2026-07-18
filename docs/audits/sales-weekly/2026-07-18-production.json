@@ -1,0 +1,73 @@
+{
+  "base": "https://spreadsheet-tax-production.up.railway.app",
+  "ok": true,
+  "days": 7,
+  "since": "2026-07-11T13:05:24.058Z",
+  "until": "2026-07-18T13:05:24.058Z",
+  "registers": 2,
+  "usersTotal": 2,
+  "ctaEvents": 87,
+  "ctaEventsAllTime": 87,
+  "ctaByEvent": [
+    {
+      "event": "app_open",
+      "count": 65
+    },
+    {
+      "event": "sign-in",
+      "count": 7
+    },
+    {
+      "event": "get-started-free",
+      "count": 7
+    },
+    {
+      "event": "sign-in-submit",
+      "count": 5
+    },
+    {
+      "event": "download-template",
+      "count": 2
+    },
+    {
+      "event": "deadline-help",
+      "count": 1
+    }
+  ],
+  "ctaByPath": [
+    {
+      "path": "/app",
+      "count": 65
+    },
+    {
+      "path": "/signin",
+      "count": 7
+    },
+    {
+      "path": "/",
+      "count": 4
+    },
+    {
+      "path": "/self-employed",
+      "count": 3
+    },
+    {
+      "path": "/help",
+      "count": 3
+    },
+    {
+      "path": "/templates/",
+      "count": 2
+    },
+    {
+      "path": "/pricing",
+      "count": 2
+    },
+    {
+      "path": "/register",
+      "count": 1
+    }
+  ],
+  "note": "Aggregates only. No tax data, emails, or NINOs. Conversion rate needs reliable unique visits (not in this table).",
+  "topCta": "app_open"
+}
