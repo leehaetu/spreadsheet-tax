@@ -1,5 +1,5 @@
 {
-  "at": "2026-07-17T23:57:54.616Z",
+  "at": "2026-07-18T00:01:39.563Z",
   "base": "https://spreadsheet-tax-production.up.railway.app",
   "nino": "TB****",
   "steps": [
@@ -9,7 +9,7 @@
       "status": 200,
       "label": null,
       "path": null,
-      "snippet": "{\"connected\":true,\"mock\":false,\"expired\":false,\"mode\":\"sandbox\",\"expiresAt\":\"2026-07-18T03:58:00.730Z\",\"label\":\"HMRC OAuth token stored\"}"
+      "snippet": "{\"connected\":true,\"mock\":false,\"expired\":false,\"mode\":\"sandbox\",\"expiresAt\":\"2026-07-18T04:01:45.924Z\",\"label\":\"HMRC OAuth token stored\"}"
     },
     {
       "name": "import_self_employment",
@@ -17,7 +17,7 @@
       "status": 200,
       "label": null,
       "path": null,
-      "snippet": "{\"draftId\":\"4d9be41e-3cc6-49bb-9364-d8ec80208145\"}"
+      "snippet": "{\"draftId\":\"01750842-4af3-4297-a6a2-08e3000d66af\"}"
     },
     {
       "name": "import_uk_property",
@@ -25,7 +25,7 @@
       "status": 200,
       "label": null,
       "path": null,
-      "snippet": "{\"draftId\":\"ca8f10a3-bb4d-467b-bcee-f66b53185db3\"}"
+      "snippet": "{\"draftId\":\"9aa49f43-eccd-4bf5-a8a9-669ca0028229\"}"
     },
     {
       "name": "import_foreign_property",
@@ -33,7 +33,7 @@
       "status": 200,
       "label": null,
       "path": null,
-      "snippet": "{\"draftId\":\"50133aeb-308f-47fc-9194-f6fe68a2afd3\"}"
+      "snippet": "{\"draftId\":\"2ea30b6b-29bc-4a6a-9e68-af87d177f3ab\"}"
     },
     {
       "name": "create_test_business_uk-property",
@@ -77,11 +77,11 @@
     },
     {
       "name": "se_period_retrieve",
-      "ok": false,
-      "status": 502,
+      "ok": true,
+      "status": 200,
       "label": null,
       "path": "/individuals/business/self-employment/TB116925D/XBIS12345678901/period/2024-25/2024-04-06_2024-07-05",
-      "snippet": "{\"ok\":false,\"status\":429,\"path\":\"/individuals/business/self-employment/TB116925D/XBIS12345678901/period/2024-25/2024-04-06_2024-07-05\",\"method\":\"GET\",\"label\":\"se_period_retrieve\",\"url\":\"https://test-api.service.hmrc.gov.uk/individuals/business/self-employment/TB116925D/XBIS12345678901/period/2024-25/2024-04-06_2024-07-05\",\"body\":{\"code\":\"MESSAGE_THROTTLED_OUT\",\"message\":\"The request for the API is"
+      "snippet": "{\"ok\":true,\"status\":200,\"path\":\"/individuals/business/self-employment/TB116925D/XBIS12345678901/period/2024-25/2024-04-06_2024-07-05\",\"method\":\"GET\",\"label\":\"se_period_retrieve\",\"url\":\"https://test-api.service.hmrc.gov.uk/individuals/business/self-employment/TB116925D/XBIS12345678901/period/2024-25/2024-04-06_2024-07-05\",\"body\":{\"periodDates\":{\"periodStartDate\":\"2019-01-01\",\"periodEndDate\":\"2020-0"
     },
     {
       "name": "uk_period_create",
@@ -89,7 +89,7 @@
       "status": 502,
       "label": null,
       "path": "/individuals/business/property/uk/TB116925D/XZIS09524118559/period/2024-25",
-      "snippet": "{\"ok\":false,\"status\":429,\"path\":\"/individuals/business/property/uk/TB116925D/XZIS09524118559/period/2024-25\",\"method\":\"POST\",\"label\":\"uk_property_period_create\",\"url\":\"https://test-api.service.hmrc.gov.uk/individuals/business/property/uk/TB116925D/XZIS09524118559/period/2024-25\",\"body\":{\"code\":\"MESSAGE_THROTTLED_OUT\",\"message\":\"The request for the API is throttled as you have exceeded your quota.\""
+      "snippet": "{\"ok\":false,\"status\":400,\"path\":\"/individuals/business/property/uk/TB116925D/XZIS09524118559/period/2024-25\",\"method\":\"POST\",\"label\":\"uk_property_period_create\",\"url\":\"https://test-api.service.hmrc.gov.uk/individuals/business/property/uk/TB116925D/XZIS09524118559/period/2024-25\",\"body\":{\"code\":\"RULE_INCORRECT_OR_EMPTY_BODY_SUBMITTED\",\"message\":\"An empty or non-matching body was submitted\"},\"reques"
     },
     {
       "name": "fp_period_create",
@@ -97,15 +97,15 @@
       "status": 502,
       "label": null,
       "path": "/individuals/business/property/foreign/TB116925D/X8IS83265677006/period/2024-25",
-      "snippet": "{\"ok\":false,\"status\":429,\"path\":\"/individuals/business/property/foreign/TB116925D/X8IS83265677006/period/2024-25\",\"method\":\"POST\",\"label\":\"foreign_property_period_create\",\"url\":\"https://test-api.service.hmrc.gov.uk/individuals/business/property/foreign/TB116925D/X8IS83265677006/period/2024-25\",\"body\":{\"code\":\"MESSAGE_THROTTLED_OUT\",\"message\":\"The request for the API is throttled as you have exceed"
+      "snippet": "{\"ok\":false,\"status\":400,\"path\":\"/individuals/business/property/foreign/TB116925D/X8IS83265677006/period/2024-25\",\"method\":\"POST\",\"label\":\"foreign_property_period_create\",\"url\":\"https://test-api.service.hmrc.gov.uk/individuals/business/property/foreign/TB116925D/X8IS83265677006/period/2024-25\",\"body\":{\"code\":\"RULE_INCORRECT_OR_EMPTY_BODY_SUBMITTED\",\"message\":\"An empty or non-matching body was subm"
     },
     {
       "name": "calc_trigger",
       "ok": true,
-      "status": 502,
+      "status": 200,
       "label": null,
       "path": "/individuals/calculations/TB116925D/self-assessment/2024-25/trigger/in-year",
-      "snippet": "{\"ok\":false,\"status\":429,\"path\":\"/individuals/calculations/TB116925D/self-assessment/2024-25/trigger/in-year\",\"method\":\"POST\",\"label\":\"calculations_trigger\",\"url\":\"https://test-api.service.hmrc.gov.uk/individuals/calculations/TB116925D/self-assessment/2024-25/trigger/in-year\",\"body\":{\"code\":\"MESSAGE_THROTTLED_OUT\",\"message\":\"The request for the API is throttled as you have exceeded your quota.\"},\""
+      "snippet": "{\"ok\":true,\"status\":202,\"path\":\"/individuals/calculations/TB116925D/self-assessment/2024-25/trigger/in-year\",\"method\":\"POST\",\"label\":\"calculations_trigger\",\"url\":\"https://test-api.service.hmrc.gov.uk/individuals/calculations/TB116925D/self-assessment/2024-25/trigger/in-year\",\"body\":{\"calculationId\":\"03d6a9b4-f27a-1307-ae18-bf2510a8b034\"},\"requestBody\":{},\"fraudHeaderNames\":[\"Gov-Client-Connection-"
     },
     {
       "name": "final_declaration_obligations",
@@ -121,7 +121,7 @@
       "status": 502,
       "label": null,
       "path": "/individuals/business/self-employment/TB116925D/XBIS12345678901/annual/2024-25",
-      "snippet": "{\"ok\":false,\"status\":400,\"path\":\"/individuals/business/self-employment/TB116925D/XBIS12345678901/annual/2024-25\",\"method\":\"PUT\",\"label\":\"se_annual_put\",\"url\":\"https://test-api.service.hmrc.gov.uk/individuals/business/self-employment/TB116925D/XBIS12345678901/annual/2024-25\",\"body\":{\"code\":\"RULE_INCORRECT_OR_EMPTY_BODY_SUBMITTED\",\"message\":\"An empty or non-matching body was submitted\",\"paths\":[\"/ad"
+      "snippet": "{\"ok\":false,\"status\":429,\"path\":\"/individuals/business/self-employment/TB116925D/XBIS12345678901/annual/2024-25\",\"method\":\"PUT\",\"label\":\"se_annual_put\",\"url\":\"https://test-api.service.hmrc.gov.uk/individuals/business/self-employment/TB116925D/XBIS12345678901/annual/2024-25\",\"body\":{\"code\":\"MESSAGE_THROTTLED_OUT\",\"message\":\"The request for the API is throttled as you have exceeded your quota.\"},\"re"
     },
     {
       "name": "bsas_trigger",
@@ -134,26 +134,26 @@
     {
       "name": "itsa_status",
       "ok": true,
-      "status": 200,
+      "status": 502,
       "label": null,
       "path": "/individuals/person/itsa-status/TB116925D/2024-25",
-      "snippet": "{\"ok\":true,\"status\":200,\"path\":\"/individuals/person/itsa-status/TB116925D/2024-25\",\"method\":\"GET\",\"label\":\"individual_details_itsa_status\",\"url\":\"https://test-api.service.hmrc.gov.uk/individuals/person/itsa-status/TB116925D/2024-25\",\"body\":{\"itsaStatuses\":[{\"taxYear\":\"2019-20\",\"itsaStatusDetails\":[{\"submittedOn\":\"2023-06-01T10:19:00.303Z\",\"status\":\"No Status\",\"statusReason\":\"Sign up - return avail"
+      "snippet": "{\"ok\":false,\"status\":429,\"path\":\"/individuals/person/itsa-status/TB116925D/2024-25\",\"method\":\"GET\",\"label\":\"individual_details_itsa_status\",\"url\":\"https://test-api.service.hmrc.gov.uk/individuals/person/itsa-status/TB116925D/2024-25\",\"body\":{\"code\":\"MESSAGE_THROTTLED_OUT\",\"message\":\"The request for the API is throttled as you have exceeded your quota.\"},\"requestBody\":null,\"fraudHeaderNames\":[\"Gov-"
     },
     {
       "name": "biss",
       "ok": true,
-      "status": 200,
+      "status": 502,
       "label": null,
       "path": "/individuals/self-assessment/income-summary/TB116925D/self-employment/2024-25/XBIS12345678901",
-      "snippet": "{\"ok\":true,\"status\":200,\"path\":\"/individuals/self-assessment/income-summary/TB116925D/self-employment/2024-25/XBIS12345678901\",\"method\":\"GET\",\"label\":\"biss_retrieve\",\"url\":\"https://test-api.service.hmrc.gov.uk/individuals/self-assessment/income-summary/TB116925D/self-employment/2024-25/XBIS12345678901\",\"body\":{\"total\":{\"income\":321,\"expenses\":125.49,\"additions\":140.22,\"deductions\":60.4,\"accounting"
+      "snippet": "{\"ok\":false,\"status\":429,\"path\":\"/individuals/self-assessment/income-summary/TB116925D/self-employment/2024-25/XBIS12345678901\",\"method\":\"GET\",\"label\":\"biss_retrieve\",\"url\":\"https://test-api.service.hmrc.gov.uk/individuals/self-assessment/income-summary/TB116925D/self-employment/2024-25/XBIS12345678901\",\"body\":{\"code\":\"MESSAGE_THROTTLED_OUT\",\"message\":\"The request for the API is throttled as you h"
     },
     {
       "name": "accounts_balance",
       "ok": true,
       "status": 502,
       "label": null,
-      "path": "/accounts/self-assessment/TB116925D/balance-and-transactions",
-      "snippet": "{\"ok\":false,\"status\":400,\"path\":\"/accounts/self-assessment/TB116925D/balance-and-transactions\",\"method\":\"GET\",\"label\":\"accounts_balance_and_transactions\",\"url\":\"https://test-api.service.hmrc.gov.uk/accounts/self-assessment/TB116925D/balance-and-transactions\",\"body\":{\"code\":\"RULE_INCONSISTENT_QUERY_PARAMS\",\"message\":\"Provide date range or docNumber when onlyOpenItems is false\"},\"requestBody\":null,\""
+      "path": "/accounts/self-assessment/TB116925D/balance-and-transactions?onlyOpenItems=true",
+      "snippet": "{\"ok\":false,\"status\":429,\"path\":\"/accounts/self-assessment/TB116925D/balance-and-transactions?onlyOpenItems=true\",\"method\":\"GET\",\"label\":\"accounts_balance_and_transactions\",\"url\":\"https://test-api.service.hmrc.gov.uk/accounts/self-assessment/TB116925D/balance-and-transactions?onlyOpenItems=true\",\"body\":{\"code\":\"MESSAGE_THROTTLED_OUT\",\"message\":\"The request for the API is throttled as you have exce"
     },
     {
       "name": "fraud_validate",
@@ -167,6 +167,6 @@
   "summary": {
     "total": 20,
     "httpTouched": 20,
-    "okish": 17
+    "okish": 18
   }
 }

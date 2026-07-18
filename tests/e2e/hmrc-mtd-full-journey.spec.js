@@ -282,14 +282,13 @@ test.describe('Full MTD sandbox journey (operator)', () => {
         },
       };
       const uk = await page.evaluate(
-        async ({ n, bid, draftId, periodBody }) => {
+        async ({ n, bid, periodBody }) => {
           const r = await fetch('/api/hmrc/mtd/period/uk', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               nino: n,
               businessId: bid,
-              draftId,
               taxYear: '2024-25',
               body: periodBody,
             }),
@@ -299,7 +298,6 @@ test.describe('Full MTD sandbox journey (operator)', () => {
         {
           n: NINO,
           bid: bidUk,
-          draftId: drafts.uk_property,
           periodBody: ukBody,
         }
       );
@@ -331,14 +329,13 @@ test.describe('Full MTD sandbox journey (operator)', () => {
         ],
       };
       const fp = await page.evaluate(
-        async ({ n, bid, draftId, periodBody }) => {
+        async ({ n, bid, periodBody }) => {
           const r = await fetch('/api/hmrc/mtd/period/foreign', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               nino: n,
               businessId: bid,
-              draftId,
               taxYear: '2024-25',
               body: periodBody,
             }),
@@ -348,7 +345,6 @@ test.describe('Full MTD sandbox journey (operator)', () => {
         {
           n: NINO,
           bid: bidFp,
-          draftId: drafts.foreign_property,
           periodBody: fpBody,
         }
       );
