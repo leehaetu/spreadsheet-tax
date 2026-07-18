@@ -101,10 +101,9 @@ function showQuarterlyReviewState(state) {
   const review = panel('review-panel');
   if (review) review.dataset.reviewState = state;
   document.querySelectorAll('[data-quarterly-state]').forEach((element) => {
-    const unavailable = element.id === 'spreadsheet-check-panel' && element.dataset.available === '0';
-    element.hidden = element.dataset.quarterlyState !== state || unavailable;
+    element.hidden = element.dataset.quarterlyState !== 'figures';
   });
-  setWizardStep(state === 'mapping' ? 2 : 3);
+  setWizardStep(2);
 }
 
 async function loadStatus() {
@@ -243,7 +242,9 @@ function handleImportSuccess(data) {
   lastSpreadsheetCheck = data.spreadsheetCheck || null;
   showReview(data);
   renderSpreadsheetCheck(lastSpreadsheetCheck);
-  showQuarterlyReviewState('mapping');
+  showQuarterlyReviewState('figures');
+  const advanced = document.getElementById('quarterly-advanced');
+  if (advanced) advanced.open = !lastValidation.ready;
 
   if (data.payloads?.meta?.taxYear) {
     const ty = document.getElementById('tax-year');
@@ -683,6 +684,9 @@ async function loadCumulativeReview(draftId) {
         rev.periodEnd
       )} · <strong>Tax year</strong> ${esc(rev.taxYear || '—')}</p>`;
     }
+    if ((rev.sections || []).length) {
+      html += '<details class="quarterly-breakdown"><summary>Show year-to-date category breakdown</summary>';
+    }
     for (const sec of rev.sections || []) {
       html += `<h3 style="font-size:1rem;margin:1rem 0 0.35rem">${esc(
         sec.title
@@ -706,6 +710,7 @@ async function loadCumulativeReview(draftId) {
       }
       html += '</tbody></table></div>';
     }
+    if ((rev.sections || []).length) html += '</details>';
     if (!(rev.sections || []).length) {
       html += '<p class="muted">No line items to compare yet.</p>';
     }
@@ -864,8 +869,7 @@ function showReview(data) {
   }
 
   const continueBtn = document.getElementById('goto-submit');
-  const mappingContinue = document.getElementById('goto-figures');
-  [continueBtn, mappingContinue].filter(Boolean).forEach((button) => {
+  [continueBtn].filter(Boolean).forEach((button) => {
     button.disabled = !lastValidation.ready;
     button.title = lastValidation.ready ? '' : 'Resolve the blocking spreadsheet checks first';
   });
@@ -1053,7 +1057,7 @@ document.getElementById('goto-submit')?.addEventListener('click', () => {
   if (lastValidation && !lastValidation.ready) return;
   renderDeclarationSummary();
   showPanels({ upload: false, review: true, submit: true });
-  setWizardStep(4);
+  setWizardStep(3);
   const approve = document.getElementById('approve-cells');
   const submitBtn = document.getElementById('submit-btn');
   if (approve && submitBtn) {
@@ -1070,17 +1074,6 @@ document.getElementById('approve-cells')?.addEventListener('change', (e) => {
 document.getElementById('back-to-review')?.addEventListener('click', () => {
   showPanels({ upload: true, review: true, submit: false });
   showQuarterlyReviewState('figures');
-  panel('review-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-});
-
-document.getElementById('goto-figures')?.addEventListener('click', () => {
-  if (lastValidation && !lastValidation.ready) return;
-  showQuarterlyReviewState('figures');
-  panel('review-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-});
-
-document.getElementById('back-to-mapping')?.addEventListener('click', () => {
-  showQuarterlyReviewState('mapping');
   panel('review-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 });
 
@@ -1104,7 +1097,7 @@ document.getElementById('submit-btn')?.addEventListener('click', async () => {
   if (approved && !approved.checked) {
     if (errEl) {
       errEl.textContent =
-        'Please confirm you have checked the spreadsheet cells and mappings before sending.';
+        'Please confirm you have checked the figures and any issues before sending.';
       errEl.hidden = false;
     }
     return;
@@ -1186,7 +1179,7 @@ document.getElementById('submit-btn')?.addEventListener('click', async () => {
     }
     if (successBox) successBox.hidden = false;
     submissionProcessed = true;
-    setWizardStep(4);
+    setWizardStep(3);
     successBox?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     // Persist cumulative totals for next update comparison (signed-in)
     if (lastDraftId) {

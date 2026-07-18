@@ -37,7 +37,6 @@ test.describe('Visual regression snapshots (smoke)', () => {
     await page.locator('#samples').evaluate((element) => { element.open = true; });
     await page.locator('.sample-btn').first().click();
     await expect(page.locator('#review-panel')).toBeVisible({ timeout: 15_000 });
-    await page.locator('#goto-figures').click();
     await shot(page, 'app-review');
   });
 

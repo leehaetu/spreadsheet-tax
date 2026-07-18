@@ -15,6 +15,7 @@
   - `/Users/leehine/Spreadsheet Tax/test-results/design-qa/board-2-mapping-viewport.png`
   - `/Users/leehine/Spreadsheet Tax/test-results/design-qa/board-2-figures-viewport.png`
   - `/Users/leehine/Spreadsheet Tax/test-results/design-qa/board-2-declaration-viewport.png`
+  - `/Users/leehine/Spreadsheet Tax/test-results/design-qa/board-2-simplified-figures-viewport.png`
   - `/Users/leehine/Spreadsheet Tax/test-results/design-qa/board-3-year-end-viewport.png`
   - `/Users/leehine/Spreadsheet Tax/test-results/design-qa/board-3-foreign-viewport.png`
   - `/Users/leehine/Spreadsheet Tax/test-results/design-qa/board-3-declaration-viewport.png`
@@ -45,6 +46,7 @@ No actionable P0, P1 or P2 visual differences remain in the compared states.
 3. Initial comparison found P2 year-end/history drift: foreign properties were not visually separated and recovery states were too implicit. Spain/France tabs, calculation/declaration states, a filtered evidence timeline, authority/upload/service/duplicate cards, unsaved-change handling and source-removal confirmation are now represented.
 4. Post-fix comparison found a P2 empty ownership value for fixture sources without an explicit share. The setup model now applies the truthful 100% default only when no positive share exists. Post-fix browser evidence recorded `ownership: 100` in `board-1-source-detail-viewport.png`.
 5. Final browser pass exercised the primary interactions and reported no console errors.
+6. A customer review found the clean spreadsheet path too procedural. The visible quarterly journey is now three steps: Add spreadsheet, Check figures, Review and send. A clean file proceeds directly to totals; category mappings, source cells and year-to-date category breakdowns remain available in collapsed advanced details. Files with blocking validation issues open the diagnostic detail automatically. The in-app browser recheck reported no console errors.
 
 Focused regions were required because the full journey boards contain several small screens. Setup forms, quarterly mapping/figures/declaration, foreign-property tabs, final declaration, submission history and recovery cards were captured as separate matching viewport states and included in the comparison collages.
 

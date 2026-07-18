@@ -29,7 +29,6 @@ test.describe('Taxpayer app journey (Gate 0)', () => {
       /ready|passed|Check|Fix/i
     );
 
-    await page.locator('#goto-figures').click();
     await expect(page.locator('#metric-income')).toBeVisible();
     const income = await page.locator('#metric-income').innerText();
     expect(income).not.toMatch(/^—$/);
@@ -58,6 +57,7 @@ test.describe('Taxpayer app journey (Gate 0)', () => {
     await page.locator('#samples').evaluate((element) => { element.open = true; });
     await page.locator('.sample-btn').first().click();
     await expect(page.locator('#review-panel')).toBeVisible({ timeout: 15_000 });
-    await expect(page.locator('#goto-figures')).toBeVisible();
+    await expect(page.locator('#metric-income')).toBeVisible();
+    await expect(page.locator('#goto-submit')).toBeVisible();
   });
 });

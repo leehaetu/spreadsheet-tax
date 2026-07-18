@@ -114,17 +114,19 @@ export function listIncomeSources(userId) {
  * Replace or upsert sources from HMRC business list + user nicknames.
  * @param {string} userId
  * @param {Array<object>} sources
+ * @param {{ origin?: 'preview'|'hmrc' }} [options]
  */
-export function setIncomeSources(userId, sources) {
+export function setIncomeSources(userId, sources, options = {}) {
   const database = getDb();
   const now = new Date().toISOString();
+  const origin = options.origin === 'hmrc' ? 'hmrc' : 'preview';
   database.prepare(`DELETE FROM income_sources WHERE user_id = ?`).run(userId);
   const usedIds = new Set();
   const ins = database.prepare(
     `INSERT INTO income_sources (
       id, user_id, type, business_id, label, nickname, country_code, joint, ownership_share,
-      spreadsheet_hint, status, created_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      spreadsheet_hint, status, origin, created_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   );
   for (const s of sources || []) {
     const type = s.type || 'self_employment';
@@ -147,11 +149,43 @@ export function setIncomeSources(userId, sources) {
       s.ownershipShare != null ? Number(s.ownershipShare) : null,
       s.spreadsheetHint || null,
       s.status || 'active',
+      origin,
       now,
       now
     );
   }
   return listIncomeSources(userId);
+}
+
+export function reconcileHmrcSources(existing, incoming) {
+  const allowed = new Map(
+    (existing || [])
+      .filter((source) => source.origin === 'hmrc' && source.businessId)
+      .map((source) => [String(source.businessId), source])
+  );
+  if (!allowed.size) {
+    return { error: 'Retrieve your businesses from HMRC before saving income sources.', status: 409 };
+  }
+  const seen = new Set();
+  const sources = [];
+  for (const candidate of incoming || []) {
+    const businessId = String(candidate.businessId || '');
+    const source = allowed.get(businessId);
+    if (!source || seen.has(businessId) || candidate.type !== source.type) {
+      return { error: 'Income sources must match businesses retrieved from HMRC.', status: 409 };
+    }
+    seen.add(businessId);
+    sources.push({
+      ...source,
+      nickname: candidate.nickname || source.nickname,
+      countryCode: candidate.countryCode || source.countryCode,
+      joint: Boolean(candidate.joint),
+      ownershipShare: candidate.ownershipShare != null ? Number(candidate.ownershipShare) : source.ownershipShare,
+      spreadsheetHint: candidate.spreadsheetHint || source.spreadsheetHint,
+      status: candidate.status || source.status,
+    });
+  }
+  return { sources };
 }
 
 /**
@@ -456,6 +490,7 @@ function hydrateSource(row) {
     ownershipShare: row.ownership_share,
     spreadsheetHint: row.spreadsheet_hint,
     status: row.status,
+    origin: row.origin || 'preview',
   };
 }
 

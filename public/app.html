@@ -34,10 +34,9 @@
     </div>
 
     <div class="wizard-steps" id="wizard-steps" aria-label="Progress">
-      <div class="wizard-step active" data-step="1"><span class="num">1</span><span class="label-hide-sm">Add records</span></div>
-      <div class="wizard-step" data-step="2"><span class="num">2</span><span class="label-hide-sm">Map &amp; check</span></div>
-      <div class="wizard-step" data-step="3"><span class="num">3</span><span class="label-hide-sm">Review figures</span></div>
-      <div class="wizard-step" data-step="4"><span class="num">4</span><span class="label-hide-sm">Declare &amp; submit</span></div>
+      <div class="wizard-step active" data-step="1"><span class="num">1</span><span class="label-hide-sm">Add spreadsheet</span></div>
+      <div class="wizard-step" data-step="2"><span class="num">2</span><span class="label-hide-sm">Check figures</span></div>
+      <div class="wizard-step" data-step="3"><span class="num">3</span><span class="label-hide-sm">Review &amp; send</span></div>
     </div>
 
     <section class="panel quarterly-source-panel" id="quarterly-source-panel">
@@ -97,20 +96,21 @@
     <section class="panel" id="review-panel" hidden>
       <div class="panel-header">
         <div>
-          <h2>2. Check these figures</h2>
+          <h2>2. Check your figures</h2>
           <p class="muted">
-            Approve the <strong>year-to-date</strong> column (what HMRC will hold).
-            The “this period” column shows what your new file contributed.
-            Tax adjustments belong at year end — not in quarterly updates.
+            We have read your spreadsheet and prepared the quarterly figures.
+            Fix only the items marked as needing attention, then check the totals.
           </p>
         </div>
       </div>
-      <div id="validation-panel" data-quarterly-state="mapping"></div>
-      <div class="quarterly-state-heading" data-quarterly-state="figures" hidden><p class="eyebrow">Figures review</p><h3>Review your figures</h3><p>Check income, expenses and profit for this period before declaring.</p></div>
+      <div id="validation-panel"></div>
+      <div class="quarterly-state-heading" data-quarterly-state="figures" hidden><p class="eyebrow">Figures ready</p><h3>Income, expenses and profit</h3><p>These figures came from the spreadsheet you uploaded.</p></div>
       <div id="summary-cards" class="stat-cards" data-quarterly-state="figures" hidden></div>
       <div id="cumulative-review" class="panel" data-quarterly-state="figures" style="margin:0.75rem 0;padding:0.75rem" hidden></div>
 
-      <div class="panel" id="spreadsheet-check-panel" data-quarterly-state="mapping" style="margin:0.75rem 0;padding:0.75rem" hidden>
+      <details class="quarterly-advanced" id="quarterly-advanced">
+        <summary>Advanced details: mappings, source cells and audit evidence</summary>
+      <div class="panel" id="spreadsheet-check-panel" style="margin:0.75rem 0;padding:0.75rem" hidden>
         <h3 style="margin-top:0;font-size:1.1rem">Check your spreadsheet</h3>
         <p class="muted" id="ss-security-note" style="margin-top:0"></p>
         <div id="ss-reupload-diff" class="help-tip" hidden style="border-left:3px solid var(--warn,#d97706)"></div>
@@ -165,14 +165,11 @@
         <p class="muted" id="ss-meta" style="font-size:0.85rem"></p>
       </div>
 
-      <div id="mapping-table-wrap" class="table-wrap" data-quarterly-state="mapping"></div>
-      <div class="action-bar" data-quarterly-state="mapping">
-        <button type="button" class="btn btn-primary btn-lg" id="goto-figures">Continue to figures</button>
-        <button type="button" class="btn btn-ghost" id="back-to-upload">Upload a different file</button>
-      </div>
+      <div id="mapping-table-wrap" class="table-wrap"></div>
+      </details>
       <div class="action-bar" data-quarterly-state="figures" hidden>
-        <button type="button" class="btn btn-primary btn-lg" id="goto-submit">Looks right — continue</button>
-        <button type="button" class="btn btn-ghost" id="back-to-mapping">Back to mapping</button>
+        <button type="button" class="btn btn-primary btn-lg" id="goto-submit">Review and send</button>
+        <button type="button" class="btn btn-ghost" id="back-to-upload">Upload a different file</button>
         <button type="button" class="btn btn-ghost" id="nil-update-btn">Confirm nil (no activity)</button>
       </div>
     </section>
@@ -234,14 +231,14 @@
         <label style="display:flex;gap:0.5rem;align-items:flex-start;cursor:pointer">
           <input type="checkbox" id="approve-cells" style="margin-top:0.35rem" />
           <span>
-            I have checked the spreadsheet cells and mappings shown above.
-            The cumulative figures displayed are the figures I authorise Spreadsheet Tax to send to HMRC.
+            I have checked the figures and any issues shown above.
+            These are the figures I authorise Spreadsheet Tax to send to HMRC.
           </span>
         </label>
       </div>
       <div class="action-bar">
         <button type="button" class="btn btn-primary btn-lg" id="submit-btn" disabled>Send quarterly update</button>
-        <button type="button" class="btn btn-ghost" id="back-to-review">Back to figures</button>
+        <button type="button" class="btn btn-ghost" id="back-to-review">Back to check figures</button>
       </div>
       <p id="submit-error" class="error" hidden></p>
       <div id="submit-success" class="success-box" hidden>

@@ -39,7 +39,6 @@ test.describe('Gate 0 smoke — sales and personal app', () => {
     const sample = page.locator('.sample-btn').first();
     await sample.click();
     await expect(page.locator('#review-panel')).toBeVisible({ timeout: 15_000 });
-    await page.locator('#goto-figures').click();
     await expect(page.locator('#metric-income')).not.toHaveText('—');
     await expect(page.locator('#goto-submit')).toBeVisible();
   });
@@ -57,7 +56,6 @@ test.describe('Gate 0 smoke — sales and personal app', () => {
     await page.locator('#samples').evaluate((element) => { element.open = true; });
     await page.locator('.sample-btn').first().click();
     await expect(page.locator('#review-panel')).toBeVisible({ timeout: 15_000 });
-    await page.locator('#goto-figures').click();
     await page.locator('#goto-submit').click();
     await expect(page.locator('#submit-panel')).toBeVisible();
     const nino = page.locator('#nino');

@@ -51,6 +51,12 @@ test.describe('approved taxpayer overhaul', () => {
       await page.locator('#next-step').click();
     }
     await expect(page.locator('.review-source')).toHaveCount(4);
+    const lastReviewSource = page.locator('.review-source').last();
+    const lastReviewName = await lastReviewSource.locator('strong').innerText();
+    await lastReviewSource.locator('[data-review-edit]').click();
+    await expect(page.locator('.source-detail')).toContainText(lastReviewName);
+    await page.locator('#next-step').click();
+    await expect(page.locator('.review-source')).toHaveCount(4);
     await page.getByRole('button', { name: 'Save setup and go home' }).click();
     await page.waitForURL(/\/home$/);
 
@@ -92,9 +98,8 @@ test.describe('approved taxpayer overhaul', () => {
     });
     await page.locator('.sample-btn[data-sample="combined"]').click({ force: true });
     await expect(page.locator('#review-panel')).toBeVisible({ timeout: 20_000 });
-    await expect(page.locator('#mapping-table-wrap')).toBeVisible();
-    await page.locator('#goto-figures').click();
     await expect(page.locator('#summary-cards')).toBeVisible();
+    await expect(page.locator('#quarterly-advanced')).not.toHaveAttribute('open', '');
     await page.locator('#goto-submit').click();
     await expect(page.locator('#submit-panel')).toBeVisible();
     await page.locator('#nino').fill('AA123456A');

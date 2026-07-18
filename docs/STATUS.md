@@ -1,7 +1,7 @@
 # Project status
 
 **Last updated:** 2026-07-18  
-**App version:** **1.33.7** (branch; deployed host reported 1.33.5 on 2026-07-18)
+**App version:** **1.34.1** (branch; deployed host reported 1.33.5 on 2026-07-18)
 **Screen audit pack:** [docs/audits/2026-07-18-all-screens/](./audits/2026-07-18-all-screens/) — drives UI fixes (not “image work”)  
 **Sales high-conversion stream:** [docs/audits/2026-07-18-sales-conversion-after/REPORT.md](./audits/2026-07-18-sales-conversion-after/REPORT.md) · [full live pack 0 defects](./audits/2026-07-18-sales-conversion-after-full/REPORT.md) · prior [conversion-review](./audits/2026-07-18-sales-conversion-review/)  
 **Sales weekly readout:** [SALES-WEEKLY-READOUT.md](./SALES-WEEKLY-READOUT.md)  
@@ -15,7 +15,7 @@
 
 ---
 
-## Truth status (2026-07-18) — v1.33.7 three-board taxpayer workflow
+## Truth status (2026-07-18) — v1.34.1 three-board taxpayer workflow
 
 - Stage: 2 of 5 — Sandbox engineering
 - Not claiming: production-ready · pilot-ready · HMRC Recognised · full operational E2E
@@ -28,7 +28,7 @@
   - `ensure_property_businesses` → app 502 after the two conflicts
   - UK period, foreign period, calculation, BSAS, ITSA status, BISS and Accounts → 429 → `MESSAGE_THROTTLED_OUT`
   - FPH validation → 422 with underlying `MESSAGE_THROTTLED_OUT`
-- Version: deployed `X-App-Version=1.33.5` · branch package `1.33.7` · STATUS `1.33.7`
+- Version: deployed `X-App-Version=1.33.5` · branch package `1.34.1` · STATUS `1.34.1`
 
 ### Capabilities
 
@@ -37,6 +37,8 @@
 | Three approved visual boards implemented as the taxpayer workflow | `CUSTOMER_WORKFLOW` | `design-qa.md`; taxpayer Playwright suite | Production deployment or tax sign-off |
 | Income sources retrieved from HMRC; no arbitrary local source creation in onboarding | `UNIT_TESTED` + `CUSTOMER_WORKFLOW` | onboarding and HMRC-business route tests | HMRC property-business reconciliation complete |
 | Spreadsheet/digital-record quarterly path; no manual quarterly total entry | `UNIT_TESTED` + `CUSTOMER_WORKFLOW` | quarterly workflow tests | Universal digital-link compliance sign-off |
+| Clean spreadsheet journey reduced to Add spreadsheet → Check figures → Review and send; mappings and cell evidence remain available as advanced details | `CUSTOMER_WORKFLOW` | taxpayer Playwright suite and in-app browser verification | Independent usability study |
+| Real-HMRC accounts cannot save invented income-source identities through the authenticated API | `UNIT_TESTED` | taxpayer journey reconciliation tests | HMRC business-list inconsistency resolved |
 | Real HMRC sandbox OAuth and application-origin traffic | `SANDBOX_HTTP` | `docs/hmrc/sandbox-journey-run.json` | Every HMRC endpoint green |
 
 ### What is unknown

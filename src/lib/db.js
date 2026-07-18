@@ -298,6 +298,7 @@ function migrate(database) {
       ownership_share REAL,
       spreadsheet_hint TEXT,
       status TEXT NOT NULL DEFAULT 'active',
+      origin TEXT NOT NULL DEFAULT 'preview',
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
     );
@@ -375,6 +376,19 @@ function migrate(database) {
       updated_at TEXT NOT NULL
     );
   `);
+
+  try {
+    database.exec(
+      `ALTER TABLE income_sources ADD COLUMN origin TEXT NOT NULL DEFAULT 'preview'`
+    );
+  } catch (e) {
+    if (!String(e?.message || e).includes('duplicate column name')) {
+      console.warn(
+        'income_sources origin migration skipped:',
+        e instanceof Error ? e.message : e
+      );
+    }
+  }
 
   // Additive columns for integrity chain (idempotent)
   try {
