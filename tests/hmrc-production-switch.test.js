@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import {
   resolveHmrcBaseUrl,
   buildSubmitRequest,
+  resolveConfig,
+  canAttemptLiveHmrc,
 } from '../src/lib/hmrc-client.js';
 import {
   taxYearFromPeriodId,
@@ -34,6 +36,28 @@ describe('production switch is env-only', () => {
       }),
       'https://custom.example'
     );
+  });
+
+  it('client_id alone does not enable live HMRC mode', () => {
+    const prev = process.env.HMRC_CLIENT_ID;
+    const prevTok = process.env.HMRC_ACCESS_TOKEN;
+    process.env.HMRC_CLIENT_ID = 'hub-client-id';
+    delete process.env.HMRC_ACCESS_TOKEN;
+    try {
+      assert.equal(resolveConfig({}).mode, 'double');
+      assert.equal(canAttemptLiveHmrc({ allowLiveSubmit: true }), false);
+      assert.equal(
+        canAttemptLiveHmrc({
+          allowLiveSubmit: true,
+          accessToken: 'user-oauth-token',
+        }),
+        true
+      );
+    } finally {
+      if (prev) process.env.HMRC_CLIENT_ID = prev;
+      else delete process.env.HMRC_CLIENT_ID;
+      if (prevTok) process.env.HMRC_ACCESS_TOKEN = prevTok;
+    }
   });
 });
 

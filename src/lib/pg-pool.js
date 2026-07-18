@@ -134,7 +134,11 @@ export async function migratePostgres() {
       mode TEXT NOT NULL,
       ok INTEGER NOT NULL,
       results_json TEXT NOT NULL,
-      created_at TIMESTAMPTZ NOT NULL
+      created_at TIMESTAMPTZ NOT NULL,
+      evidence_json TEXT,
+      correlation_id TEXT,
+      supersedes_attempt_id TEXT,
+      status TEXT DEFAULT 'recorded'
     );
     CREATE TABLE IF NOT EXISTS audit_events (
       id TEXT PRIMARY KEY,

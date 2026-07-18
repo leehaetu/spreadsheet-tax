@@ -16,7 +16,7 @@ const DEFAULT_PRODUCTION_BASE = 'https://api.service.hmrc.gov.uk';
 
 /**
  * @typedef {object} HmrcConfig
- * @property {'sandbox' | 'double'} mode
+ * @property {'sandbox' | 'double' | 'production'} mode
  * @property {string} [baseUrl]
  * @property {string} [clientId]
  * @property {string} [clientSecret]
@@ -24,6 +24,7 @@ const DEFAULT_PRODUCTION_BASE = 'https://api.service.hmrc.gov.uk';
  * @property {string} [nino]
  * @property {import('express').Request | null} [req]
  * @property {string|null} [userId]
+ * @property {'sandbox' | 'production'} [oauthEnv]
  */
 
 /**
@@ -226,13 +227,24 @@ export function resolveConfig(overrides = {}) {
     process.env.HMRC_OAUTH_ENV === 'production' ? 'production' : 'sandbox';
   const clientId =
     'clientId' in overrides ? overrides.clientId : process.env.HMRC_CLIENT_ID;
+  const hasToken = Boolean(
+    ('accessToken' in overrides
+      ? overrides.accessToken
+      : process.env.HMRC_ACCESS_TOKEN) || overrides.accessToken
+  );
   let mode = overrides.mode;
   if (!mode) {
-    if (envMode === 'sandbox' || envMode === 'double') mode = envMode;
-    // Access token present (user OAuth) → external host (sandbox or production by env)
-    else if (overrides.accessToken || process.env.HMRC_ACCESS_TOKEN)
-      mode = 'sandbox'; // label; host chosen below via oauth env
-    else mode = clientId ? 'sandbox' : 'double';
+    if (envMode === 'double') mode = 'double';
+    else if (envMode === 'sandbox' || envMode === 'production') {
+      // Explicit HMRC_MODE only applies when a token is available — never invent live HTTP
+      mode = hasToken ? envMode : 'double';
+    } else if (hasToken) {
+      // Real OAuth/token → external host; production vs sandbox from HMRC_OAUTH_ENV
+      mode = oauthEnv === 'production' ? 'production' : 'sandbox';
+    } else {
+      // No token: always preview. Never invent external mode from client_id alone.
+      mode = 'double';
+    }
   }
   const defaultBase =
     oauthEnv === 'production' ? DEFAULT_PRODUCTION_BASE : DEFAULT_SANDBOX_BASE;
@@ -240,11 +252,13 @@ export function resolveConfig(overrides = {}) {
     mode,
     baseUrl: overrides.baseUrl ?? process.env.HMRC_BASE_URL ?? defaultBase,
     oauthEnv,
-    clientId,
+    clientId: mode === 'double' ? undefined : clientId,
     clientSecret:
-      'clientSecret' in overrides
-        ? overrides.clientSecret
-        : process.env.HMRC_CLIENT_SECRET,
+      mode === 'double'
+        ? undefined
+        : 'clientSecret' in overrides
+          ? overrides.clientSecret
+          : process.env.HMRC_CLIENT_SECRET,
     accessToken:
       'accessToken' in overrides
         ? overrides.accessToken
@@ -253,6 +267,23 @@ export function resolveConfig(overrides = {}) {
     req: overrides.req ?? null,
     userId: overrides.userId ?? null,
   };
+}
+
+/**
+ * Pure: can this config attempt live (non-double) HMRC HTTP?
+ * @param {Partial<HmrcConfig> & { allowLiveSubmit?: boolean }} opts
+ */
+export function canAttemptLiveHmrc(opts = {}) {
+  const allow =
+    opts.allowLiveSubmit === true ||
+    process.env.HMRC_ALLOW_LIVE_SUBMIT === '1';
+  if (!allow) return false;
+  const token = opts.accessToken || process.env.HMRC_ACCESS_TOKEN;
+  if (!token) return false;
+  if (String(token).startsWith('mock-') || String(token).includes('mock')) {
+    return false;
+  }
+  return true;
 }
 
 /**

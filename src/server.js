@@ -12,6 +12,14 @@ import { processLocalFile, processLocalFileIsolated } from './lib/pipeline.js';
 import { redisRateLimit } from './lib/redis-client.js';
 import { enqueueJob } from './lib/job-queue.js';
 import { evaluateCapacityPlatform, isPostgresMode } from './lib/platform-config.js';
+import {
+  ensureOperationalPostgres,
+  mirrorDraftToPostgres,
+  mirrorSubmissionAttemptToPostgres,
+  operationalStoreHealth,
+} from './lib/operational-store.js';
+import { performProductSubmit } from './lib/live-submit.js';
+import { canAttemptLiveHmrc } from './lib/hmrc-client.js';
 import { createHmrcClient } from './lib/hmrc-client.js';
 import { validateSubmission } from './lib/validation.js';
 import {
@@ -207,7 +215,7 @@ const root = path.join(__dirname, '..');
 const publicDir = path.join(root, 'public');
 const templatesDir = path.join(root, 'templates');
 const testSpreadsheetsDir = path.join(root, 'test-spreadsheets');
-const APP_VERSION = '1.21.0';
+const APP_VERSION = '1.22.0';
 
 /**
  * Serve HTML with site-chrome (HMRC recognition banner/footer) injected once.
@@ -345,6 +353,7 @@ app.get('/health', (_req, res) => {
     dataDir = process.env.DATA_DIR || null;
   }
   const capacity = evaluateCapacityPlatform(process.env);
+  const store = operationalStoreHealth();
   const ready = dbOk;
   res.status(ready ? 200 : 503).json({
     ok: ready,
@@ -358,12 +367,21 @@ app.get('/health', (_req, res) => {
     bridging: true,
     db: dbOk,
     dbMode: capacity.mode,
+    operationalStore: store,
     postgresConfigured: capacity.postgres,
     redisConfigured: capacity.redis,
     capacityGateMet: false,
+    capacityGateMetNote:
+      'Always false until CAPACITY-REQUIREMENTS acceptance evidence is recorded — never inferred from DATABASE_URL alone',
     capacityRequired: { practices: 200, customers: 800_000 },
     capacityNote:
       'Capacity gate NOT MET until 200 practices + 800k customers proven under load — see docs/CAPACITY-REQUIREMENTS.md',
+    productionApiReady: Boolean(
+      process.env.HMRC_CLIENT_ID &&
+        (process.env.HMRC_OAUTH_ENV === 'production' || process.env.HMRC_BASE_URL)
+    ),
+    productionApiNote:
+      'Production host is env-only (HMRC_OAUTH_ENV / HMRC_BASE_URL). Live traffic still requires real OAuth token + HMRC_ALLOW_LIVE_SUBMIT=1 + approval.',
     oauthMock: oauthConfig().mock,
     liveSubmitEnabled: process.env.HMRC_ALLOW_LIVE_SUBMIT === '1',
     previewOnlyDefault: process.env.HMRC_ALLOW_LIVE_SUBMIT !== '1',
@@ -662,6 +680,10 @@ function sendImportResult(req, res, result, filename) {
         console.warn('spreadsheet review persist failed', e);
       }
     }
+    // Operational dual-write when DATABASE_URL set (non-blocking)
+    mirrorDraftToPostgres(draft).catch((e) =>
+      console.warn('Postgres draft mirror failed', e?.message || e)
+    );
   } catch (e) {
     console.warn('Draft persist failed (import still returned):', e);
   }
@@ -794,7 +816,7 @@ app.get('/api/samples', (_req, res) => {
  */
 function createSubmitClient(opts = {}) {
   const allowLive = process.env.HMRC_ALLOW_LIVE_SUBMIT === '1';
-  if (!allowLive) {
+  if (!allowLive || !opts.accessToken || !canAttemptLiveHmrc({ accessToken: opts.accessToken, allowLiveSubmit: allowLive })) {
     return createHmrcClient({
       mode: 'double',
       accessToken: undefined,
@@ -804,21 +826,14 @@ function createSubmitClient(opts = {}) {
       userId: opts.userId || null,
     });
   }
-  if (opts.accessToken) {
-    return createHmrcClient({
-      mode: opts.mode === 'production' ? 'sandbox' : opts.mode || 'sandbox',
-      accessToken: opts.accessToken,
-      req: opts.req || null,
-      userId: opts.userId || null,
-    });
-  }
-  // Live flag may be on for connected users, but without a real OAuth token
-  // always preview (double). Never invent external HMRC calls from client_id alone.
+  // Live path: production vs sandbox host from HMRC_OAUTH_ENV / HMRC_BASE_URL only
+  const mode =
+    process.env.HMRC_OAUTH_ENV === 'production' || opts.mode === 'production'
+      ? 'production'
+      : 'sandbox';
   return createHmrcClient({
-    mode: 'double',
-    accessToken: undefined,
-    clientId: undefined,
-    clientSecret: undefined,
+    mode,
+    accessToken: opts.accessToken,
     req: opts.req || null,
     userId: opts.userId || null,
   });
@@ -997,9 +1012,49 @@ app.post('/api/submit', async (req, res) => {
           });
         }
         accessToken = conn.accessToken;
-        tokenMode = conn.mode;
+        tokenMode =
+          process.env.HMRC_OAUTH_ENV === 'production' ? 'production' : 'sandbox';
         connectionMock = false;
       }
+    }
+
+    // Queue-backed live/preview submit when operational flag set (worker re-loads OAuth)
+    if (
+      process.env.ASYNC_HMRC_SUBMIT === '1' &&
+      draft &&
+      user &&
+      approvalGate?.ok
+    ) {
+      const job = await enqueueJob({
+        queue: 'hmrc_submit',
+        jobType: 'hmrc_submit',
+        payload: {
+          userApproved: true,
+          draftId: draft.id,
+          userId: user.id,
+          nino: validation.normalized.nino,
+          taxYear: validation.normalized.taxYear,
+          businessIdSe:
+            validation.normalized.businessIdSe || businessIdSe,
+          businessIdUk:
+            validation.normalized.businessIdUk || businessIdUk,
+          businessIdForeign:
+            validation.normalized.businessIdForeign || businessIdForeign,
+          idempotencyKey: idempotencyKey ? String(idempotencyKey) : null,
+          supersedesAttemptId: req.body?.supersedesAttemptId || null,
+        },
+      });
+      await mirrorDraftToPostgres(draft).catch(() => {});
+      return res.json({
+        ok: true,
+        queued: true,
+        jobId: job.id,
+        draftId: draft.id,
+        mode: 'queued',
+        previewOnly: process.env.HMRC_ALLOW_LIVE_SUBMIT !== '1',
+        message:
+          'Submission queued for worker — no autonomous HMRC send without approval (already recorded).',
+      });
     }
 
     // Anonymous draft + live external: force double unless signed-in owner
@@ -1088,6 +1143,20 @@ app.post('/api/submit', async (req, res) => {
           previewOnly: client.mode === 'double',
         },
       });
+      await mirrorDraftToPostgres(draft).catch(() => {});
+      await mirrorSubmissionAttemptToPostgres({
+        id: attemptId,
+        draftId: draft.id,
+        userId: user?.id,
+        mode: client.mode,
+        ok,
+        results,
+        evidence,
+        correlationId,
+        supersedesAttemptId: req.body?.supersedesAttemptId || null,
+        status: client.mode === 'double' ? 'preview' : ok ? 'accepted' : 'failed',
+        createdAt: new Date().toISOString(),
+      }).catch(() => {});
     }
 
     res.json({
@@ -3702,6 +3771,10 @@ if (process.env.SPREADSHEET_TAX_NO_LISTEN !== '1') {
     console.error(e instanceof Error ? e.message : e);
     process.exit(1);
   }
+  // Warm operational Postgres schema when DATABASE_URL is present
+  ensureOperationalPostgres().catch((e) =>
+    console.warn('[boot] operational postgres:', e?.message || e)
+  );
   app.listen(port, '0.0.0.0', () => {
     console.log(`Spreadsheet Tax listening on http://0.0.0.0:${port}`);
     console.log(`  Sales:      http://localhost:${port}/`);
@@ -3710,6 +3783,9 @@ if (process.env.SPREADSHEET_TAX_NO_LISTEN !== '1') {
     console.log(`  Practice:   http://localhost:${port}/practice`);
     console.log(`  Portal:     http://localhost:${port}/portal`);
     console.log(`  Template:   http://localhost:${port}/download/template`);
+    console.log(
+      `  Store:      ${isPostgresMode() ? 'postgres (dual-write)' : 'sqlite'}`
+    );
   });
 }
 

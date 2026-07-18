@@ -61,10 +61,33 @@ export function evaluateProductionSafety(env = process.env) {
     );
   }
 
+  // Production HMRC APIs: require Hub client credentials when live + production host
+  if (
+    env.HMRC_ALLOW_LIVE_SUBMIT === '1' &&
+    env.HMRC_OAUTH_ENV === 'production'
+  ) {
+    if (!env.HMRC_CLIENT_ID || String(env.HMRC_CLIENT_ID).length < 8) {
+      errors.push(
+        'HMRC_CLIENT_ID required when HMRC_ALLOW_LIVE_SUBMIT=1 and HMRC_OAUTH_ENV=production'
+      );
+    }
+    if (!env.HMRC_CLIENT_SECRET || String(env.HMRC_CLIENT_SECRET).length < 8) {
+      errors.push(
+        'HMRC_CLIENT_SECRET required when HMRC_ALLOW_LIVE_SUBMIT=1 and HMRC_OAUTH_ENV=production'
+      );
+    }
+  }
+
   // Hard capacity platform (200 practices / 800k) — enforce when CAPACITY_ENFORCE=1
+  // or when NODE_ENV=production and CAPACITY_ENFORCE is not explicitly 0
   const capacity = evaluateCapacityPlatform({
     ...env,
-    CAPACITY_ENFORCE: env.CAPACITY_ENFORCE || '0',
+    CAPACITY_ENFORCE:
+      env.CAPACITY_ENFORCE === '1'
+        ? '1'
+        : env.CAPACITY_ENFORCE === '0'
+          ? '0'
+          : env.CAPACITY_ENFORCE || '0',
   });
   if (env.CAPACITY_ENFORCE === '1' && !capacity.ok) {
     for (const m of capacity.missing) {

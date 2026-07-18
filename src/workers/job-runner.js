@@ -14,6 +14,12 @@ import {
 import { isPostgresMode } from '../lib/platform-config.js';
 import { migratePostgres } from '../lib/pg-pool.js';
 import { getDb } from '../lib/db.js';
+import { ensureOperationalPostgres } from '../lib/operational-store.js';
+import { performQueuedHmrcSubmit } from '../lib/live-submit.js';
+import { processLocalFileIsolated } from '../lib/pipeline.js';
+import { createDraft } from '../lib/drafts.js';
+import { mirrorDraftToPostgres } from '../lib/operational-store.js';
+import fs from 'node:fs';
 
 const workerId = `worker-${crypto.randomUUID().slice(0, 8)}`;
 const queues = (process.env.WORKER_QUEUES || 'default,excel,hmrc_submit,email,reminders')
@@ -26,7 +32,6 @@ async function handleJob(job) {
     case 'ping':
       return { pong: true, at: new Date().toISOString() };
     case 'deadline_reminders': {
-      // Firm-scoped only — payload.firmId required
       if (!job.payload?.firmId) {
         throw new Error('deadline_reminders requires firmId (no cross-tenant scan)');
       }
@@ -36,20 +41,46 @@ async function handleJob(job) {
       });
     }
     case 'hmrc_submit': {
-      // Hard gate: never autonomous HMRC submit without explicit approval flag
-      if (job.payload?.userApproved !== true) {
-        throw new Error(
-          'hmrc_submit rejected: userApproved must be true (no autonomous filing)'
-        );
+      // Real product submit — never autonomous without userApproved
+      return performQueuedHmrcSubmit(job.payload || {});
+    }
+    case 'excel_parse': {
+      const p = job.payload || {};
+      if (!p.filePath && !p.bufferBase64) {
+        throw new Error('excel_parse requires filePath or bufferBase64');
       }
+      let buffer;
+      if (p.bufferBase64) {
+        buffer = Buffer.from(p.bufferBase64, 'base64');
+      } else {
+        buffer = fs.readFileSync(p.filePath);
+      }
+      const result = await processLocalFileIsolated(
+        buffer,
+        p.originalName || 'upload.xlsx'
+      );
+      const draft = createDraft({
+        userId: p.userId || null,
+        clientId: p.clientId || null,
+        firmId: p.firmId || null,
+        filename: p.originalName || 'upload.xlsx',
+        payloads: {
+          meta: result.payloads.meta,
+          selfEmployment: result.payloads.selfEmployment,
+          ukProperty: result.payloads.ukProperty,
+          foreignProperty: result.payloads.foreignProperty,
+        },
+        summary: result.summary,
+        figures: result.figures,
+        validation: result.validation,
+      });
+      await mirrorDraftToPostgres(draft);
       return {
-        queued: true,
-        note: 'HMRC submit worker placeholder — uses same adapter when wired to draftId',
-        draftId: job.payload.draftId,
+        draftId: draft.id,
+        ok: true,
+        sources: result.sources,
       };
     }
-    case 'excel_parse':
-      return { note: 'excel parse handled on upload path via isolated worker' };
     default:
       throw new Error(`Unknown job type: ${job.jobType}`);
   }
@@ -60,8 +91,8 @@ async function tick() {
     const job = await claimJob(q, workerId);
     if (!job) continue;
     try {
-      await handleJob(job);
-      await completeJob(job.id);
+      const result = await handleJob(job);
+      await completeJob(job.id, result);
       console.log(`[job-runner] completed ${job.jobType} ${job.id}`);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
@@ -74,6 +105,7 @@ async function tick() {
 async function main() {
   if (isPostgresMode()) {
     await migratePostgres();
+    await ensureOperationalPostgres();
     console.log('[job-runner] Postgres mode');
   } else {
     getDb();
