@@ -4,21 +4,21 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Sign in — Spreadsheet Tax</title>
+  <meta name="description" content="Sign in to your Spreadsheet Tax account." />
   <link rel="stylesheet" href="/css/site.css" />
 </head>
-<body class="theme-light app-body app-simple">
+<body class="theme-light app-simple">
   <header class="site-header">
     <div class="wrap header-inner">
       <a class="logo" href="/"><span class="logo-mark">ST</span> Spreadsheet Tax</a>
       <nav>
-        <a href="/register">Create account</a>
-        <a href="/">Marketing site</a>
+        <a class="btn btn-primary btn-sm" href="/register" data-cta="get-started-free">Get started free</a>
       </nav>
     </div>
   </header>
   <main class="wrap app-main" style="max-width:480px">
     <h1>Sign in</h1>
-    <p class="muted">Sign in to open your tax home, quarterly update, and receipts. This is not the marketing website.</p>
+    <p class="muted">Welcome back. Sign in to continue your quarterly updates and account settings.</p>
     <form id="login-form" class="panel">
       <div class="form-row">
         <label>Email <input type="email" id="email" required autocomplete="username" /></label>
@@ -31,10 +31,14 @@
           <input type="text" id="mfa" inputmode="numeric" autocomplete="one-time-code" maxlength="8" />
         </label>
       </div>
-      <button type="submit" class="btn btn-primary">Sign in</button>
+      <button type="submit" class="btn btn-primary" data-cta="sign-in-submit">Sign in</button>
       <p id="err" class="error" hidden></p>
     </form>
-    <p class="muted"><a href="/forgot-password">Forgot password?</a> · No account? <a href="/register">Register</a></p>
+    <p class="muted">
+      <a href="/forgot-password">Forgot password?</a>
+      · New here?
+      <a href="/register" data-cta="get-started-free">Get started free</a>
+    </p>
   </main>
   <script>
     document.getElementById('login-form').addEventListener('submit', async (e) => {

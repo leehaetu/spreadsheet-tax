@@ -5,6 +5,7 @@ Full-page, above-the-fold, and scroll-stage screenshots of every public sales/ma
 | Item | Path |
 |------|------|
 | **Report** | [REPORT.md](./REPORT.md) |
+| **Improvement plan (full detail)** | [IMPROVEMENT-PLAN.md](./IMPROVEMENT-PLAN.md) |
 | **Metrics index** | [capture-index.json](./capture-index.json) |
 | **Screenshots** | [screenshots/](./screenshots/) (140 PNGs) |
 

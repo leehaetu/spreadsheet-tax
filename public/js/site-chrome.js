@@ -10,9 +10,15 @@
 
   function isSalesSurface() {
     const b = document.body;
-    if (b.classList.contains('app-body') || b.classList.contains('practice-shell')) {
+    if (b.classList.contains('practice-shell')) return false;
+    // Public auth entry uses app-simple but is still a sales surface (no mode pill)
+    if (b.classList.contains('sales-surface')) return true;
+    if (b.classList.contains('app-body') && !b.classList.contains('app-simple')) {
       return false;
     }
+    // app-simple alone (sign-in/register) is public entry, not product shell
+    if (b.classList.contains('app-simple') && !isProductShellPath()) return true;
+    if (b.classList.contains('app-body')) return false;
     return true;
   }
 
@@ -56,8 +62,29 @@
     return { text: 'Preview only — not sent to HMRC', cls: 'mode-preview' };
   }
 
+  function isProductShellPath() {
+    const p = (location.pathname || '/').replace(/\/$/, '') || '/';
+    const prefixes = [
+      '/home',
+      '/app',
+      '/onboarding',
+      '/records',
+      '/year-end',
+      '/workspace',
+      '/connect-hmrc',
+      '/account',
+      '/history',
+      '/billing',
+      '/admin',
+      '/mtd',
+    ];
+    return prefixes.some((pre) => p === pre || p.startsWith(pre + '/'));
+  }
+
   function ensureModePill(status) {
+    // Never show product mode chrome on marketing or public auth entry
     if (isSalesSurface()) return;
+    if (!isProductShellPath()) return;
     if (document.getElementById('st-mode-pill')) return;
     const m = modeLabel(status);
     if (!m) return;

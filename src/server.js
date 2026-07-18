@@ -242,13 +242,36 @@ const root = path.join(__dirname, '..');
 const publicDir = path.join(root, 'public');
 const templatesDir = path.join(root, 'templates');
 const testSpreadsheetsDir = path.join(root, 'test-spreadsheets');
-const APP_VERSION = '1.25.0';
+const APP_VERSION = '1.26.0';
 
 /**
  * Serve HTML with site-chrome (HMRC recognition banner/footer) injected once.
  * @param {import('express').Response} res
  * @param {string} filename - file under public/
  */
+const MARKETING_HTML = new Set([
+  'sales.html',
+  'self-employed.html',
+  'landlords.html',
+  'professionals.html',
+  'firms.html',
+  'how-it-works.html',
+  'pricing.html',
+  'templates.html',
+  'security.html',
+  'help.html',
+  'license.html',
+  'legal.html',
+  'privacy.html',
+  'terms.html',
+  'signin.html',
+  'register.html',
+  'forgot-password.html',
+  'reset-password.html',
+  'accept-invite.html',
+  'leave-to-sales.html',
+]);
+
 function sendPublicHtml(res, filename) {
   const file = path.join(publicDir, filename);
   if (!fs.existsSync(file)) {
@@ -257,6 +280,15 @@ function sendPublicHtml(res, filename) {
   let html = fs.readFileSync(file, 'utf8');
   if (!html.includes('/js/site-chrome.js')) {
     const tag = '<script src="/js/site-chrome.js" defer></script>';
+    if (/<\/body>/i.test(html)) {
+      html = html.replace(/<\/body>/i, `${tag}\n</body>`);
+    } else {
+      html += `\n${tag}\n`;
+    }
+  }
+  // Shared sales chrome (nav/footer/CTA) for marketing + public auth entry
+  if (MARKETING_HTML.has(filename) && !html.includes('/js/sales-chrome.js')) {
+    const tag = '<script src="/js/sales-chrome.js" defer></script>';
     if (/<\/body>/i.test(html)) {
       html = html.replace(/<\/body>/i, `${tag}\n</body>`);
     } else {

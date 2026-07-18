@@ -4,24 +4,26 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Create account — Spreadsheet Tax</title>
+  <meta name="description" content="Create a free Spreadsheet Tax account for quarterly spreadsheet checks and HMRC updates." />
   <link rel="stylesheet" href="/css/site.css" />
 </head>
-<body class="theme-light app-body app-simple">
+<body class="theme-light app-simple">
   <header class="site-header">
     <div class="wrap header-inner">
       <a class="logo" href="/"><span class="logo-mark">ST</span> Spreadsheet Tax</a>
       <nav>
-        <a href="/signin?next=/home">Sign in</a>
-        <a href="/">Marketing site</a>
+        <a href="/signin?next=/home" data-cta="sign-in">Sign in</a>
       </nav>
     </div>
   </header>
   <main class="wrap app-main" style="max-width:480px">
     <h1>Create account</h1>
-    <p class="muted">
-      Create an account for spreadsheet checks, quarterly updates, and HMRC connection when enabled.
-      Not HMRC-recognised software. You remain responsible for figures you approve.
-    </p>
+    <p class="muted">Free to start. Keep your records in your spreadsheet, review figures in plain English, and approve before anything is sent.</p>
+    <ul class="outcome-list" style="margin:0 0 1.25rem;padding-left:1.1rem;color:var(--text-soft,#334155)">
+      <li>Upload Excel or CSV for one quarter</li>
+      <li>Check totals before you send</li>
+      <li>Connect HMRC when you are ready</li>
+    </ul>
     <form id="reg-form" class="panel">
       <div class="form-row">
         <label>Name <input type="text" id="name" autocomplete="name" /></label>
@@ -38,9 +40,10 @@
           <a href="/privacy" target="_blank" rel="noopener">Privacy notice</a>, and I understand
           Spreadsheet Tax is not HMRC-recognised software.</span>
       </label>
-      <button type="submit" class="btn btn-primary">Create account</button>
+      <button type="submit" class="btn btn-primary" data-cta="get-started-free">Get started free</button>
       <p id="err" class="error" hidden></p>
     </form>
+    <p class="muted" style="margin-top:1rem">Already have an account? <a href="/signin?next=/home" data-cta="sign-in">Sign in</a></p>
   </main>
   <script>
     document.getElementById('reg-form').addEventListener('submit', async (e) => {

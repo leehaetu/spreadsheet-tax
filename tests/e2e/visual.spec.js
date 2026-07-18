@@ -64,7 +64,7 @@ test.describe('Auth workspace journey', () => {
     await page.fill('#password', 'DemoPass123!');
     await page.click('button[type=submit]');
     await page.waitForURL(/home/);
-    await expect(page.getByRole('heading', { name: /tax year|Your tax/i })).toBeVisible({
+    await expect(page.getByRole('heading', { name: /Good morning/i })).toBeVisible({
       timeout: 10_000,
     });
     await shot(page, 'product-home-signed-in');
@@ -122,4 +122,3 @@ test.describe('Auth workspace journey', () => {
     await shot(page, 'connect-hmrc');
   });
 });
-

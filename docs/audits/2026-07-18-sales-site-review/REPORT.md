@@ -171,9 +171,11 @@ This is a sound simple funnel **if** nav and CTAs are unified.
 
 ## 5. Priority fixes (sales site only)
 
+**Full step-by-step execution plan:** [IMPROVEMENT-PLAN.md](./IMPROVEMENT-PLAN.md) (Phases A–G, page matrix, acceptance, tests, honesty gates).
+
 ### P0 — fix first
 
-1. **Unify primary CTA label site-wide** → pick one: **Get started free** *or* **Create free account**.  
+1. **Unify primary CTA label site-wide** → locked: **Get started free** (see plan §3).  
 2. **Unify marketing header nav** on all sales pages (same links as home, responsive hamburger on mobile).  
 3. **Remove product mode pill from sign-in/register/forgot** (or only show inside signed-in app).  
 4. **Force light theme on forgot-password** to match sales.  

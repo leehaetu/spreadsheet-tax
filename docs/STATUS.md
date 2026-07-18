@@ -1,8 +1,9 @@
 # Project status
 
 **Last updated:** 2026-07-18  
-**App version:** **1.25.0**  
+**App version:** **1.26.0**  
 **Screen audit pack:** [docs/audits/2026-07-18-all-screens/](./audits/2026-07-18-all-screens/) — drives UI fixes (not “image work”)  
+**Sales review + plan:** [docs/audits/2026-07-18-sales-site-review/](./audits/2026-07-18-sales-site-review/) · [IMPROVEMENT-PLAN.md](./audits/2026-07-18-sales-site-review/IMPROVEMENT-PLAN.md)  
 **Protocol:** [AGENT-TRUTH-PROTOCOL.md](./AGENT-TRUTH-PROTOCOL.md)  
 **Capacity gate:** [CAPACITY-REQUIREMENTS.md](./CAPACITY-REQUIREMENTS.md) — **NOT MET**  
 **Release gates:** [RELEASE-GATES.md](./RELEASE-GATES.md) — **OPEN**  
@@ -10,7 +11,55 @@
 
 ---
 
-## Truth status (2026-07-18) — v1.24 product UX gates from audit
+## Truth status (2026-07-18) — v1.26 sales chrome conversion wave
+
+### Shipped in 1.26.0 (sales site plan Phases A–G — code)
+
+- Shared marketing chrome: `public/js/sales-chrome.js` injects one nav + footer + mobile hamburger on marketing and public auth HTML [UNIT_TESTED]
+- Primary CTA locked to **Get started free** → `/register`; secondary template CTA unified [UNIT_TESTED]
+- Mode pill only on product shell paths (`isProductShellPath`) — not sign-in/register/forgot [UNIT_TESTED]
+- Auth entry light theme; no “Marketing site” / Preview mode chrome on cold entry [UNIT_TESTED]
+- Hero lead contrast + eyebrow ≥13px; mobile sticky compact header + drawer [ROUTE_ONLY CSS]
+- Home soft proof (no fake metrics); paid-deferred honesty on **pricing** only [UNIT_TESTED]
+- Professionals first-time education + return sign-in path [ROUTE_ONLY]
+- `data-cta` attributes for light instrumentation (SALE-12 style) [UNIT_TESTED source]
+- Plan doc: [IMPROVEMENT-PLAN.md](./audits/2026-07-18-sales-site-review/IMPROVEMENT-PLAN.md)
+- **Not** pilot-ready · **not** sales-complete S1–S7 (no moderated S7 interviews; no full after visual pack re-score yet)
+
+```text
+BLOCKERS:
+- Capacity 200 practices / 800k customers NOT MET
+- Release gates OPEN (tax review, DR restore, pen-test, full a11y, real billing)
+- HMRC Recognised: No
+- Individual vs agent OAuth separation: not fully proven as separate journeys
+- Deployed sandbox re-run of ensure-property-businesses path: pending operator OAuth
+- Card payments: NOT LIVE (no STRIPE_SECRET_KEY)
+- Transactional email: stub unless EMAIL_WEBHOOK_URL
+- CSRF enforced only when CSRF_ENFORCE=1 or NODE_ENV=production
+- Practice admin MFA hard-require only when MFA_REQUIRE_PRACTICE_ADMIN=1
+- Full after visual recapture pack scores not yet written to AFTER-REPORT (code done; optional re-PNG)
+
+PROVEN:
+- Unit tests: 216 pass including sales-chrome suite [UNIT_TESTED]
+- Sales-chrome inject on marketing + auth routes [UNIT_TESTED]
+- Pricing owns “Paid plans not available yet”; home has no “Create free account” [UNIT_TESTED]
+- Sign-in HTML has no mode pill / Preview only [UNIT_TESTED]
+- Product surface freeze + security freeze suites still pass [UNIT_TESTED]
+- SE + UK + foreign period sandbox HTTP on prior journey ledger [SANDBOX_HTTP]
+- Customer quarterly path exists (import → review → preview) [CUSTOMER_WORKFLOW / UNIT_TESTED]
+
+UNPROVEN:
+- Full unaided customer journey on production host after freeze
+- 800k capacity load / isolation / recovery
+- Independent pen-test and tax-domain sign-off
+- Live Stripe checkout + webhook verification
+- Real email delivery in production
+- Human moderated 10-second sales targets (S7)
+- After visual score uplift vs 2026-07-18 before pack (needs re-capture on deployed or local :3456)
+
+EXTERNAL:
+- HMRC Production credentials / recognition listing
+```
 
 ### Shipped in 1.25.0 (full audit list UX pass)
 - Marketing rewritten short + honest (sales, audiences, pricing, how-it-works, license, firms, professionals)
