@@ -100,7 +100,15 @@ test.describe('Auth workspace journey', () => {
     await shot(page, 'account-signed-in');
   });
 
-  test('mock HMRC connect journey', async ({ page }) => {
+  test('mock HMRC connect journey', async ({ page, request }) => {
+    // Production with real Hub credentials redirects to HMRC — mock path is local-only
+    const st = await request.get('/api/status');
+    const status = await st.json();
+    test.skip(
+      status.oauthMock === false,
+      'Real HMRC OAuth configured — mock connect journey is local-only'
+    );
+
     await page.goto('/signin?next=/connect-hmrc');
     await page.fill('#email', 'demo@spreadsheet-tax.example');
     await page.fill('#password', 'DemoPass123!');
@@ -114,3 +122,4 @@ test.describe('Auth workspace journey', () => {
     await shot(page, 'connect-hmrc');
   });
 });
+

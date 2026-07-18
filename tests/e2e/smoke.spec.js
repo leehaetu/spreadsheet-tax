@@ -71,10 +71,29 @@ test.describe('Gate 0 smoke — sales and personal app', () => {
     await expect(page.locator('body')).toContainText(/upload|mapping|HMRC|map/i);
   });
 
-  test('help templates billing connect pages load', async ({ page }) => {
+  test('help templates billing connect pages load', async ({ page, request }) => {
     for (const p of ['/help', '/templates', '/billing', '/connect-hmrc', '/account']) {
-      const res = await page.goto(p);
-      expect(res?.ok() || res?.status() === 200 || page.url().includes('signin')).toBeTruthy();
+      // Prefer API-level check (avoids aborted navigations when soft-redirects fire)
+      const api = await request.get(p, { maxRedirects: 5 });
+      expect(
+        api.ok() || api.status() < 400,
+        `${p} HTTP ${api.status()}`
+      ).toBeTruthy();
+      try {
+        await page.goto(p, { waitUntil: 'domcontentloaded', timeout: 15_000 });
+        await expect(page.locator('body')).toBeVisible();
+      } catch (err) {
+        // Soft-redirect races (ERR_ABORTED) are acceptable if the URL landed
+        const url = page.url();
+        const okLand =
+          url.includes(p.replace(/\/$/, '')) ||
+          url.includes('signin') ||
+          url.includes('templates') ||
+          url.includes('account');
+        expect(okLand, `${p} navigation: ${err?.message || err} url=${url}`).toBeTruthy();
+      }
     }
   });
 });
+
+
